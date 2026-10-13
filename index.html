@@ -461,7 +461,6 @@
             gerarAbasPortoes();
             popularSelectPortoesModal();
             await carregarDadosSupabase();
-            ativarEscutaRealtimeSupabase();
         });
 
         function mostrarLoadingGame(mostrar) {
@@ -470,26 +469,6 @@
                 if (mostrar) el.classList.remove('hidden');
                 else el.classList.add('hidden');
             }
-        }
-
-        // Escuta em tempo real reativada para sincronizar automaticamente entre telas
-        function ativarEscutaRealtimeSupabase() {
-            if (!supabaseClient) return;
-            try {
-                supabaseClient
-                    .channel('tabela-mudancas-global-v12')
-                    .on(
-                        'postgres_changes',
-                        { event: '*', schema: 'public', table: 'controle_faltas_portao' },
-                        async (payload) => {
-                            const alterado = payload.new || payload.old;
-                            if (alterado && alterado.data_operacao === dataAtual) {
-                                await carregarDadosSupabaseQuiet();
-                            }
-                        }
-                    )
-                    .subscribe();
-            } catch (e) {}
         }
 
         async function verificarCruzamentoOutroApp(sscc, index, tipoTabela) {
@@ -521,7 +500,7 @@
                         const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual][index] : dadosPortoes[portaoAtual][index];
                         if (item) {
                             item.observacao = `[Mapeado: ${categoria}]`;
-                            salvarOuAtualizarNoSupabase(portaoAtual, index, tipoTabela);
+                            salvarOuAtualizarNoSupabaseSilencioso(portaoAtual, index, tipoTabela);
                         }
                     }
                 }
@@ -534,7 +513,8 @@
             document.getElementById('modal-alerta-integracao').classList.add('hidden');
         }
 
-        async function carregarDadosSupabaseQuiet() {
+        async function carregarDadosSupabase() {
+            mostrarLoadingGame(true);
             dadosPortoes = {};
             rasgadasPortoes = {};
             for (let i = 7; i <= 26; i++) {
@@ -589,11 +569,6 @@
             renderizarTabelas();
             atualizarIndicadoresKPI();
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
-        }
-
-        async function carregarDadosSupabase() {
-            mostrarLoadingGame(true);
-            await carregarDadosSupabaseQuiet();
             setTimeout(() => { mostrarLoadingGame(false); }, 400);
         }
 
@@ -615,6 +590,7 @@
             }
         }
 
+        // Salvamento robusto que não redesenha a tela nem afeta o cursor
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
             if (!supabaseClient) return;
             const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum][index] : dadosPortoes[portaoNum][index];
@@ -677,6 +653,10 @@
             if (tipoTabela === 'falta') {
                 await verificarCruzamentoOutroApp(item.sscc, index, 'falta');
             }
+        }
+
+        async function salvarOuAtualizarNoSupabaseSilencioso(portaoNum, index, tipoTabela = 'falta') {
+            await salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela);
         }
 
         function definirModoDispositivo(modo) {
