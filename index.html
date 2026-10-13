@@ -456,9 +456,20 @@
             inicializarDataHoje();
             gerarAbasPortoes();
             popularSelectPortoesModal();
+            inicializarMatrizVazia();
             await carregarDadosSupabase();
             ativarEscutaRealtimeSupabase();
         });
+
+        function inicializarMatrizVazia() {
+            for (let i = 7; i <= 26; i++) {
+                dadosPortoes[i] = [];
+                rasgadasPortoes[i] = [];
+                for (let r = 0; r < 20; r++) {
+                    dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
+                }
+            }
+        }
 
         function mostrarLoadingGame(mostrar) {
             const el = document.getElementById('game-loading-indicator');
@@ -472,7 +483,7 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v18')
+                    .channel('tabela-mudancas-global-v19')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -537,12 +548,7 @@
         }
 
         async function carregarDadosSupabaseQuiet() {
-            dadosPortoes = {};
-            rasgadasPortoes = {};
-            for (let i = 7; i <= 26; i++) {
-                dadosPortoes[i] = [];
-                rasgadasPortoes[i] = [];
-            }
+            inicializarMatrizVazia();
 
             if (supabaseClient) {
                 try {
@@ -552,46 +558,42 @@
                         .eq('data_operacao', dataAtual);
 
                     if (!error && data) {
-                        const idsProcessados = new Set();
+                        let contadorLinhasPortao = {};
                         data.forEach(row => {
-                            if (idsProcessados.has(row.id)) return;
-                            idsProcessados.add(row.id);
-
                             const p = row.portao;
                             if (p >= 7 && p <= 26) {
-                                if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
-                                    rasgadasPortoes[p].push({
-                                        id: row.id,
-                                        sscc: row.sscc || '',
-                                        tipo: 'Lida',
-                                        status: row.status || 'Pendente',
-                                        origem: row.origem || 'CD',
-                                        ordem: row.ordem || '',
-                                        observacao: row.observacao.replace('[RASGADA] ', ''),
-                                        verificadoCruzamento: true
-                                    });
-                                } else {
-                                    dadosPortoes[p].push({
-                                        id: row.id,
-                                        sscc: row.sscc || '',
-                                        status: row.status || 'Pendente',
-                                        origem: row.origem || 'CD',
-                                        ordem: row.ordem || '',
-                                        noApp: row.no_app || 'Não',
-                                        observacao: row.observacao || '',
-                                        verificadoCruzamento: true
-                                    });
+                                if (contadorLinhasPortao[p] === undefined) contadorLinhasPortao[p] = 0;
+                                const idx = contadorLinhasPortao[p];
+                                if (idx < 20) {
+                                    if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
+                                        rasgadasPortoes[p][idx] = {
+                                            id: row.id,
+                                            sscc: row.sscc || '',
+                                            tipo: 'Lida',
+                                            status: row.status || 'Pendente',
+                                            origem: row.origem || 'CD',
+                                            ordem: row.ordem || '',
+                                            observacao: row.observacao.replace('[RASGADA] ', ''),
+                                            verificadoCruzamento: true
+                                        };
+                                    } else {
+                                        dadosPortoes[p][idx] = {
+                                            id: row.id,
+                                            sscc: row.sscc || '',
+                                            status: row.status || 'Pendente',
+                                            origem: row.origem || 'CD',
+                                            ordem: row.ordem || '',
+                                            noApp: row.no_app || 'Não',
+                                            observacao: row.observacao || '',
+                                            verificadoCruzamento: true
+                                        };
+                                    }
+                                    contadorLinhasPortao[p]++;
                                 }
                             }
                         });
                     }
                 } catch (err) {}
-            }
-
-            for (let i = 7; i <= 26; i++) {
-                while (dadosPortoes[i].length < 6) {
-                    dadosPortoes[i].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
-                }
             }
 
             renderizarTabelas();
@@ -623,7 +625,7 @@
             }
         }
 
-        // SALVAMENTO FIXO POR ÍNDICE SEM ALTERAR ORDEM DA TELA
+        // SALVAMENTO ESTRICTAMENTE AMARRADO AO ÍNDICE FIXO DA LINHA
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
             if (!supabaseClient) return;
             const listaTarget = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum] : dadosPortoes[portaoNum];
@@ -662,22 +664,9 @@
                 if (item.id) {
                     await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id);
                 } else {
-                    const { data: existente } = await supabaseClient
-                        .from('controle_faltas_portao')
-                        .select('id')
-                        .eq('data_operacao', dataAtual)
-                        .eq('portao', Number(portaoNum))
-                        .eq('sscc', String(item.sscc).trim())
-                        .maybeSingle();
-
-                    if (existente && existente.id) {
-                        item.id = existente.id;
-                        await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id);
-                    } else {
-                        const res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
-                        if (res.data && res.data[0]) {
-                            item.id = res.data[0].id;
-                        }
+                    const res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
+                    if (res.data && res.data[0]) {
+                        item.id = res.data[0].id;
                     }
                 }
                 atualizarIndicadoresKPI();
@@ -776,7 +765,7 @@
             for (let i = 7; i <= 26; i++) {
                 const badge = document.getElementById(`badge-rasgada-${i}`);
                 if (badge) {
-                    const rasgadas = rasgadasPortoes[i] || [];
+                    const rasgadas = (rasgadasPortoes[i] || []).filter(x => x.sscc && x.sscc.trim() !== '');
                     if (rasgadas.length > 0) badge.classList.remove('hidden');
                     else badge.classList.add('hidden');
                 }
@@ -819,7 +808,7 @@
         function verificarBannerRasgadas() {
             const banner = document.getElementById('banner-rasgadas-lidas');
             const textoAlerta = document.getElementById('texto-alerta-rasgada-lida');
-            const rasgadas = rasgadasPortoes[portaoAtual] || [];
+            const rasgadas = (rasgadasPortoes[portaoAtual] || []).filter(x => x.sscc && x.sscc.trim() !== '');
             const rasgadasLidas = rasgadas.filter(r => r.tipo === 'Lida');
 
             if (rasgadasLidas.length > 0) {
@@ -848,9 +837,13 @@
             if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
             if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
 
-            rasgadasPortoes[portaoAlvo].unshift({ sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: obs });
+            // Acha a primeira linha vazia de rasgadas
+            let indexVazio = rasgadasPortoes[portaoAlvo].findIndex(x => !x.sscc || x.sscc.trim() === '');
+            if (indexVazio === -1) indexVazio = 0;
 
-            await salvarOuAtualizarNoSupabase(portaoAlvo, 0, 'rasgada');
+            rasgadasPortoes[portaoAlvo][indexVazio] = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: obs };
+
+            await salvarOuAtualizarNoSupabase(portaoAlvo, indexVazio, 'rasgada');
 
             tocarSomSucesso();
             fecharModalRasgada();
@@ -864,7 +857,6 @@
             for (let i = 7; i <= 26; i++) {
                 const lista = dadosPortoes[i] || [];
                 const rasgadas = rasgadasPortoes[i] || [];
-                totalRasgadas += rasgadas.length;
 
                 lista.forEach(item => {
                     if (item.sscc && item.sscc.trim() !== '') {
@@ -875,6 +867,7 @@
                 });
                 rasgadas.forEach(item => {
                     if (item.sscc && item.sscc.trim() !== '') {
+                        totalRasgadas++;
                         totalFaltas++;
                         if (item.status === 'Entregue no Portão') entregues++; else pendentes++;
                     }
@@ -897,7 +890,8 @@
             const tbody = document.getElementById('corpo-tabela-excel');
             tbody.innerHTML = '';
             const lista = dadosPortoes[portaoAtual] || [];
-            document.getElementById('contador-linhas-portao').innerText = `${lista.length} registo(s)`;
+            const preenchidos = lista.filter(x => x.sscc && x.sscc.trim() !== '').length;
+            document.getElementById('contador-linhas-portao').innerText = `${preenchidos} registo(s)`;
 
             lista.forEach((item, index) => {
                 const tr = document.createElement('tr');
@@ -947,7 +941,7 @@
                         <input type="text" id="input-obs-${portaoAtual}-${index}" value="${item.observacao || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'observacao', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Obs..." class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
-                        <button onclick="removerLinhaSupabase(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        <button onclick="removerLinhaSupabase(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Limpar"><i class="fa-solid fa-trash-can text-xs"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -958,14 +952,15 @@
             const secaoRasgadas = document.getElementById('secao-tabela-rasgadas');
             const tbody = document.getElementById('corpo-tabela-rasgadas');
             tbody.innerHTML = '';
-            const lista = rasgadasPortoes[portaoAtual] || [];
+            const lista = (rasgadasPortoes[portaoAtual] || []).filter(item => item.sscc && item.sscc.trim() !== '');
             
             if (lista.length === 0) { secaoRasgadas.classList.add('hidden'); return; }
 
             secaoRasgadas.classList.remove('hidden');
             document.getElementById('contador-linhas-rasgadas').innerText = `${lista.length} registo(s)`;
 
-            lista.forEach((item, index) => {
+            rasgadasPortoes[portaoAtual].forEach((item, index) => {
+                if (!item.sscc || item.sscc.trim() === '') return;
                 const tr = document.createElement('tr');
                 const inputId = `input-rasg-sscc-${index}`;
 
@@ -1102,10 +1097,18 @@
             verificarBannerRasgadas();
         }
 
-        function adicionarLinhaVaziaObjeto() {
-            dadosPortoes[portaoAtual].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
+        function adicionarLinhaVazia() {
+            // Apenas foca na primeira linha vazia disponível
+            const lista = dadosPortoes[portaoAtual];
+            const idxVazio = lista.findIndex(x => !x.sscc || x.sscc.trim() === '');
+            if (idxVazio !== -1) {
+                const inputs = document.querySelectorAll('#corpo-tabela-excel tr');
+                if (inputs[idxVazio]) {
+                    const inputSSCC = inputs[idxVazio].querySelector('.excel-input-sscc');
+                    if (inputSSCC) inputSSCC.focus();
+                }
+            }
         }
-        function adicionarLinhaVazia() { adicionarLinhaVaziaObjeto(); renderizarTabelaFaltas(); }
 
         async function removerLinhaSupabase(index) {
             const item = dadosPortoes[portaoAtual][index];
@@ -1114,11 +1117,8 @@
                 await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
                 mostrarLoadingGame(false);
             }
-            dadosPortoes[portaoAtual].splice(index, 1);
-            while (dadosPortoes[portaoAtual].length < 6) {
-                dadosPortoes[portaoAtual].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
-            }
-            renderizarTabelas();
+            dadosPortoes[portaoAtual][index] = { id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false };
+            renderizarTabelaFaltas();
             atualizarIndicadoresKPI();
         }
 
@@ -1129,7 +1129,7 @@
                 await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
                 mostrarLoadingGame(false);
             }
-            rasgadasPortoes[portaoAtual].splice(index, 1);
+            rasgadasPortoes[portaoAtual][index] = { id: null, sscc: '', tipo: 'Lida', status: 'Pendente', origem: 'CD', ordem: '', observacao: '', verificadoCruzamento: false };
             renderizarTabelas();
             atualizarIndicadoresKPI();
         }
