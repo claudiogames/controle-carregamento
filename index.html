@@ -460,6 +460,7 @@
             ativarEscutaRealtimeSupabase();
         });
 
+        // CRIA SEMPRE EXATAMENTE 5 LINHAS FIXAS (ÍNDICES DE 0 A 4)
         function inicializarMatrizFixa() {
             for (let i = 7; i <= 26; i++) {
                 dadosPortoes[i] = [];
@@ -482,18 +483,21 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v21')
+                    .channel('tabela-mudancas-global-v22')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
                         async (payload) => {
+                            // TRAVA DE SEGURANÇA: Se o usuário estiver focado digitando em qualquer input, ignora o realtime para NUNCA roubar o foco ou mexer na linha
+                            const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                            const activeClass = document.activeElement ? document.activeElement.className : '';
+                            if (activeTag === 'INPUT' && activeClass.includes('excel-input')) {
+                                return;
+                            }
+
                             const alterado = payload.new || payload.old;
                             if (alterado && alterado.data_operacao === dataAtual) {
-                                const activeTag = document.activeElement ? document.activeElement.tagName : '';
-                                const activeClass = document.activeElement ? document.activeElement.className : '';
-                                if (activeTag !== 'INPUT' || !activeClass.includes('excel-input')) {
-                                    await carregarDadosSupabaseQuiet();
-                                }
+                                await carregarDadosSupabaseQuiet();
                             }
                         }
                     )
@@ -501,7 +505,6 @@
             } catch (e) {}
         }
 
-        // VERIFICAÇÃO DE CRUZAMENTO TOTALMENTE SEPARADA
         async function verificarCruzamentoAposSalvar(sscc, index, tipoTabela) {
             if (!supabaseClient || !sscc) return;
             const codigoLimpo = tratarSSCC(String(sscc));
@@ -543,7 +546,6 @@
         }
 
         async function carregarDadosSupabaseQuiet() {
-            // Mantém os 5 slots fixos sem perder as referências de índice
             for (let i = 7; i <= 26; i++) {
                 if (!dadosPortoes[i] || dadosPortoes[i].length === 0) {
                     dadosPortoes[i] = [];
@@ -551,7 +553,6 @@
                         dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
                     }
                 } else {
-                    // Limpa valores para remapear com segurança pelo BD
                     dadosPortoes[i].forEach(item => {
                         item.id = null;
                         item.sscc = '';
@@ -615,7 +616,6 @@
                 } catch (err) {}
             }
 
-            // Garante mínimo de 5 linhas visíveis
             for (let i = 7; i <= 26; i++) {
                 while (dadosPortoes[i].length < 5) {
                     dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
@@ -651,7 +651,7 @@
             }
         }
 
-        // TRAVA RIGOROSA DE ANCORAGEM POR ÍNDICE FIXO
+        // SALVAMENTO VINCULADO AO ÍNDICE EXATO SEM RE-RENDERIZAR A TABELA NO MEIO DA DIGITAÇÃO
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta', dispararVerificacao = true) {
             if (!supabaseClient) return;
             const listaTarget = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum] : dadosPortoes[portaoNum];
