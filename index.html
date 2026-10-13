@@ -448,6 +448,7 @@
             gerarAbasPortoes();
             popularSelectPortoesModal();
             await carregarDadosSupabase();
+            ativarEscutaRealtimeSupabase();
         });
 
         function mostrarLoadingGame(mostrar) {
@@ -458,25 +459,29 @@
             }
         }
 
-        function inicializarDataHoje() {
-            const hoje = new Date().toISOString().split('T')[0];
-            const dataSalva = localStorage.getItem('data_controle_carregamento');
-            dataAtual = dataSalva || hoje;
-            if (!dataSalva) localStorage.setItem('data_controle_carregamento', hoje);
-            document.getElementById('input-data-controle').value = dataAtual;
+        // Canal em tempo real para sincronizar celular e computador instantaneamente
+        function ativarEscutaRealtimeSupabase() {
+            if (!supabaseClient) return;
+            try {
+                supabaseClient
+                    .channel('tabela-mudancas-global')
+                    .on(
+                        'postgres_changes',
+                        { event: '*', schema: 'public', table: 'controle_faltas_portao' },
+                        async (payload) => {
+                            // Se a mudança veio de outro dispositivo/sessão para a data atual
+                            if (payload.new && payload.new.data_operacao === dataAtual) {
+                                mostrarLoadingGame(true);
+                                await carregarDadosSupabaseQuiet();
+                                setTimeout(() => { mostrarLoadingGame(false); }, 500);
+                            }
+                        }
+                    )
+                    .subscribe();
+            } catch (e) {}
         }
 
-        async function mudarDataOperacional(novaData) {
-            if (novaData !== dataAtual) {
-                dataAtual = novaData;
-                localStorage.setItem('data_controle_carregamento', novaData);
-                gerarAbasPortoes();
-                await carregarDadosSupabase();
-                tocarSomTrocaData();
-            }
-        }
-
-        async function carregarDadosSupabase() {
+        async function carregarDadosSupabaseQuiet() {
             dadosPortoes = {};
             rasgadasPortoes = {};
             for (let i = 7; i <= 26; i++) {
@@ -531,6 +536,30 @@
             renderizarTabelas();
             atualizarIndicadoresKPI();
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
+        }
+
+        function inicializarDataHoje() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const dataSalva = localStorage.getItem('data_controle_carregamento');
+            dataAtual = dataSalva || hoje;
+            if (!dataSalva) localStorage.setItem('data_controle_carregamento', hoje);
+            document.getElementById('input-data-controle').value = dataAtual;
+        }
+
+        async function mudarDataOperacional(novaData) {
+            if (novaData !== dataAtual) {
+                dataAtual = novaData;
+                localStorage.setItem('data_controle_carregamento', novaData);
+                gerarAbasPortoes();
+                await carregarDadosSupabase();
+                tocarSomTrocaData();
+            }
+        }
+
+        async function carregarDadosSupabase() {
+            mostrarLoadingGame(true);
+            await carregarDadosSupabaseQuiet();
+            setTimeout(() => { mostrarLoadingGame(false); }, 400);
         }
 
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
@@ -919,7 +948,6 @@
             document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
         }
 
-        // Sistema de debounce otimizado (salva 800ms após terminar de digitar/bipar)
         let timerAutossave = null;
         function atualizarCampoFaltaEmTempoReal(index, campo, valor) {
             dadosPortoes[portaoAtual][index][campo] = valor;
