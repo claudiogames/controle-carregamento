@@ -166,8 +166,8 @@
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
-            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">Caixa Localizada no Outro Sistema!</h2>
-            <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono">Esta caixa foi encontrada na tabela registros_sscc.</p>
+            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">Aviso de Localização</h2>
+            <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono">A caixa informada se encontra em...</p>
             <button onclick="fecharAlertaIntegracao()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-xs cursor-pointer shadow">Entendido / Fechar</button>
         </div>
     </div>
@@ -401,7 +401,7 @@
         <div class="ui-card border p-4 rounded shadow-sm">
             <div class="flex justify-between items-center border-b pb-3 mb-3">
                 <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2 text-blue-500">
-                    <i class="fa-solid fa-layer-group"></i> Panorama Unificado - Todos los Portões
+                    <i class="fa-solid fa-layer-group"></i> Panorama Unificado - Todos os Portões
                 </h2>
                 <span class="text-xs opacity-75 font-mono" id="contador-total-geral">0 itens gerais</span>
             </div>
@@ -452,6 +452,9 @@
         let responsavelAtual = '';
         let dataAtual = '';
         
+        // Memória para evitar que o alerta fique reabrindo em loop para o mesmo SSCC
+        let caixasAlertadasMemoria = new Set();
+        
         let html5QrcodeScanner = null;
         let campoAlvoScannerId = null;
 
@@ -460,7 +463,6 @@
             gerarAbasPortoes();
             popularSelectPortoesModal();
             await carregarDadosSupabase();
-            ativarEscutaRealtimeSupabase();
         });
 
         function mostrarLoadingGame(mostrar) {
@@ -471,11 +473,15 @@
             }
         }
 
-        // Cruzamento infalível: busca todos os registros e cruza no navegador
+        // Cruzamento infalível com trava anti-loop
         async function verificarCruzamentoOutroApp(sscc, index, tipoTabela) {
             if (!supabaseClient || !sscc) return;
             const codigoLimpo = tratarSSCC(String(sscc));
-            if (!codigoLimpo) return;
+            if (!codigoLimpo || codigoLimpo.length < 5) return;
+
+            // Se já alertamos esta exata caixa nesta sessão, não exibe novamente
+            const chaveAlerta = `${portaoAtual}_${tipoTabela}_${index}_${codigoLimpo}`;
+            if (caixasAlertadasMemoria.has(chaveAlerta)) return;
 
             try {
                 const { data, error } = await supabaseClient
@@ -486,55 +492,37 @@
                     const encontrado = data.find(r => tratarSSCC(String(r.sscc || '')) === codigoLimpo);
 
                     if (encontrado) {
-                        const cat = encontrado.categoria || 'Outro Setor';
-                        const detalheRastro = encontrado.rastro ? ` (${encontrado.rastro})` : '';
-                        const mensagem = `Atenção: A caixa ${codigoLimpo} foi encontrada no outro aplicativo na categoria [${cat}]${detalheRastro}!`;
+                        caixasAlertadasMemoria.add(chaveAlerta);
+
+                        const categoria = encontrado.categoria || 'Reposição';
+                        const rastro = encontrado.rastro ? ` (${encontrado.rastro})` : '';
+                        const mensagem = `A caixa informada se encontra em "${categoria}"${rastro}.`;
                         
                         document.getElementById('texto-alerta-integracao').innerText = mensagem;
                         document.getElementById('modal-alerta-integracao').classList.remove('hidden');
 
                         const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual][index] : dadosPortoes[portaoAtual][index];
                         if (item) {
-                            item.observacao = `[Localizado: ${cat}${detalheRastro}]`;
+                            item.observacao = `[Mapeado: ${categoria}]`;
                             if (tipoTabela === 'rasgada') {
-                                renderizarTabelaRasgadas();
                                 salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
                             } else {
-                                renderizarTabelaFaltas();
                                 salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
                             }
                         }
                     }
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.error("Erro no cruzamento:", err);
+            }
         }
 
         function fecharAlertaIntegracao() {
             document.getElementById('modal-alerta-integracao').classList.add('hidden');
         }
 
-        function ativarEscutaRealtimeSupabase() {
-            if (!supabaseClient) return;
-            try {
-                supabaseClient
-                    .channel('tabela-mudancas-global-v9')
-                    .on(
-                        'postgres_changes',
-                        { event: '*', schema: 'public', table: 'controle_faltas_portao' },
-                        async (payload) => {
-                            const alterado = payload.new || payload.old;
-                            if (alterado && alterado.data_operacao === dataAtual) {
-                                mostrarLoadingGame(true);
-                                await carregarDadosSupabaseQuiet();
-                                setTimeout(() => { mostrarLoadingGame(false); }, 400);
-                            }
-                        }
-                    )
-                    .subscribe();
-            } catch (e) {}
-        }
-
-        async function carregarDadosSupabaseQuiet() {
+        async function carregarDadosSupabase() {
+            mostrarLoadingGame(true);
             dadosPortoes = {};
             rasgadasPortoes = {};
             for (let i = 7; i <= 26; i++) {
@@ -589,6 +577,7 @@
             renderizarTabelas();
             atualizarIndicadoresKPI();
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
+            setTimeout(() => { mostrarLoadingGame(false); }, 400);
         }
 
         function inicializarDataHoje() {
@@ -607,12 +596,6 @@
                 await carregarDadosSupabase();
                 tocarSomTrocaData();
             }
-        }
-
-        async function carregarDadosSupabase() {
-            mostrarLoadingGame(true);
-            await carregarDadosSupabaseQuiet();
-            setTimeout(() => { mostrarLoadingGame(false); }, 400);
         }
 
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
@@ -674,7 +657,6 @@
             } catch (err) {}
             setTimeout(() => { mostrarLoadingGame(false); }, 400);
 
-            // Verificar cruzamento
             await verificarCruzamentoOutroApp(item.sscc, index, tipoTabela);
         }
 
@@ -901,7 +883,7 @@
                 tr.innerHTML = `
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
-                        <input type="text" value="${item.sscc || ''}" oninput="this.value = tratarSSCC(this.value); atualizarCampoFaltaEmTempoReal(${index}, 'sscc', this.value);" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                        <input type="text" value="${item.sscc || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
                     </td>
                     <td class="${classeStatus}" data-label="Status">
                         <select onchange="atualizarCampoFalta(${index}, 'status', this.value)" class="excel-select ${classeStatus}">
@@ -923,7 +905,7 @@
                         </select>
                     </td>
                     <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoFaltaEmTempoReal(${index}, 'ordem', this.value)" placeholder="Ordem..." class="excel-input font-bold">
+                        <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'ordem', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Ordem..." class="excel-input font-bold">
                     </td>
                     <td class="${classeApp}" data-label="No App?">
                         <select onchange="atualizarCampoFalta(${index}, 'noApp', this.value)" class="excel-select ${classeApp}">
@@ -932,7 +914,7 @@
                         </select>
                     </td>
                     <td data-label="Observação">
-                        <input type="text" value="${item.observacao || ''}" oninput="atualizarCampoFaltaEmTempoReal(${index}, 'observacao', this.value)" placeholder="Obs..." class="excel-input">
+                        <input type="text" value="${item.observacao || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'observacao', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Obs..." class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
                         <button onclick="removerLinhaSupabase(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
@@ -966,7 +948,7 @@
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
                         <div class="flex items-center gap-1 w-full justify-end">
-                            <input type="text" id="${inputId}" value="${item.sscc || ''}" oninput="this.value = tratarSSCC(this.value); atualizarCampoRasgadaEmTempoReal(${index}, 'sscc', this.value);" class="excel-input excel-input-sscc font-bold">
+                            <input type="text" id="${inputId}" value="${item.sscc || ''}" oninput="atualizarCampoRasgadaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" class="excel-input excel-input-sscc font-bold">
                             <button type="button" onclick="abrirModalScannerParaCampo('${inputId}')" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
                         </div>
                     </td>
@@ -994,10 +976,10 @@
                         </select>
                     </td>
                     <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoRasgadaEmTempoReal(${index}, 'ordem', this.value)" class="excel-input font-bold">
+                        <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoRasgadaLocal(${index}, 'ordem', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" class="excel-input font-bold">
                     </td>
                     <td data-label="Observação">
-                        <input type="text" value="${item.observacao || ''}" oninput="atualizarCampoRasgadaEmTempoReal(${index}, 'observacao', this.value)" class="excel-input">
+                        <input type="text" value="${item.observacao || ''}" oninput="atualizarCampoRasgadaLocal(${index}, 'observacao', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
                         <button onclick="removerLinhaRasgada(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
@@ -1032,23 +1014,18 @@
             document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
         }
 
-        let timerAutossave = null;
-        function atualizarCampoFaltaEmTempoReal(index, campo, valor) {
+        function atualizarCampoFaltaLocal(index, campo, valor) {
+            if (!dadosPortoes[portaoAtual][index]) return;
+            if (campo === 'sscc') valor = tratarSSCC(valor);
             dadosPortoes[portaoAtual][index][campo] = valor;
             atualizarIndicadoresKPI();
-            clearTimeout(timerAutossave);
-            timerAutossave = setTimeout(() => {
-                salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
-            }, 600);
         }
 
-        function atualizarCampoRasgadaEmTempoReal(index, campo, valor) {
+        function atualizarCampoRasgadaLocal(index, campo, valor) {
+            if (!rasgadasPortoes[portaoAtual][index]) return;
+            if (campo === 'sscc') valor = tratarSSCC(valor);
             rasgadasPortoes[portaoAtual][index][campo] = valor;
             atualizarIndicadoresKPI();
-            clearTimeout(timerAutossave);
-            timerAutossave = setTimeout(() => {
-                salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
-            }, 600);
         }
 
         async function atualizarCampoFalta(index, campo, valor) {
@@ -1127,7 +1104,11 @@
                             if (navigator.vibrate) navigator.vibrate(200);
                             if (campoAlvoScannerId) {
                                 const inputEl = document.getElementById(campoAlvoScannerId);
-                                if (inputEl) { inputEl.value = codigoTratado; inputEl.dispatchEvent(new Event('input')); }
+                                if (inputEl) { 
+                                    inputEl.value = codigoTratado; 
+                                    inputEl.dispatchEvent(new Event('input')); 
+                                    inputEl.dispatchEvent(new Event('change')); 
+                                }
                             }
                             fecharModalScanner();
                         }
@@ -1139,11 +1120,12 @@
 
         function tratarSSCC(texto) {
             if (!texto) return '';
-            let limpo = texto.replace(/^\][A-Za-z]\d+/, '').replace(/[^\d]/g, '');
-            if (limpo.length > 20) {
-                limpo = limpo.substring(limpo.length - 20);
+            let limpo = texto.replace(/^\][A-Za-z]\d+/, '');
+            limpo = limpo.replace(/\D/g, '');
+            if (limpo.length === 21) {
+                limpo = limpo.substring(1);
             }
-            return limpo || texto.replace(/[^\d]/g, '');
+            return limpo || texto;
         }
 
         function tocarSomSucesso() {
