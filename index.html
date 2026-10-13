@@ -160,6 +160,18 @@
         <span class="text-[11px] font-mono font-bold tracking-wider text-blue-400">SINCRONIZANDO...</span>
     </div>
 
+    <!-- MODAL DE ALERTA INTEGRAÇÃO (LOCALIZADO NO OUTRO APP) -->
+    <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
+        <div class="ui-card rounded-lg max-w-sm w-full p-6 text-center shadow-2xl border border-amber-500">
+            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">Caixa Localizada em Outro Setor!</h2>
+            <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono">Esta caixa foi encontrada no sistema de rastreio.</p>
+            <button onclick="fecharAlertaIntegracao()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-xs cursor-pointer shadow">Entendido / Fechar</button>
+        </div>
+    </div>
+
     <!-- MODAL DE SELEÇÃO DE DISPOSITIVO -->
     <div id="modal-dispositivo" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
         <div class="ui-card rounded-lg max-w-sm w-full p-6 text-center shadow-2xl border">
@@ -459,11 +471,45 @@
             }
         }
 
+        // Função que verifica em tempo real na tabela do outro app (registros_sscc)
+        async function verificarCruzamentoOutroApp(sscc, index, tipoTabela) {
+            if (!supabaseClient || !sscc || sscc.trim() === '') return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('registros_sscc')
+                    .select('*')
+                    .eq('sscc', sscc.trim())
+                    .maybeSingle();
+
+                if (!error && data) {
+                    const cat = data.categoria || 'Outro Setor';
+                    const detalheRastro = data.rastro ? ` (${data.rastro})` : '';
+                    const mensagem = `Atenção: A caixa ${sscc} foi localizada no outro aplicativo na categoria [${cat}]${detalheRastro}!`;
+                    
+                    // Exibir modal de alerta de integração
+                    document.getElementById('texto-alerta-integracao').innerText = mensagem;
+                    document.getElementById('modal-alerta-integracao').classList.remove('hidden');
+
+                    // Preencher a observação automaticamente com a localização encontrada
+                    const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual][index] : dadosPortoes[portaoAtual][index];
+                    if (item) {
+                        item.observacao = `[Encontrado em ${cat}${detalheRastro}]`;
+                        if (tipoTabela === 'rasgada') renderizarTabelaRasgadas();
+                        else renderizarTabelaFaltas();
+                    }
+                }
+            } catch (err) {}
+        }
+
+        function fecharAlertaIntegracao() {
+            document.getElementById('modal-alerta-integracao').classList.add('hidden');
+        }
+
         function ativarEscutaRealtimeSupabase() {
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v5')
+                    .channel('tabela-mudancas-global-v6')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -619,6 +665,9 @@
                 atualizarIndicadoresKPI();
             } catch (err) {}
             setTimeout(() => { mostrarLoadingGame(false); }, 400);
+
+            // Verificar se existe no outro app
+            await verificarCruzamentoOutroApp(item.sscc, index, tipoTabela);
         }
 
         function definirModoDispositivo(modo) {
