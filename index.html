@@ -463,7 +463,7 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v3')
+                    .channel('tabela-mudancas-global-v4')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -564,7 +564,18 @@
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
             if (!supabaseClient) return;
             const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum][index] : dadosPortoes[portaoNum][index];
-            if (!item.sscc || item.sscc.trim() === '') return;
+            
+            // Se o SSCC foi limpo/apagado, removemos do banco se tiver ID
+            if (!item.sscc || item.sscc.trim() === '') {
+                if (item.id) {
+                    mostrarLoadingGame(true);
+                    await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+                    item.id = null;
+                    mostrarLoadingGame(false);
+                    atualizarIndicadoresKPI();
+                }
+                return;
+            }
 
             const obsFinal = tipoTabela === 'rasgada' ? `[RASGADA] ${item.observacao || 'Caixa rasgada no carregamento'}` : (item.observacao || '');
 
@@ -584,11 +595,10 @@
             mostrarLoadingGame(true);
             try {
                 let res;
-                // Se já tem ID, atualiza diretamente
                 if (item.id) {
                     res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
                 } else {
-                    // Evita duplicidade verificando se já existe um registro idêntico sem ID na lista
+                    // Verifica se já existe um registro com esse mesmo SSCC para evitar duplicações
                     const { data: existente } = await supabaseClient
                         .from('controle_faltas_portao')
                         .select('id')
@@ -969,7 +979,7 @@
             clearTimeout(timerAutossave);
             timerAutossave = setTimeout(() => {
                 salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
-            }, 800);
+            }, 600);
         }
 
         function atualizarCampoRasgadaEmTempoReal(index, campo, valor) {
@@ -978,7 +988,7 @@
             clearTimeout(timerAutossave);
             timerAutossave = setTimeout(() => {
                 salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
-            }, 800);
+            }, 600);
         }
 
         async function atualizarCampoFalta(index, campo, valor) {
@@ -1005,7 +1015,9 @@
         async function removerLinhaSupabase(index) {
             const item = dadosPortoes[portaoAtual][index];
             if (item.id && supabaseClient) {
+                mostrarLoadingGame(true);
                 await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+                mostrarLoadingGame(false);
             }
             dadosPortoes[portaoAtual].splice(index, 1);
             while (dadosPortoes[portaoAtual].length < 4) {
@@ -1018,7 +1030,9 @@
         async function removerLinhaRasgada(index) {
             const item = rasgadasPortoes[portaoAtual][index];
             if (item.id && supabaseClient) {
+                mostrarLoadingGame(true);
                 await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+                mostrarLoadingGame(false);
             }
             rasgadasPortoes[portaoAtual].splice(index, 1);
             renderizarTabelas();
