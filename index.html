@@ -166,8 +166,8 @@
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
-            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">Caixa Localizada em Outro Setor!</h2>
-            <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono">Esta caixa foi encontrada no sistema de rastreio.</p>
+            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">Caixa Localizada no Outro Sistema!</h2>
+            <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono">Esta caixa foi encontrada na tabela registros_sscc.</p>
             <button onclick="fecharAlertaIntegracao()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-xs cursor-pointer shadow">Entendido / Fechar</button>
         </div>
     </div>
@@ -471,34 +471,45 @@
             }
         }
 
-        // Função que verifica em tempo real na tabela do outro app (registros_sscc)
+        // Função corrigida e robusta de cruzamento com registros_sscc
         async function verificarCruzamentoOutroApp(sscc, index, tipoTabela) {
-            if (!supabaseClient || !sscc || sscc.trim() === '') return;
+            if (!supabaseClient || !sscc) return;
+            const codigoLimpo = String(sscc).trim();
+            if (codigoLimpo === '') return;
+
             try {
+                // Consulta na tabela registros_sscc
                 const { data, error } = await supabaseClient
                     .from('registros_sscc')
                     .select('*')
-                    .eq('sscc', sscc.trim())
-                    .maybeSingle();
+                    .eq('sscc', codigoLimpo);
 
-                if (!error && data) {
-                    const cat = data.categoria || 'Outro Setor';
-                    const detalheRastro = data.rastro ? ` (${data.rastro})` : '';
-                    const mensagem = `Atenção: A caixa ${sscc} foi localizada no outro aplicativo na categoria [${cat}]${detalheRastro}!`;
+                if (!error && data && data.length > 0) {
+                    const reg = data[0];
+                    const cat = reg.categoria || 'Outro Setor';
+                    const detalheRastro = reg.rastro ? ` (${reg.rastro})` : '';
+                    const mensagem = `Atenção: A caixa ${codigoLimpo} foi encontrada no sistema de rastreio na categoria [${cat}]${detalheRastro}!`;
                     
                     // Exibir modal de alerta de integração
                     document.getElementById('texto-alerta-integracao').innerText = mensagem;
                     document.getElementById('modal-alerta-integracao').classList.remove('hidden');
 
-                    // Preencher a observação automaticamente com a localização encontrada
+                    // Preencher a observação automaticamente
                     const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual][index] : dadosPortoes[portaoAtual][index];
                     if (item) {
-                        item.observacao = `[Encontrado em ${cat}${detalheRastro}]`;
-                        if (tipoTabela === 'rasgada') renderizarTabelaRasgadas();
-                        else renderizarTabelaFaltas();
+                        item.observacao = `[Localizado: ${cat}${detalheRastro}]`;
+                        if (tipoTabela === 'rasgada') {
+                            renderizarTabelaRasgadas();
+                            salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
+                        } else {
+                            renderizarTabelaFaltas();
+                            salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
+                        }
                     }
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.warn("Erro ao cruzar dados com registros_sscc:", err);
+            }
         }
 
         function fecharAlertaIntegracao() {
@@ -509,7 +520,7 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v6')
+                    .channel('tabela-mudancas-global-v7')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -666,7 +677,7 @@
             } catch (err) {}
             setTimeout(() => { mostrarLoadingGame(false); }, 400);
 
-            // Verificar se existe no outro app
+            // Executar verificação cruzada com a tabela registros_sscc
             await verificarCruzamentoOutroApp(item.sscc, index, tipoTabela);
         }
 
