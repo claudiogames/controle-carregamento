@@ -461,7 +461,6 @@
             gerarAbasPortoes();
             popularSelectPortoesModal();
             await carregarDadosSupabase();
-            ativarEscutaRealtimeSupabase();
         });
 
         function mostrarLoadingGame(mostrar) {
@@ -470,29 +469,6 @@
                 if (mostrar) el.classList.remove('hidden');
                 else el.classList.add('hidden');
             }
-        }
-
-        // Sincronização em tempo real segura (atualiza em background sem redesenhar campos em foco)
-        function ativarEscutaRealtimeSupabase() {
-            if (!supabaseClient) return;
-            try {
-                supabaseClient
-                    .channel('tabela-mudancas-global-v13')
-                    .on(
-                        'postgres_changes',
-                        { event: '*', schema: 'public', table: 'controle_faltas_portao' },
-                        async (payload) => {
-                            const alterado = payload.new || payload.old;
-                            if (alterado && alterado.data_operacao === dataAtual) {
-                                // Se o usuário não estiver com foco digitando em nenhum input, atualiza suavemente
-                                if (!document.activeElement || document.activeElement.tagName !== 'INPUT') {
-                                    await carregarDadosSupabaseQuiet();
-                                }
-                            }
-                        }
-                    )
-                    .subscribe();
-            } catch (e) {}
         }
 
         async function verificarCruzamentoOutroApp(sscc, index, tipoTabela) {
@@ -537,7 +513,8 @@
             document.getElementById('modal-alerta-integracao').classList.add('hidden');
         }
 
-        async function carregarDadosSupabaseQuiet() {
+        async function carregarDadosSupabase() {
+            mostrarLoadingGame(true);
             dadosPortoes = {};
             rasgadasPortoes = {};
             for (let i = 7; i <= 26; i++) {
@@ -592,11 +569,6 @@
             renderizarTabelas();
             atualizarIndicadoresKPI();
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
-        }
-
-        async function carregarDadosSupabase() {
-            mostrarLoadingGame(true);
-            await carregarDadosSupabaseQuiet();
             setTimeout(() => { mostrarLoadingGame(false); }, 400);
         }
 
@@ -618,7 +590,7 @@
             }
         }
 
-        // Salvamento seguro que não mexe na tabela nem altera o foco
+        // Salvamento isolado e blindado: nunca redesenha a tabela ao salvar
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
             if (!supabaseClient) return;
             const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum][index] : dadosPortoes[portaoNum][index];
@@ -908,7 +880,7 @@
                     <td class="td-sscc-container" data-label="SSCC">
                         <input type="text" value="${item.sscc || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
                     </td>
-                    <td class="${classeStatus}" data-label="Status">
+                    <td class="${classeStatus}" id="td-status-${index}" data-label="Status">
                         <select onchange="atualizarCampoFalta(${index}, 'status', this.value)" class="excel-select ${classeStatus}">
                             <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
                             <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
@@ -930,7 +902,7 @@
                     <td data-label="Ordem">
                         <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'ordem', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Ordem..." class="excel-input font-bold">
                     </td>
-                    <td class="${classeApp}" data-label="No App?">
+                    <td class="${classeApp}" id="td-app-${index}" data-label="No App?">
                         <select onchange="atualizarCampoFalta(${index}, 'noApp', this.value)" class="excel-select ${classeApp}">
                             <option value="Não" ${item.noApp === 'Não' ? 'selected' : ''}>Não</option>
                             <option value="Sim" ${item.noApp === 'Sim' ? 'selected' : ''}>Sim</option>
@@ -1051,12 +1023,38 @@
             atualizarIndicadoresKPI();
         }
 
+        // Atualização cirúrgica de status sem recriar a tabela inteira (evita pular de linha ou trocar status do vizinho)
         async function atualizarCampoFalta(index, campo, valor) {
             if (campo === 'sscc') valor = tratarSSCC(valor);
             dadosPortoes[portaoAtual][index][campo] = valor;
-            if (campo === 'status' && valor === 'Entregue no Portão') tocarSomConquistaAnimada();
+
+            if (campo === 'status' && valor === 'Entregue no Portão') {
+                tocarSomConquistaAnimada();
+            }
+
+            // Atualiza apenas a classe visual e cor da célula atual sem recriar o DOM
+            const tdStatus = document.getElementById(`td-status-${index}`);
+            if (tdStatus && campo === 'status') {
+                let st = valor.toLowerCase();
+                let classeStatus = st.includes('andamento') ? 'status-em-andamento' :
+                                   st.includes('requisitada') ? 'status-requisitada' :
+                                   st.includes('portão 1') ? 'status-portao-1' :
+                                   st.includes('apareceu') ? 'status-apareceu' :
+                                   st.includes('entregue') ? 'status-entregue' : 'status-pendente';
+                tdStatus.className = classeStatus;
+                const selectEl = tdStatus.querySelector('select');
+                if (selectEl) selectEl.className = `excel-select ${classeStatus}`;
+            }
+
+            const tdApp = document.getElementById(`td-app-${index}`);
+            if (tdApp && campo === 'noApp') {
+                let classeApp = valor === 'Sim' ? 'app-sim' : 'app-nao';
+                tdApp.className = classeApp;
+                const selectEl = tdApp.querySelector('select');
+                if (selectEl) selectEl.className = `excel-select ${classeApp}`;
+            }
+
             await salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
-            renderizarTabelaFaltas();
         }
 
         async function atualizarCampoRasgada(index, campo, valor) {
