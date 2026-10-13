@@ -157,7 +157,7 @@
     <!-- INDICADOR DE LOADING FLUTUANTE (ESTILO GAME) -->
     <div id="game-loading-indicator" class="fixed bottom-4 right-4 z-[999999] hidden items-center gap-2 bg-slate-900/90 text-white px-3 py-2 rounded-lg shadow-2xl border border-blue-500/50 backdrop-blur-md">
         <img src="https://pub-f46b0cda8b8d434aabcf14ccac85f3af.r2.dev/1791682069820.png" alt="Salvando..." class="w-6 h-6 object-contain game-loading-icon">
-        <span class="text-[11px] font-mono font-bold tracking-wider text-blue-400">SALVANDO...</span>
+        <span class="text-[11px] font-mono font-bold tracking-wider text-blue-400">SINCRONIZANDO...</span>
     </div>
 
     <!-- MODAL DE SELEÇÃO DE DISPOSITIVO -->
@@ -459,21 +459,21 @@
             }
         }
 
-        // Canal em tempo real para sincronizar celular e computador instantaneamente
+        // Canal em tempo real garantindo captura de inserções, atualizações e exclusões em qualquer campo
         function ativarEscutaRealtimeSupabase() {
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global')
+                    .channel('tabela-mudancas-global-v2')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
                         async (payload) => {
-                            // Se a mudança veio de outro dispositivo/sessão para a data atual
-                            if (payload.new && payload.new.data_operacao === dataAtual) {
+                            const alterado = payload.new || payload.old;
+                            if (alterado && alterado.data_operacao === dataAtual) {
                                 mostrarLoadingGame(true);
                                 await carregarDadosSupabaseQuiet();
-                                setTimeout(() => { mostrarLoadingGame(false); }, 500);
+                                setTimeout(() => { mostrarLoadingGame(false); }, 400);
                             }
                         }
                     )
