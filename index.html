@@ -441,7 +441,7 @@
         }
 
         let portaoAtual = 7;
-        let dadosPortoes = {};
+        let registrosPortoes = {}; // Armazena por ID único do BD ou UID local temporário
         let rasgadasPortoes = {};
         let modoDispositivo = 'computador';
         let turnoAtual = 'Turno 1';
@@ -455,18 +455,29 @@
             inicializarDataHoje();
             gerarAbasPortoes();
             popularSelectPortoesModal();
-            inicializarMatrizFixa();
+            inicializarEstruturaVazia();
             await carregarDadosSupabase();
             ativarEscutaRealtimeSupabase();
         });
 
-        // CRIA SEMPRE EXATAMENTE 5 LINHAS FIXAS (ÍNDICES DE 0 A 4)
-        function inicializarMatrizFixa() {
+        // ESTRUTURA BASEADA EM LISTA DE REGISTROS INDEPENDENTES
+        function inicializarEstruturaVazia() {
             for (let i = 7; i <= 26; i++) {
-                dadosPortoes[i] = [];
+                registrosPortoes[i] = [];
                 rasgadasPortoes[i] = [];
+                // Cria 5 linhas em branco iniciais com IDs temporários únicos
                 for (let r = 0; r < 5; r++) {
-                    dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
+                    registrosPortoes[i].push({
+                        uid: 'temp_' + Math.random().toString(36.2),
+                        id: null,
+                        sscc: '',
+                        status: 'Pendente',
+                        origem: 'CD',
+                        ordem: '',
+                        noApp: 'Não',
+                        observacao: '',
+                        verificadoCruzamento: false
+                    });
                 }
             }
         }
@@ -483,18 +494,15 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v22')
+                    .channel('tabela-mudancas-global-v23')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
                         async (payload) => {
-                            // TRAVA DE SEGURANÇA: Se o usuário estiver focado digitando em qualquer input, ignora o realtime para NUNCA roubar o foco ou mexer na linha
-                            const activeTag = document.activeElement ? document.activeElement.tagName : '';
-                            const activeClass = document.activeElement ? document.activeElement.className : '';
-                            if (activeTag === 'INPUT' && activeClass.includes('excel-input')) {
-                                return;
+                            const activeEl = document.activeElement;
+                            if (activeEl && activeEl.tagName === 'INPUT' && activeEl.classList.contains('excel-input')) {
+                                return; // Nunca interrompe a digitação do usuário
                             }
-
                             const alterado = payload.new || payload.old;
                             if (alterado && alterado.data_operacao === dataAtual) {
                                 await carregarDadosSupabaseQuiet();
@@ -505,9 +513,13 @@
             } catch (e) {}
         }
 
-        async function verificarCruzamentoAposSalvar(sscc, index, tipoTabela) {
-            if (!supabaseClient || !sscc) return;
-            const codigoLimpo = tratarSSCC(String(sscc));
+        async function verificarCruzamentoAposSalvar(uidRegistro) {
+            if (!supabaseClient) return;
+            const lista = registrosPortoes[portaoAtual];
+            const item = lista.find(x => x.uid === uidRegistro);
+            if (!item || !item.sscc) return;
+
+            const codigoLimpo = tratarSSCC(String(item.sscc));
             if (!codigoLimpo || codigoLimpo.length < 5) return;
 
             try {
@@ -526,19 +538,14 @@
                         document.getElementById('texto-alerta-integracao').innerText = mensagem;
                         document.getElementById('modal-alerta-integracao').classList.remove('hidden');
 
-                        const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual][index] : dadosPortoes[portaoAtual][index];
-                        if (item) {
-                            item.observacao = `[Mapeado: ${categoria}]`;
-                            const inputObs = document.getElementById(`input-obs-${portaoAtual}-${index}`);
-                            if (inputObs) inputObs.value = item.observacao;
-                            
-                            await salvarOuAtualizarNoSupabase(portaoAtual, index, tipoTabela, false);
-                        }
+                        item.observacao = `[Mapeado: ${categoria}]`;
+                        const inputObs = document.getElementById(`input-obs-${item.uid}`);
+                        if (inputObs) inputObs.value = item.observacao;
+                        
+                        await salvarOuAtualizarRegistro(portaoAtual, item.uid, 'falta', false);
                     }
                 }
-            } catch (err) {
-                console.error("Erro no cruzamento:", err);
-            }
+            } catch (err) {}
         }
 
         function fecharAlertaIntegracao() {
@@ -547,23 +554,7 @@
 
         async function carregarDadosSupabaseQuiet() {
             for (let i = 7; i <= 26; i++) {
-                if (!dadosPortoes[i] || dadosPortoes[i].length === 0) {
-                    dadosPortoes[i] = [];
-                    for (let r = 0; r < 5; r++) {
-                        dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
-                    }
-                } else {
-                    dadosPortoes[i].forEach(item => {
-                        item.id = null;
-                        item.sscc = '';
-                        item.status = 'Pendente';
-                        item.origem = 'CD';
-                        item.ordem = '';
-                        item.noApp = 'Não';
-                        item.observacao = '';
-                        item.verificadoCruzamento = false;
-                    });
-                }
+                registrosPortoes[i] = [];
                 rasgadasPortoes[i] = [];
             }
 
@@ -575,40 +566,27 @@
                         .eq('data_operacao', dataAtual);
 
                     if (!error && data) {
-                        let contadorFaltasPortao = {};
                         data.forEach(row => {
                             const p = row.portao;
                             if (p >= 7 && p <= 26) {
-                                if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
-                                    rasgadasPortoes[p].push({
-                                        id: row.id,
-                                        sscc: row.sscc || '',
-                                        tipo: 'Lida',
-                                        status: row.status || 'Pendente',
-                                        origem: row.origem || 'CD',
-                                        ordem: row.ordem || '',
-                                        observacao: row.observacao.replace('[RASGADA] ', ''),
-                                        verificadoCruzamento: true
-                                    });
-                                } else {
-                                    if (contadorFaltasPortao[p] === undefined) contadorFaltasPortao[p] = 0;
-                                    const idx = contadorFaltasPortao[p];
-                                    
-                                    while (dadosPortoes[p].length <= idx) {
-                                        dadosPortoes[p].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
-                                    }
+                                const registro = {
+                                    uid: 'db_' + row.id,
+                                    id: row.id,
+                                    sscc: row.sscc || '',
+                                    status: row.status || 'Pendente',
+                                    origem: row.origem || 'CD',
+                                    ordem: row.ordem || '',
+                                    noApp: row.no_app || 'Não',
+                                    observacao: row.observacao || '',
+                                    verificadoCruzamento: true
+                                };
 
-                                    dadosPortoes[p][idx] = {
-                                        id: row.id,
-                                        sscc: row.sscc || '',
-                                        status: row.status || 'Pendente',
-                                        origem: row.origem || 'CD',
-                                        ordem: row.ordem || '',
-                                        noApp: row.no_app || 'Não',
-                                        observacao: row.observacao || '',
-                                        verificadoCruzamento: true
-                                    };
-                                    contadorFaltasPortao[p]++;
+                                if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
+                                    registro.observacao = row.observacao.replace('[RASGADA] ', '');
+                                    registro.tipo = 'Lida';
+                                    rasgadasPortoes[p].push(registro);
+                                } else {
+                                    registrosPortoes[p].push(registro);
                                 }
                             }
                         });
@@ -616,9 +594,20 @@
                 } catch (err) {}
             }
 
+            // Garante pelo menos 5 linhas vazias disponíveis em cada portão se estiverem vazios
             for (let i = 7; i <= 26; i++) {
-                while (dadosPortoes[i].length < 5) {
-                    dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
+                while (registrosPortoes[i].length < 5) {
+                    registrosPortoes[i].push({
+                        uid: 'temp_' + Math.random().toString(36).substr(2, 9),
+                        id: null,
+                        sscc: '',
+                        status: 'Pendente',
+                        origem: 'CD',
+                        ordem: '',
+                        noApp: 'Não',
+                        observacao: '',
+                        verificadoCruzamento: false
+                    });
                 }
             }
 
@@ -651,14 +640,13 @@
             }
         }
 
-        // SALVAMENTO VINCULADO AO ÍNDICE EXATO SEM RE-RENDERIZAR A TABELA NO MEIO DA DIGITAÇÃO
-        async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta', dispararVerificacao = true) {
+        // SALVAMENTO INDEPENDENTE POR UID DE REGISTRO (NÃO MEXE NAS OUTRAS LINHAS)
+        async function salvarOuAtualizarRegistro(portaoNum, uidRegistro, tipoTabela = 'falta', dispararVerificacao = true) {
             if (!supabaseClient) return;
-            const listaTarget = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum] : dadosPortoes[portaoNum];
-            if (!listaTarget || !listaTarget[index]) return;
+            const lista = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum] : registrosPortoes[portaoNum];
+            const item = lista.find(x => x.uid === uidRegistro);
+            if (!item) return;
 
-            const item = listaTarget[index];
-            
             if (!item.sscc || item.sscc.trim() === '') {
                 if (item.id) {
                     mostrarLoadingGame(true);
@@ -693,6 +681,7 @@
                     const res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
                     if (res.data && res.data[0]) {
                         item.id = res.data[0].id;
+                        item.uid = 'db_' + res.data[0].id;
                     }
                 }
                 atualizarIndicadoresKPI();
@@ -701,7 +690,7 @@
 
             if (dispararVerificacao && tipoTabela === 'falta' && !item.verificadoCruzamento) {
                 item.verificadoCruzamento = true;
-                await verificarCruzamentoAposSalvar(item.sscc, index, 'falta');
+                await verificarCruzamentoAposSalvar(uidRegistro);
             }
         }
 
@@ -863,12 +852,19 @@
             if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
             if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
 
-            let indexVazio = rasgadasPortoes[portaoAlvo].findIndex(x => !x.sscc || x.sscc.trim() === '');
-            if (indexVazio === -1) indexVazio = rasgadasPortoes[portaoAlvo].length;
+            const novoRegistro = {
+                uid: 'temp_' + Math.random().toString(36).substr(2, 9),
+                id: null,
+                sscc,
+                tipo,
+                status: 'Pendente',
+                origem: 'CD',
+                ordem: 'URGENTE',
+                observacao: obs
+            };
 
-            rasgadasPortoes[portaoAlvo][indexVazio] = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: obs };
-
-            await salvarOuAtualizarNoSupabase(portaoAlvo, indexVazio, 'rasgada', false);
+            rasgadasPortoes[portaoAlvo].push(novoRegistro);
+            await salvarOuAtualizarRegistro(portaoAlvo, novoRegistro.uid, 'rasgada', false);
 
             tocarSomSucesso();
             fecharModalRasgada();
@@ -880,7 +876,7 @@
             let totalFaltas = 0, entregues = 0, pendentes = 0, totalRasgadas = 0, quantificadosNoApp = 0;
 
             for (let i = 7; i <= 26; i++) {
-                const lista = dadosPortoes[i] || [];
+                const lista = registrosPortoes[i] || [];
                 const rasgadas = rasgadasPortoes[i] || [];
 
                 lista.forEach(item => {
@@ -914,7 +910,7 @@
         function renderizarTabelaFaltas() {
             const tbody = document.getElementById('corpo-tabela-excel');
             tbody.innerHTML = '';
-            const lista = dadosPortoes[portaoAtual] || [];
+            const lista = registrosPortoes[portaoAtual] || [];
             const preenchidos = lista.filter(x => x.sscc && x.sscc.trim() !== '').length;
             document.getElementById('contador-linhas-portao').innerText = `${preenchidos} registo(s)`;
 
@@ -932,10 +928,10 @@
                 tr.innerHTML = `
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
-                        <input type="text" value="${item.sscc || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                        <input type="text" value="${item.sscc || ''}" oninput="atualizarCampoLocal('${item.uid}', 'sscc', this.value, 'falta')" onchange="salvarOuAtualizarRegistro(${portaoAtual}, '${item.uid}', 'falta')" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
                     </td>
-                    <td class="${classeStatus}" id="td-status-${index}" data-label="Status">
-                        <select onchange="atualizarCampoFalta(${index}, 'status', this.value)" class="excel-select ${classeStatus}">
+                    <td class="${classeStatus}" id="td-status-${item.uid}" data-label="Status">
+                        <select onchange="atualizarCampoSelect('${item.uid}', 'status', this.value, 'falta')" class="excel-select ${classeStatus}">
                             <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
                             <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
                             <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
@@ -945,7 +941,7 @@
                         </select>
                     </td>
                     <td data-label="Origem">
-                        <select onchange="atualizarCampoFalta(${index}, 'origem', this.value)" class="excel-select">
+                        <select onchange="atualizarCampoSelect('${item.uid}', 'origem', this.value, 'falta')" class="excel-select">
                             <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
                             <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
                             <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
@@ -954,19 +950,19 @@
                         </select>
                     </td>
                     <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'ordem', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Ordem..." class="excel-input font-bold">
+                        <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoLocal('${item.uid}', 'ordem', this.value, 'falta')" onchange="salvarOuAtualizarRegistro(${portaoAtual}, '${item.uid}', 'falta')" placeholder="Ordem..." class="excel-input font-bold">
                     </td>
-                    <td class="${classeApp}" id="td-app-${index}" data-label="No App?">
-                        <select onchange="atualizarCampoFalta(${index}, 'noApp', this.value)" class="excel-select ${classeApp}">
+                    <td class="${classeApp}" id="td-app-${item.uid}" data-label="No App?">
+                        <select onchange="atualizarCampoSelect('${item.uid}', 'noApp', this.value, 'falta')" class="excel-select ${classeApp}">
                             <option value="Não" ${item.noApp === 'Não' ? 'selected' : ''}>Não</option>
                             <option value="Sim" ${item.noApp === 'Sim' ? 'selected' : ''}>Sim</option>
                         </select>
                     </td>
                     <td data-label="Observação">
-                        <input type="text" id="input-obs-${portaoAtual}-${index}" value="${item.observacao || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'observacao', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Obs..." class="excel-input">
+                        <input type="text" id="input-obs-${item.uid}" value="${item.observacao || ''}" oninput="atualizarCampoLocal('${item.uid}', 'observacao', this.value, 'falta')" onchange="salvarOuAtualizarRegistro(${portaoAtual}, '${item.uid}', 'falta')" placeholder="Obs..." class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
-                        <button onclick="removerLinhaSupabase(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Limpar"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        <button onclick="removerRegistro('${item.uid}', 'falta')" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Limpar"><i class="fa-solid fa-trash-can text-xs"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -977,17 +973,16 @@
             const secaoRasgadas = document.getElementById('secao-tabela-rasgadas');
             const tbody = document.getElementById('corpo-tabela-rasgadas');
             tbody.innerHTML = '';
-            const lista = (rasgadasPortoes[portaoAtual] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+            const lista = rasgadasPortoes[portaoAtual] || [];
             
             if (lista.length === 0) { secaoRasgadas.classList.add('hidden'); return; }
 
             secaoRasgadas.classList.remove('hidden');
             document.getElementById('contador-linhas-rasgadas').innerText = `${lista.length} registo(s)`;
 
-            rasgadasPortoes[portaoAtual].forEach((item, index) => {
-                if (!item.sscc || item.sscc.trim() === '') return;
+            lista.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                const inputId = `input-rasg-sscc-${index}`;
+                const inputId = `input-rasg-sscc-${item.uid}`;
 
                 let st = (item.status || 'Pendente').toLowerCase();
                 let classeStatusRasgada = st.includes('requisitada') ? 'status-rasgada-requisitada' :
@@ -998,18 +993,18 @@
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
                         <div class="flex items-center gap-1 w-full justify-end">
-                            <input type="text" id="${inputId}" value="${item.sscc || ''}" oninput="atualizarCampoRasgadaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" class="excel-input excel-input-sscc font-bold">
+                            <input type="text" id="${inputId}" value="${item.sscc || ''}" oninput="atualizarCampoLocal('${item.uid}', 'sscc', this.value, 'rasgada')" onchange="salvarOuAtualizarRegistro(${portaoAtual}, '${item.uid}', 'rasgada')" class="excel-input excel-input-sscc font-bold">
                             <button type="button" onclick="abrirModalScannerParaCampo('${inputId}')" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
                         </div>
                     </td>
                     <td data-label="Tipo">
-                        <select onchange="atualizarCampoRasgada(${index}, 'tipo', this.value)" class="excel-select font-bold ${item.tipo === 'Lida' ? 'text-red-600' : 'text-amber-600'}">
+                        <select onchange="atualizarCampoSelect('${item.uid}', 'tipo', this.value, 'rasgada')" class="excel-select font-bold ${item.tipo === 'Lida' ? 'text-red-600' : 'text-amber-600'}">
                             <option value="Lida" ${item.tipo === 'Lida' ? 'selected' : ''}>Rasgada (Lida)</option>
                             <option value="Nao Lida" ${item.tipo === 'Nao Lida' ? 'selected' : ''}>Rasgada (Não Lida)</option>
                         </select>
                     </td>
                     <td class="${classeStatusRasgada}" data-label="Status">
-                        <select onchange="atualizarCampoRasgada(${index}, 'status', this.value)" class="excel-select ${classeStatusRasgada}">
+                        <select onchange="atualizarCampoSelect('${item.uid}', 'status', this.value, 'rasgada')" class="excel-select ${classeStatusRasgada}">
                             <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
                             <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
                             <option value="Restaurada" ${item.status === 'Restaurada' ? 'selected' : ''}>Restaurada</option>
@@ -1017,7 +1012,7 @@
                         </select>
                     </td>
                     <td data-label="Origem">
-                        <select onchange="atualizarCampoRasgada(${index}, 'origem', this.value)" class="excel-select">
+                        <select onchange="atualizarCampoSelect('${item.uid}', 'origem', this.value, 'rasgada')" class="excel-select">
                             <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
                             <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
                             <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
@@ -1026,13 +1021,13 @@
                         </select>
                     </td>
                     <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoRasgadaLocal(${index}, 'ordem', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" class="excel-input font-bold">
+                        <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoLocal('${item.uid}', 'ordem', this.value, 'rasgada')" onchange="salvarOuAtualizarRegistro(${portaoAtual}, '${item.uid}', 'rasgada')" class="excel-input font-bold">
                     </td>
                     <td data-label="Observação">
-                        <input type="text" value="${item.observacao || ''}" oninput="atualizarCampoRasgadaLocal(${index}, 'observacao', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" class="excel-input">
+                        <input type="text" value="${item.observacao || ''}" oninput="atualizarCampoLocal('${item.uid}', 'observacao', this.value, 'rasgada')" onchange="salvarOuAtualizarRegistro(${portaoAtual}, '${item.uid}', 'rasgada')" class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
-                        <button onclick="removerLinhaRasgada(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        <button onclick="removerRegistro('${item.uid}', 'rasgada')" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1045,7 +1040,7 @@
             let totalGeral = 0;
 
             for (let i = 7; i <= 26; i++) {
-                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+                const listaFaltas = (registrosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
                 const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
 
                 listaFaltas.forEach(item => {
@@ -1064,89 +1059,104 @@
             document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
         }
 
-        function atualizarCampoFaltaLocal(index, campo, valor) {
-            if (!dadosPortoes[portaoAtual] || !dadosPortoes[portaoAtual][index]) return;
+        function atualizarCampoLocal(uidRegistro, campo, valor, tipoTabela) {
+            const lista = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual] : registrosPortoes[portaoAtual];
+            const item = lista.find(x => x.uid === uidRegistro);
+            if (!item) return;
+
             if (campo === 'sscc') {
                 valor = tratarSSCC(valor);
-                dadosPortoes[portaoAtual][index].verificadoCruzamento = false;
+                item.verificadoCruzamento = false;
             }
-            dadosPortoes[portaoAtual][index][campo] = valor;
+            item[campo] = valor;
             atualizarIndicadoresKPI();
         }
 
-        function atualizarCampoRasgadaLocal(index, campo, valor) {
-            if (!rasgadasPortoes[portaoAtual] || !rasgadasPortoes[portaoAtual][index]) return;
-            if (campo === 'sscc') valor = tratarSSCC(valor);
-            rasgadasPortoes[portaoAtual][index][campo] = valor;
-            atualizarIndicadoresKPI();
-        }
+        async function atualizarCampoSelect(uidRegistro, campo, valor, tipoTabela) {
+            const lista = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual] : registrosPortoes[portaoAtual];
+            const item = lista.find(x => x.uid === uidRegistro);
+            if (!item) return;
 
-        async function atualizarCampoFalta(index, campo, valor) {
             if (campo === 'sscc') valor = tratarSSCC(valor);
-            dadosPortoes[portaoAtual][index][campo] = valor;
+            item[campo] = valor;
 
             if (campo === 'status' && valor === 'Entregue no Portão') {
                 tocarSomConquistaAnimada();
             }
 
-            const tdStatus = document.getElementById(`td-status-${index}`);
-            if (tdStatus && campo === 'status') {
-                let st = valor.toLowerCase();
-                let classeStatus = st.includes('andamento') ? 'status-em-andamento' :
-                                   st.includes('requisitada') ? 'status-requisitada' :
-                                   st.includes('portão 1') ? 'status-portao-1' :
-                                   st.includes('apareceu') ? 'status-apareceu' :
-                                   st.includes('entregue') ? 'status-entregue' : 'status-pendente';
-                tdStatus.className = classeStatus;
-                const selectEl = tdStatus.querySelector('select');
-                if (selectEl) selectEl.className = `excel-select ${classeStatus}`;
+            if (tipoTabela === 'falta' && campo === 'status') {
+                const tdStatus = document.getElementById(`td-status-${uidRegistro}`);
+                if (tdStatus) {
+                    let st = valor.toLowerCase();
+                    let classeStatus = st.includes('andamento') ? 'status-em-andamento' :
+                                       st.includes('requisitada') ? 'status-requisitada' :
+                                       st.includes('portão 1') ? 'status-portao-1' :
+                                       st.includes('apareceu') ? 'status-apareceu' :
+                                       st.includes('entregue') ? 'status-entregue' : 'status-pendente';
+                    tdStatus.className = classeStatus;
+                    const selectEl = tdStatus.querySelector('select');
+                    if (selectEl) selectEl.className = `excel-select ${classeStatus}`;
+                }
             }
 
-            const tdApp = document.getElementById(`td-app-${index}`);
-            if (tdApp && campo === 'noApp') {
-                let classeApp = valor === 'Sim' ? 'app-sim' : 'app-nao';
-                tdApp.className = classeApp;
-                const selectEl = tdApp.querySelector('select');
-                if (selectEl) selectEl.className = `excel-select ${classeApp}`;
+            if (tipoTabela === 'falta' && campo === 'noApp') {
+                const tdApp = document.getElementById(`td-app-${uidRegistro}`);
+                if (tdApp) {
+                    let classeApp = valor === 'Sim' ? 'app-sim' : 'app-nao';
+                    tdApp.className = classeApp;
+                    const selectEl = tdApp.querySelector('select');
+                    if (selectEl) selectEl.className = `excel-select ${classeApp}`;
+                }
             }
 
-            await salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
-        }
-
-        async function atualizarCampoRasgada(index, campo, valor) {
-            if (campo === 'sscc') valor = tratarSSCC(valor);
-            rasgadasPortoes[portaoAtual][index][campo] = valor;
-            if (campo === 'status' && valor === 'Entregue no Portão') tocarSomConquistaAnimada();
-            await salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
-            renderizarTabelaRasgadas();
-            verificarBannerRasgadas();
+            await salvarOuAtualizarRegistro(portaoAtual, uidRegistro, tipoTabela);
         }
 
         function adicionarLinhaVazia() {
-            dadosPortoes[portaoAtual].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
+            if (!registrosPortoes[portaoAtual]) registrosPortoes[portaoAtual] = [];
+            registrosPortoes[portaoAtual].push({
+                uid: 'temp_' + Math.random().toString(36).substr(2, 9),
+                id: null,
+                sscc: '',
+                status: 'Pendente',
+                origem: 'CD',
+                ordem: '',
+                noApp: 'Não',
+                observacao: '',
+                verificadoCruzamento: false
+            });
             renderizarTabelaFaltas();
         }
 
-        async function removerLinhaSupabase(index) {
-            const item = dadosPortoes[portaoAtual][index];
+        async function removerRegistro(uidRegistro, tipoTabela) {
+            const lista = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual] : registrosPortoes[portaoAtual];
+            const index = lista.findIndex(x => x.uid === uidRegistro);
+            if (index === -1) return;
+
+            const item = lista[index];
             if (item.id && supabaseClient) {
                 mostrarLoadingGame(true);
                 await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
                 mostrarLoadingGame(false);
             }
-            dadosPortoes[portaoAtual][index] = { id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false };
-            renderizarTabelaFaltas();
-            atualizarIndicadoresKPI();
-        }
 
-        async function removerLinhaRasgada(index) {
-            const item = rasgadasPortoes[portaoAtual][index];
-            if (item.id && supabaseClient) {
-                mostrarLoadingGame(true);
-                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
-                mostrarLoadingGame(false);
+            lista.splice(index, 1);
+
+            // Se for faltas e ficar abaixo de 5 linhas, garante reposição de uma em branco
+            if (tipoTabela === 'falta' && lista.length < 5) {
+                lista.push({
+                    uid: 'temp_' + Math.random().toString(36).substr(2, 9),
+                    id: null,
+                    sscc: '',
+                    status: 'Pendente',
+                    origem: 'CD',
+                    ordem: '',
+                    noApp: 'Não',
+                    observacao: '',
+                    verificadoCruzamento: false
+                });
             }
-            rasgadasPortoes[portaoAtual][index] = { id: null, sscc: '', tipo: 'Lida', status: 'Pendente', origem: 'CD', ordem: '', observacao: '', verificadoCruzamento: false };
+
             renderizarTabelas();
             atualizarIndicadoresKPI();
         }
@@ -1258,7 +1268,7 @@
             let temDados = false;
 
             for (let i = 7; i <= 26; i++) {
-                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+                const listaFaltas = (registrosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
                 const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
 
                 if (listaFaltas.length > 0 || listaRasgadas.length > 0) {
