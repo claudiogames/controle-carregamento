@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-raiz" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle e Acompanhamento do Carregamento - Portão 1 CD</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0d1117',
+                        darkcard: '#161b22',
+                        darkborder: '#30363d'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS para Exportação para Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Html5-Qrcode (Scanner de Câmera) -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- Supabase JS Client Oficial -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s, color 0.3s; }
+        
+        /* TEMAS */
+        body.light { background-color: #f3f4f6; color: #1f2937; }
+        body.light .ui-card { background-color: #ffffff; border-color: #e5e7eb; color: #1f2937; }
+        body.light .excel-table th { background-color: #e5e7eb; color: #374151; border-color: #d1d5db; }
+        body.light .excel-table td { background-color: #ffffff; border-color: #d1d5db; color: #1f2937; }
+        body.light .excel-input, body.light .excel-select { color: #1f2937; }
+
+        body.dark { background-color: #0d1117; color: #c9d1d9; }
+        body.dark .ui-card { background-color: #161b22; border-color: #30363d; color: #c9d1d9; }
+        body.dark .excel-table th { background-color: #21262d; color: #8b949e; border-color: #30363d; }
+        body.dark .excel-table td { background-color: #161b22; border-color: #30363d; color: #c9d1d9; }
+        body.dark .excel-input, body.dark .excel-select { color: #c9d1d9; }
+
+        .excel-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+        .excel-table th { padding: 6px 8px; text-align: left; font-weight: 700; }
+        .excel-table td { padding: 2px 4px; position: relative; }
+
+        .excel-input, .excel-select {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 12px;
+            font-family: monospace;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        /* EXPANSÃO FLUIDA DO SSCC NO CELULAR */
+        .td-sscc-container {
+            position: relative;
+            z-index: 1;
+        }
+        .td-sscc-container:focus-within {
+            z-index: 9999 !important;
+        }
+
+        body.modo-celular .excel-input-sscc:focus {
+            position: absolute !important;
+            left: 2px !important;
+            top: -2px !important;
+            width: 280px !important;
+            height: 42px !important;
+            z-index: 99999 !important;
+            background-color: #ffffff !important;
+            border: 2px solid #2563eb !important;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+            font-size: 14px !important;
+            padding: 10px !important;
+            color: #000000 !important;
+        }
+        body.dark.modo-celular .excel-input-sscc:focus {
+            background-color: #161b22 !important;
+            color: #ffffff !important;
+            border: 2px solid #3b82f6 !important;
+        }
+
+        /* OTIMIZAÇÃO MOBILE (MODO CARTÕES PARA NÃO FICAR APERTADO) */
+        @media (max-width: 768px) {
+            .excel-table thead { display: none; }
+            .excel-table, .excel-table tbody, .excel-table tr, .excel-table td { display: block; width: 100%; }
+            .excel-table tr {
+                margin-bottom: 12px;
+                border: 1px solid #30363d;
+                border-radius: 8px;
+                padding: 8px;
+                background: inherit;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .excel-table td {
+                padding: 4px 0;
+                border: none !important;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .excel-table td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                font-size: 10px;
+                text-transform: uppercase;
+                opacity: 0.7;
+                margin-right: 8px;
+            }
+            .excel-table td:first-child { display: none; } /* Oculta o index # para ganhar espaço */
+            .excel-input, .excel-select { text-align: right; }
+        }
+
+        /* Cores de Status Gerais */
+        .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; font-weight: bold; border-radius: 4px; }
+        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-apareceu { background-color: #06b6d4 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-portao-1 { background-color: #3b82f6 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-entregue { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+
+        /* Cores de Status Específicas para Rasgadas */
+        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+
+        .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+
+        .scanner-frame { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid #30363d; }
+        .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="light p-2 sm:p-3">
+
+    <!-- MODAL DE SELEÇÃO DE DISPOSITIVO -->
+    <div id="modal-dispositivo" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
+        <div class="ui-card rounded-xl max-w-sm w-full p-6 text-center shadow-2xl border">
+            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                <i class="fa-solid fa-display"></i>
+            </div>
+            <h2 class="text-base font-bold mb-1">Como você vai navegar?</h2>
+            <p class="text-xs opacity-75 mb-5">Escolha o seu dispositivo para ajustar a interface automaticamente.</p>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="definirModoDispositivo('celular')" class="flex flex-col items-center justify-center p-4 border-2 border-blue-500 bg-blue-50/50 hover:bg-blue-100 rounded-lg text-blue-700 transition-all cursor-pointer">
+                    <i class="fa-solid fa-mobile-screen-button text-2xl mb-1"></i>
+                    <span class="text-xs font-bold">Celular</span>
+                </button>
+                <button onclick="definirModoDispositivo('computador')" class="flex flex-col items-center justify-center p-4 border-2 border-gray-300 hover:border-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-700 transition-all cursor-pointer">
+                    <i class="fa-solid fa-desktop text-2xl mb-1"></i>
+                    <span class="text-xs font-bold">Computador</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE SCANNER (RASGADAS) -->
+    <div id="modal-scanner" class="fixed inset-0 bg-black/90 hidden z-[99999] flex items-center justify-center p-4">
+        <div class="ui-card border rounded-lg max-w-md w-full p-5 shadow-2xl">
+            <div class="flex justify-between items-center pb-3 border-b mb-4">
+                <h3 class="text-sm font-bold flex items-center gap-2 text-amber-500">
+                    <i class="fa-solid fa-barcode"></i> Leitor de SSCC (Caixa Rasgada)
+                </h3>
+                <button type="button" onclick="fecharModalScanner()" class="opacity-70 hover:opacity-100 p-1 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+            <div class="mb-4">
+                <div id="reader" class="scanner-frame bg-black w-full min-h-[220px]"></div>
+            </div>
+            <p class="text-[11px] opacity-75 text-center mb-3">Aponte a câmara para o código da caixa rasgada.</p>
+            <div class="flex justify-end pt-2 border-t">
+                <button type="button" onclick="fecharModalScanner()" class="px-3 py-1.5 border rounded text-xs cursor-pointer">Concluir / Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL REGISTRO DE CAIXA RASGADA -->
+    <div id="modal-rasgada" class="fixed inset-0 bg-black/60 hidden z-40 flex items-center justify-center p-4">
+        <div class="ui-card rounded-lg max-w-md w-full p-5 shadow-xl border">
+            <div class="flex justify-between items-center pb-2 border-b mb-3">
+                <h3 class="text-xs font-bold text-amber-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Registar Caixa Rasgada
+                </h3>
+                <button onclick="fecharModalRasgada()" class="opacity-70 hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block opacity-75 mb-1">Selecione o Portão</label>
+                    <select id="rasgada-portao" class="w-full ui-card border rounded p-2 font-mono"></select>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="opacity-75">Código SSCC</label>
+                        <button type="button" onclick="abrirModalScannerParaCampo('rasgada-sscc')" class="text-amber-500 hover:underline flex items-center gap-1 cursor-pointer font-bold"><i class="fa-solid fa-camera"></i> Bipar com Câmera</button>
+                    </div>
+                    <input type="text" id="rasgada-sscc" placeholder="Bipe ou digite o SSCC..." class="w-full ui-card border rounded p-2 font-mono font-bold" oninput="this.value = tratarSSCC(this.value)">
+                </div>
+                <div>
+                    <label class="block opacity-75 mb-1">Tipo</label>
+                    <select id="rasgada-tipo" class="w-full ui-card border rounded p-2 font-medium">
+                        <option value="Lida">Rasgada LIDA (Alerta Vermelho)</option>
+                        <option value="Nao Lida">Rasgada NÃO LIDA</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block opacity-75 mb-1">Observação</label>
+                    <input type="text" id="rasgada-obs" placeholder="Ex: Rasgada na conferência..." class="w-full ui-card border rounded p-2">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="fecharModalRasgada()" class="px-3 py-1.5 border rounded opacity-75">Cancelar</button>
+                    <button onclick="salvarCaixaRasgada()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold">Registar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CABEÇALHO -->
+    <header class="ui-card p-3 sm:p-4 rounded-xl shadow-sm border mb-3 flex flex-col xl:flex-row justify-between items-center gap-3">
+        <div class="flex items-center gap-3 w-full xl:w-auto justify-center sm:justify-start">
+            <div class="bg-white p-1.5 rounded-lg border border-gray-200 flex items-center justify-center min-w-[110px]">
+                <img src="https://sindcalf.org.br/wp-content/uploads/2017/06/grendene.jpg" alt="Grendene" class="h-7 w-auto object-contain">
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-sm sm:text-base font-extrabold tracking-tight">Controle de Carregamento</h1>
+                    <span class="hidden sm:inline-block bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-mono font-bold">Portão 1 CD</span>
+                </div>
+                <p class="text-[11px] opacity-75">Gestão Operacional &bull; Faltas e Ocorrências (Supabase)</p>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full xl:w-auto justify-center xl:justify-end">
+            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
+                <i class="fa-solid fa-calendar-days text-blue-500"></i>
+                <input type="date" id="input-data-controle" onchange="mudarDataOperacional(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
+            </div>
+
+            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
+                <i class="fa-solid fa-user-tie text-blue-500"></i>
+                <select id="select-responsavel" onchange="mudarResponsavel(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
+                    <option value="" disabled selected>Responsável</option>
+                    <option value="Aldo">Supervisor Aldo</option>
+                    <option value="Elisson">Supervisor Elisson</option>
+                    <option value="Jhonatan Carlos">Líder Jhonatan</option>
+                    <option value="Cláudio Sousa">Cláudio Sousa</option>
+                    <option value="Yens Farrapo">Yens Farrapo</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
+                <i class="fa-solid fa-clock text-blue-500"></i>
+                <select id="select-turno" onchange="mudarTurno(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
+                    <option value="Turno 1">T1</option>
+                    <option value="Turno 2">T2</option>
+                    <option value="Turno 3">T3</option>
+                    <option value="Comercial">Com.</option>
+                </select>
+            </div>
+
+            <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
+            <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
+            <button onclick="adicionarLinhaVazia()" class="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-plus"></i> Linha</button>
+            <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
+        </div>
+    </header>
+
+    <!-- KPI / INDICADORES -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
+        <div class="ui-card border p-2 rounded-lg shadow-sm">
+            <span class="text-[9px] font-bold opacity-75 uppercase block">Total Faltas</span>
+            <div class="text-base sm:text-lg font-black font-mono" id="kpi-total-faltas">0</div>
+        </div>
+        <div class="ui-card border p-2 rounded-lg shadow-sm">
+            <span class="text-[9px] font-bold text-emerald-600 uppercase block">Concluídas</span>
+            <div class="text-base sm:text-lg font-black font-mono text-emerald-600" id="kpi-entregues">0</div>
+        </div>
+        <div class="ui-card border p-2 rounded-lg shadow-sm">
+            <span class="text-[9px] font-bold text-red-500 uppercase block">Pendentes</span>
+            <div class="text-base sm:text-lg font-black font-mono text-red-500" id="kpi-pendentes">0</div>
+        </div>
+        <div class="ui-card border p-2 rounded-lg shadow-sm">
+            <span class="text-[9px] font-bold text-amber-500 uppercase block">Rasgadas</span>
+            <div class="text-base sm:text-lg font-black font-mono text-amber-500" id="kpi-rasgadas">0</div>
+        </div>
+        <div class="ui-card border p-2 rounded-lg shadow-sm col-span-2 sm:col-span-1">
+            <span class="text-[9px] font-bold text-cyan-500 uppercase block">No App</span>
+            <div class="text-base sm:text-lg font-black font-mono text-cyan-500" id="kpi-no-app">0</div>
+        </div>
+    </div>
+
+    <!-- ABAS PORTÕES -->
+    <div class="flex border-b mb-3 overflow-x-auto ui-card rounded-t-lg border p-1 gap-1" id="container-abas-portoes"></div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div id="wrapper-conteudo-dinamico" class="fade-in">
+        <div class="ui-card rounded-lg border shadow-sm overflow-hidden mb-4">
+            <div id="banner-rasgadas-lidas" class="hidden bg-red-600 text-white p-2.5 flex items-center justify-between text-xs font-bold animate-pulse">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span id="texto-alerta-rasgada-lida">Atenção: Caixa rasgada lida neste portão!</span>
+                </div>
+            </div>
+
+            <div class="p-2.5 border-b flex justify-between items-center opacity-90">
+                <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" id="titulo-portao-atual">
+                    <i class="fa-solid fa-truck text-blue-500"></i> Portão 7 - Faltas
+                </span>
+                <span class="text-xs opacity-75 font-mono" id="contador-linhas-portao">0 registo(s)</span>
+            </div>
+
+            <div class="overflow-x-auto max-h-[50vh]">
+                <table class="excel-table">
+                    <thead>
+                        <tr>
+                            <th class="w-8 text-center">#</th>
+                            <th class="w-64">Código SSCC</th>
+                            <th class="w-36">Status</th>
+                            <th class="w-36">Origem</th>
+                            <th class="w-28">Ordem</th>
+                            <th class="w-20">No App?</th>
+                            <th>Observação</th>
+                            <th class="w-8 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela-excel"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TABELA DE RASGADAS -->
+        <div id="secao-tabela-rasgadas" class="hidden ui-card rounded-lg border shadow-sm overflow-hidden mb-6 fade-in">
+            <div class="p-2.5 border-b flex justify-between items-center bg-amber-500/10">
+                <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Caixas Rasgadas - <span id="titulo-portao-rasgadas">Portão 7</span>
+                </span>
+                <span class="text-xs opacity-75 font-mono" id="contador-linhas-rasgadas">0 registo(s)</span>
+            </div>
+            <div class="overflow-x-auto max-h-[35vh]">
+                <table class="excel-table">
+                    <thead>
+                        <tr>
+                            <th class="w-8 text-center">#</th>
+                            <th class="w-56">Código SSCC</th>
+                            <th class="w-40">Tipo</th>
+                            <th class="w-36">Status</th>
+                            <th class="w-36">Origem</th>
+                            <th class="w-28">Ordem</th>
+                            <th>Observação</th>
+                            <th class="w-8 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela-rasgadas"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISÃO GLOBAL -->
+    <div id="wrapper-todos-portoes" class="hidden fade-in space-y-4 mb-6">
+        <div class="ui-card border p-4 rounded-lg shadow-sm">
+            <div class="flex justify-between items-center border-b pb-3 mb-3">
+                <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2 text-blue-500">
+                    <i class="fa-solid fa-layer-group"></i> Panorama Unificado - Todos os Portões
+                </h2>
+                <span class="text-xs opacity-75 font-mono" id="contador-total-geral">0 itens gerais</span>
+            </div>
+            <div class="overflow-x-auto max-h-[65vh]">
+                <table class="excel-table">
+                    <thead>
+                        <tr>
+                            <th class="w-24">Portão</th>
+                            <th class="w-48">Código SSCC</th>
+                            <th class="w-36">Categoria</th>
+                            <th class="w-36">Status</th>
+                            <th class="w-36">Origem</th>
+                            <th class="w-28">Ordem</th>
+                            <th class="w-20">No App?</th>
+                            <th>Observação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela-todos-portoes"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://mpsyqawieuwjgupoedib.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wc3lxYXdpZXV3amd1cG9lZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTA1OTQsImV4cCI6MjEwNjA4NjU5NH0.P9I8u6ycOBCKYIT2mvp35kZ-SfNTHiVY3Jkw7ltYFuQ";
+        
+        let supabaseClient = null;
+        try {
+            if (typeof supabase !== 'undefined' && supabase.createClient) {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                    auth: { persistSession: false, autoRefreshToken: false }
+                });
+            } else if (typeof supabase !== 'undefined' && supabase.default && supabase.default.createClient) {
+                supabaseClient = supabase.default.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                    auth: { persistSession: false, autoRefreshToken: false }
+                });
+            }
+        } catch (e) {
+            console.warn("Supabase SDK indisponível");
+        }
+
+        let portaoAtual = 7;
+        let dadosPortoes = {};
+        let rasgadasPortoes = {};
+        let modoDispositivo = 'computador';
+        let turnoAtual = 'Turno 1';
+        let responsavelAtual = '';
+        let dataAtual = '';
+        
+        let html5QrcodeScanner = null;
+        let campoAlvoScannerId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            inicializarDataHoje();
+            gerarAbasPortoes();
+            popularSelectPortoesModal();
+            await carregarDadosSupabase();
+        });
+
+        function inicializarDataHoje() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const dataSalva = localStorage.getItem('data_controle_carregamento');
+            dataAtual = dataSalva || hoje;
+            if (!dataSalva) localStorage.setItem('data_controle_carregamento', hoje);
+            document.getElementById('input-data-controle').value = dataAtual;
+        }
+
+        async function mudarDataOperacional(novaData) {
+            if (novaData !== dataAtual) {
+                dataAtual = novaData;
+                localStorage.setItem('data_controle_carregamento', novaData);
+                gerarAbasPortoes();
+                await carregarDadosSupabase();
+                tocarSomTrocaData();
+            }
+        }
+
+        async function carregarDadosSupabase() {
+            dadosPortoes = {};
+            rasgadasPortoes = {};
+            for (let i = 7; i <= 26; i++) {
+                dadosPortoes[i] = [];
+                rasgadasPortoes[i] = [];
+            }
+
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('controle_faltas_portao')
+                        .select('*')
+                        .eq('data_operacao', dataAtual);
+
+                    if (!error && data) {
+                        data.forEach(row => {
+                            const p = row.portao;
+                            if (p >= 7 && p <= 26) {
+                                // Separação correta: se for rasgada, vai direto para rasgadasPortoes e NÃ£o entra na tabela de faltas normal
+                                if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
+                                    rasgadasPortoes[p].push({
+                                        id: row.id,
+                                        sscc: row.sscc || '',
+                                        tipo: 'Lida',
+                                        status: row.status || 'Pendente',
+                                        origem: row.origem || 'CD',
+                                        ordem: row.ordem || '',
+                                        observacao: row.observacao.replace('[RASGADA] ', '')
+                                    });
+                                } else {
+                                    dadosPortoes[p].push({
+                                        id: row.id,
+                                        sscc: row.sscc || '',
+                                        status: row.status || 'Pendente',
+                                        origem: row.origem || 'CD',
+                                        ordem: row.ordem || '',
+                                        noApp: row.no_app || 'Não',
+                                        observacao: row.observacao || ''
+                                    });
+                                }
+                            }
+                        });
+                    }
+                } catch (err) {}
+            }
+
+            // Garante que cada portão abra sempre com pelo menos 4 linhas em branco na tabela normal
+            for (let i = 7; i <= 26; i++) {
+                while (dadosPortoes[i].length < 4) {
+                    dadosPortoes[i].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '' });
+                }
+            }
+
+            renderizarTabelas();
+            atualizarIndicadoresKPI();
+            if (portaoAtual !== 'todos') verificarBannerRasgadas();
+        }
+
+        async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
+            if (!supabaseClient) return;
+            const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum][index] : dadosPortoes[portaoNum][index];
+            if (!item.sscc || item.sscc.trim() === '') return;
+
+            const obsFinal = tipoTabela === 'rasgada' ? `[RASGADA] ${item.observacao || 'Caixa rasgada no carregamento'}` : (item.observacao || '');
+
+            const payload = {
+                data_operacao: dataAtual,
+                portao: Number(portaoNum),
+                sscc: String(item.sscc).trim(),
+                status: String(item.status || 'Pendente'),
+                origem: String(item.origem || 'CD'),
+                ordem: String(item.ordem || ''),
+                no_app: tipoTabela === 'rasgada' ? 'Sim' : String(item.noApp || 'Não'),
+                observacao: String(obsFinal),
+                turno: String(turnoAtual || 'Turno 1'),
+                responsavel: String(responsavelAtual || 'Não informado')
+            };
+
+            try {
+                let res;
+                if (item.id) {
+                    res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
+                } else {
+                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
+                }
+
+                if (res.data && res.data[0] && res.data[0].id) {
+                    item.id = res.data[0].id;
+                }
+                atualizarIndicadoresKPI();
+            } catch (err) {}
+        }
+
+        function definirModoDispositivo(modo) {
+            modoDispositivo = modo;
+            if (modo === 'celular') document.body.classList.add('modo-celular');
+            else document.body.classList.remove('modo-celular');
+            document.getElementById('modal-dispositivo').classList.add('hidden');
+            selecionarPortao(7);
+        }
+
+        function alternarTema() {
+            const body = document.body;
+            if (body.classList.contains('light')) {
+                body.classList.replace('light', 'dark');
+                document.getElementById('icone-tema').className = "fa-solid fa-sun";
+                localStorage.setItem('tema_grendene', 'dark');
+            } else {
+                body.classList.replace('dark', 'light');
+                document.getElementById('icone-tema').className = "fa-solid fa-moon";
+                localStorage.setItem('tema_grendene', 'light');
+            }
+        }
+
+        const temaSalvo = localStorage.getItem('tema_grendene');
+        if (temaSalvo === 'dark') {
+            document.body.classList.replace('light', 'dark');
+            document.getElementById('icone-tema').className = "fa-solid fa-sun";
+        }
+
+        function mudarTurno(turno) {
+            turnoAtual = turno;
+            localStorage.setItem('turno_grendene', turno);
+        }
+
+        const turnoSalvo = localStorage.getItem('turno_grendene');
+        if (turnoSalvo) {
+            turnoAtual = turnoSalvo;
+            document.getElementById('select-turno').value = turnoSalvo;
+        }
+
+        function mudarResponsavel(resp) {
+            responsavelAtual = resp;
+            localStorage.setItem('responsavel_grendene', resp);
+        }
+
+        const respSalvo = localStorage.getItem('responsavel_grendene');
+        if (respSalvo) {
+            responsavelAtual = respSalvo;
+            document.getElementById('select-responsavel').value = respSalvo;
+        }
+
+        function popularSelectPortoesModal() {
+            const select = document.getElementById('rasgada-portao');
+            select.innerHTML = '';
+            for (let i = 7; i <= 26; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = `Portão ${i}`;
+                select.appendChild(opt);
+            }
+        }
+
+        function gerarAbasPortoes() {
+            const container = document.getElementById('container-abas-portoes');
+            container.innerHTML = '';
+            
+            const btnTodos = document.createElement('button');
+            btnTodos.id = `btn-portao-todos`;
+            btnTodos.className = "px-3 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border-r text-blue-500";
+            btnTodos.innerHTML = `<i class="fa-solid fa-layer-group text-[11px]"></i> Todos`;
+            btnTodos.onclick = () => selecionarPortao('todos');
+            container.appendChild(btnTodos);
+
+            for (let i = 7; i <= 26; i++) {
+                const btn = document.createElement('button');
+                btn.id = `btn-portao-${i}`;
+                btn.className = "px-2.5 py-1.5 text-xs font-bold rounded hover:opacity-80 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
+                btn.innerHTML = `<i class="fa-solid fa-truck text-[10px] opacity-60"></i> P-${i} <span id="badge-rasgada-${i}" class="hidden w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`;
+                btn.onclick = () => selecionarPortao(i);
+                container.appendChild(btn);
+            }
+            atualizarBadgesPortoesAbas();
+        }
+
+        function atualizarBadgesPortoesAbas() {
+            for (let i = 7; i <= 26; i++) {
+                const badge = document.getElementById(`badge-rasgada-${i}`);
+                if (badge) {
+                    const rasgadas = rasgadasPortoes[i] || [];
+                    if (rasgadas.length > 0) badge.classList.remove('hidden');
+                    else badge.classList.add('hidden');
+                }
+            }
+        }
+
+        function selecionarPortao(paramPortao) {
+            portaoAtual = paramPortao;
+            if (paramPortao === 'todos') {
+                document.getElementById('btn-portao-todos').className = "px-3 py-1.5 text-xs font-bold rounded bg-blue-600 text-white shadow-sm whitespace-nowrap cursor-pointer flex items-center gap-1.5";
+                for (let i = 7; i <= 26; i++) {
+                    const b = document.getElementById(`btn-portao-${i}`);
+                    if (b) b.className = "px-2.5 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
+                }
+                document.getElementById('wrapper-conteudo-dinamico').classList.add('hidden');
+                document.getElementById('wrapper-todos-portoes').classList.remove('hidden');
+                renderizarPanoramaTodosPortoes();
+                return;
+            } else {
+                document.getElementById('btn-portao-todos').className = "px-3 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border-r text-blue-500";
+                document.getElementById('wrapper-todos-portoes').classList.add('hidden');
+                document.getElementById('wrapper-conteudo-dinamico').classList.remove('hidden');
+            }
+
+            for (let i = 7; i <= 26; i++) {
+                const btn = document.getElementById(`btn-portao-${i}`);
+                if (btn) {
+                    if (i === paramPortao) btn.className = "px-2.5 py-1.5 text-xs font-bold rounded bg-blue-600 text-white shadow-sm whitespace-nowrap cursor-pointer flex items-center gap-1.5";
+                    else btn.className = "px-2.5 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
+                }
+            }
+
+            document.getElementById('titulo-portao-atual').innerHTML = `<i class="fa-solid fa-truck text-blue-500"></i> Portão ${portaoAtual} - Faltas`;
+            document.getElementById('titulo-portao-rasgadas').innerText = `Portão ${portaoAtual}`;
+            renderizarTabelas();
+            atualizarIndicadoresKPI();
+            verificarBannerRasgadas();
+        }
+
+        function verificarBannerRasgadas() {
+            const banner = document.getElementById('banner-rasgadas-lidas');
+            const textoAlerta = document.getElementById('texto-alerta-rasgada-lida');
+            const rasgadas = rasgadasPortoes[portaoAtual] || [];
+            const rasgadasLidas = rasgadas.filter(r => r.tipo === 'Lida');
+
+            if (rasgadasLidas.length > 0) {
+                banner.classList.remove('hidden');
+                textoAlerta.innerHTML = `Atenção: Caixa rasgada lida neste portão! (${rasgadasLidas.length} un)`;
+            } else {
+                banner.classList.add('hidden');
+            }
+            atualizarBadgesPortoesAbas();
+        }
+
+        function abrirModalRasgada() {
+            document.getElementById('rasgada-portao').value = portaoAtual === 'todos' ? 7 : portaoAtual;
+            document.getElementById('rasgada-sscc').value = '';
+            document.getElementById('rasgada-obs').value = '';
+            document.getElementById('modal-rasgada').classList.remove('hidden');
+        }
+        function fecharModalRasgada() { document.getElementById('modal-rasgada').classList.add('hidden'); }
+
+        async function salvarCaixaRasgada() {
+            const portaoAlvo = parseInt(document.getElementById('rasgada-portao').value);
+            const sscc = tratarSSCC(document.getElementById('rasgada-sscc').value.trim());
+            const tipo = document.getElementById('rasgada-tipo').value;
+            const obs = document.getElementById('rasgada-obs').value.trim() || 'Caixa rasgada no carregamento';
+
+            if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
+            if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
+
+            // Adiciona APENAS na tabela de rasgadas (evitando duplicar na tabela de faltas de cima)
+            rasgadasPortoes[portaoAlvo].unshift({ sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: obs });
+
+            await salvarOuAtualizarNoSupabase(portaoAlvo, 0, 'rasgada');
+
+            tocarSomSucesso();
+            fecharModalRasgada();
+            await carregarDadosSupabase();
+            selecionarPortao(portaoAlvo);
+        }
+
+        function atualizarIndicadoresKPI() {
+            let totalFaltas = 0, entregues = 0, pendentes = 0, totalRasgadas = 0, quantificadosNoApp = 0;
+
+            for (let i = 7; i <= 26; i++) {
+                const lista = dadosPortoes[i] || [];
+                const rasgadas = rasgadasPortoes[i] || [];
+                totalRasgadas += rasgadas.length;
+
+                lista.forEach(item => {
+                    if (item.sscc && item.sscc.trim() !== '') {
+                        totalFaltas++;
+                        if (item.status === 'Entregue no Portão') entregues++; else pendentes++;
+                        if (item.noApp === 'Sim') quantificadosNoApp++;
+                    }
+                });
+                rasgadas.forEach(item => {
+                    if (item.sscc && item.sscc.trim() !== '') {
+                        totalFaltas++;
+                        if (item.status === 'Entregue no Portão') entregues++; else pendentes++;
+                    }
+                });
+            }
+
+            document.getElementById('kpi-total-faltas').innerText = totalFaltas;
+            document.getElementById('kpi-entregues').innerText = entregues;
+            document.getElementById('kpi-pendentes').innerText = pendentes;
+            document.getElementById('kpi-rasgadas').innerText = totalRasgadas;
+            document.getElementById('kpi-no-app').innerText = quantificadosNoApp;
+        }
+
+        function renderizarTabelas() {
+            renderizarTabelaFaltas();
+            renderizarTabelaRasgadas();
+        }
+
+        function renderizarTabelaFaltas() {
+            const tbody = document.getElementById('corpo-tabela-excel');
+            tbody.innerHTML = '';
+            const lista = dadosPortoes[portaoAtual] || [];
+            document.getElementById('contador-linhas-portao').innerText = `${lista.length} registo(s)`;
+
+            lista.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                let st = (item.status || 'Pendente').toLowerCase();
+                let classeStatus = st.includes('andamento') ? 'status-em-andamento' :
+                                   st.includes('requisitada') ? 'status-requisitada' :
+                                   st.includes('portão 1') ? 'status-portao-1' :
+                                   st.includes('apareceu') ? 'status-apareceu' :
+                                   st.includes('entregue') ? 'status-entregue' : 'status-pendente';
+
+                let classeApp = (item.noApp || 'Não') === 'Sim' ? 'app-sim' : 'app-nao';
+
+                tr.innerHTML = `
+                    <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
+                    <td class="td-sscc-container" data-label="SSCC">
+                        <input type="text" value="${item.sscc || ''}" onblur="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" oninput="this.value = tratarSSCC(this.value)" onchange="atualizarCampoFalta(${index}, 'sscc', this.value)" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                    </td>
+                    <td class="${classeStatus}" data-label="Status">
+                        <select onchange="atualizarCampoFalta(${index}, 'status', this.value)" class="excel-select ${classeStatus}">
+                            <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                            <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
+                            <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
+                            <option value="Apareceu no Portão" ${item.status === 'Apareceu no Portão' ? 'selected' : ''}>Apareceu no Portão</option>
+                            <option value="Portão 1" ${item.status === 'Portão 1' ? 'selected' : ''}>Portão 1</option>
+                            <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue no Portão</option>
+                        </select>
+                    </td>
+                    <td data-label="Origem">
+                        <select onchange="atualizarCampoFalta(${index}, 'origem', this.value)" class="excel-select">
+                            <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
+                            <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
+                            <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
+                            <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
+                            <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
+                        </select>
+                    </td>
+                    <td data-label="Ordem">
+                        <input type="text" value="${item.ordem || ''}" onblur="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" onchange="atualizarCampoFalta(${index}, 'ordem', this.value)" placeholder="Ordem..." class="excel-input font-bold">
+                    </td>
+                    <td class="${classeApp}" data-label="No App?">
+                        <select onchange="atualizarCampoFalta(${index}, 'noApp', this.value)" class="excel-select ${classeApp}">
+                            <option value="Não" ${item.noApp === 'Não' ? 'selected' : ''}>Não</option>
+                            <option value="Sim" ${item.noApp === 'Sim' ? 'selected' : ''}>Sim</option>
+                        </select>
+                    </td>
+                    <td data-label="Observação">
+                        <input type="text" value="${item.observacao || ''}" onblur="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" onchange="atualizarCampoFalta(${index}, 'observacao', this.value)" placeholder="Obs..." class="excel-input">
+                    </td>
+                    <td class="text-center" data-label="Ação">
+                        <button onclick="removerLinhaSupabase(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderizarTabelaRasgadas() {
+            const secaoRasgadas = document.getElementById('secao-tabela-rasgadas');
+            const tbody = document.getElementById('corpo-tabela-rasgadas');
+            tbody.innerHTML = '';
+            const lista = rasgadasPortoes[portaoAtual] || [];
+            
+            if (lista.length === 0) { secaoRasgadas.classList.add('hidden'); return; }
+
+            secaoRasgadas.classList.remove('hidden');
+            document.getElementById('contador-linhas-rasgadas').innerText = `${lista.length} registo(s)`;
+
+            lista.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                const inputId = `input-rasg-sscc-${index}`;
+
+                tr.innerHTML = `
+                    <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
+                    <td class="td-sscc-container" data-label="SSCC">
+                        <div class="flex items-center gap-1 w-full justify-end">
+                            <input type="text" id="${inputId}" value="${item.sscc || ''}" onblur="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" oninput="this.value = tratarSSCC(this.value)" onchange="atualizarCampoRasgada(${index}, 'sscc', this.value)" class="excel-input excel-input-sscc font-bold">
+                            <button type="button" onclick="abrirModalScannerParaCampo('${inputId}')" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
+                        </div>
+                    </td>
+                    <td data-label="Tipo">
+                        <select onchange="atualizarCampoRasgada(${index}, 'tipo', this.value)" class="excel-select font-bold ${item.tipo === 'Lida' ? 'text-red-600' : 'text-amber-600'}">
+                            <option value="Lida" ${item.tipo === 'Lida' ? 'selected' : ''}>Rasgada (Lida)</option>
+                            <option value="Nao Lida" ${item.tipo === 'Nao Lida' ? 'selected' : ''}>Rasgada (Não Lida)</option>
+                        </select>
+                    </td>
+                    <td data-label="Status">
+                        <select onchange="atualizarCampoRasgada(${index}, 'status', this.value)" class="excel-select status-rasgada-pendente">
+                            <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                            <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
+                            <option value="Restaurada" ${item.status === 'Restaurada' ? 'selected' : ''}>Restaurada</option>
+                            <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue</option>
+                        </select>
+                    </td>
+                    <td data-label="Origem">
+                        <select onchange="atualizarCampoRasgada(${index}, 'origem', this.value)" class="excel-select">
+                            <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
+                            <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
+                            <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
+                            <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
+                            <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
+                        </select>
+                    </td>
+                    <td data-label="Ordem">
+                        <input type="text" value="${item.ordem || ''}" onblur="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" onchange="atualizarCampoRasgada(${index}, 'ordem', this.value)" class="excel-input font-bold">
+                    </td>
+                    <td data-label="Observação">
+                        <input type="text" value="${item.observacao || ''}" onblur="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" onchange="atualizarCampoRasgada(${index}, 'observacao', this.value)" class="excel-input">
+                    </td>
+                    <td class="text-center" data-label="Ação">
+                        <button onclick="removerLinhaRasgada(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderizarPanoramaTodosPortoes() {
+            const tbody = document.getElementById('corpo-tabela-todos-portoes');
+            tbody.innerHTML = '';
+            let totalGeral = 0;
+
+            for (let i = 7; i <= 26; i++) {
+                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+
+                listaFaltas.forEach(item => {
+                    totalGeral++;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td class="font-bold text-blue-500">Portão ${i}</td><td class="font-mono font-bold">${item.sscc}</td><td>Falta Normal</td><td>${item.status}</td><td>${item.origem}</td><td>${item.ordem}</td><td>${item.noApp}</td><td>${item.observacao}</td>`;
+                    tbody.appendChild(tr);
+                });
+                listaRasgadas.forEach(item => {
+                    totalGeral++;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td class="font-bold text-amber-500">Portão ${i}</td><td class="font-mono font-bold">${item.sscc}</td><td>Rasgada (${item.tipo})</td><td>${item.status}</td><td>${item.origem}</td><td>${item.ordem}</td><td>Sim</td><td>${item.observacao}</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+            document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
+        }
+
+        async function atualizarCampoFalta(index, campo, valor) {
+            if (campo === 'sscc') valor = tratarSSCC(valor);
+            dadosPortoes[portaoAtual][index][campo] = valor;
+            if (campo === 'status' && valor === 'Entregue no Portão') tocarSomConquistaAnimada();
+            await salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
+            renderizarTabelaFaltas();
+        }
+
+        async function atualizarCampoRasgada(index, campo, valor) {
+            if (campo === 'sscc') valor = tratarSSCC(valor);
+            rasgadasPortoes[portaoAtual][index][campo] = valor;
+            if (campo === 'status' && valor === 'Entregue no Portão') tocarSomConquistaAnimada();
+            await salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
+            if (campo === 'status' || campo === 'tipo') { renderizarTabelaRasgadas(); verificarBannerRasgadas(); }
+        }
+
+        function adicionarLinhaVaziaObjeto() {
+            dadosPortoes[portaoAtual].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '' });
+        }
+        function adicionarLinhaVazia() { adicionarLinhaVaziaObjeto(); renderizarTabelaFaltas(); }
+
+        async function removerLinhaSupabase(index) {
+            const item = dadosPortoes[portaoAtual][index];
+            if (item.id && supabaseClient) {
+                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+            }
+            dadosPortoes[portaoAtual].splice(index, 1);
+            while (dadosPortoes[portaoAtual].length < 4) {
+                dadosPortoes[portaoAtual].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '' });
+            }
+            renderizarTabelaFaltas();
+            atualizarIndicadoresKPI();
+        }
+
+        async function removerLinhaRasgada(index) {
+            const item = rasgadasPortoes[portaoAtual][index];
+            if (item.id && supabaseClient) {
+                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+            }
+            rasgadasPortoes[portaoAtual].splice(index, 1);
+            renderizarTabelas();
+            atualizarIndicadoresKPI();
+        }
+
+        function abrirModalScannerParaCampo(idCampo) {
+            campoAlvoScannerId = idCampo;
+            document.getElementById('modal-scanner').classList.remove('hidden');
+            setTimeout(() => { iniciarScanner(); }, 150);
+        }
+
+        function fecharModalScanner() {
+            document.getElementById('modal-scanner').classList.add('hidden');
+            if (html5QrcodeScanner) {
+                try { if (html5QrcodeScanner.isScanning) html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear()).catch(()=>{}); } catch(e){}
+            }
+        }
+
+        async function iniciarScanner() {
+            if (!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode("reader");
+            try {
+                if (html5QrcodeScanner.isScanning) return;
+                await html5QrcodeScanner.start(
+                    { facingMode: "environment" },
+                    { fps: 30, qrbox: { width: 250, height: 130 } },
+                    (decodedText) => {
+                        const codigoTratado = tratarSSCC(decodedText);
+                        if (codigoTratado) {
+                            tocarSomSucesso();
+                            if (navigator.vibrate) navigator.vibrate(200);
+                            if (campoAlvoScannerId) {
+                                const inputEl = document.getElementById(campoAlvoScannerId);
+                                if (inputEl) { inputEl.value = codigoTratado; inputEl.dispatchEvent(new Event('change')); }
+                            }
+                            fecharModalScanner();
+                        }
+                    },
+                    () => {}
+                );
+            } catch (err) {}
+        }
+
+        // Função robusta de tratamento de SSCC para limpar prefixos de leitores/bipadores industriais
+        function tratarSSCC(texto) {
+            if (!texto) return '';
+            // Remove prefixos simbólicos padrão (ex: ]C1, ]E0, AIM ID, etc) e mantém apenas números
+            let limpo = texto.replace(/^\][A-Za-z]\d+/, '').replace(/[^\d]/g, '');
+            // Se o código tiver comprimento superior padrão e conter dígito extra, normaliza se necessário
+            if (limpo.length > 20) {
+                limpo = limpo.substring(limpo.length - 20);
+            }
+            return limpo || texto.replace(/[^\d]/g, '');
+        }
+
+        function tocarSomSucesso() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, now);
+                osc.frequency.setValueAtTime(880.00, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.3);
+            } catch (e) {}
+        }
+
+        function tocarSomConquistaAnimada() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioCtx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    const inicio = now + (i * 0.08);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, inicio);
+                    gain.gain.setValueAtTime(0.15, inicio);
+                    gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.25);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(inicio); osc.stop(inicio + 0.25);
+                });
+            } catch (e) {}
+        }
+
+        function tocarSomTrocaData() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554.37, now + 0.12);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.25);
+            } catch (e) {}
+        }
+
+        function exportarExcel() {
+            const workbook = XLSX.utils.book_new();
+            let temDados = false;
+
+            for (let i = 7; i <= 26; i++) {
+                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+
+                if (listaFaltas.length > 0 || listaRasgadas.length > 0) {
+                    temDados = true;
+                    let linhasExport = [{ "SSCC": `Portão ${i} (${dataAtual})`, "Status": "", "Origem": "", "Ordem": "", "No App?": "", "Observação": "" }];
+                    
+                    listaFaltas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": item.status, "Origem": item.origem, "Ordem": item.ordem, "No App?": item.noApp, "Observação": item.observacao }));
+                    listaRasgadas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": `${item.status} (Rasgada ${item.tipo})`, "Origem": item.origem, "Ordem": item.ordem, "No App?": "Sim", "Observação": item.observacao }));
+
+                    const worksheet = XLSX.utils.json_to_sheet(linhasExport);
+                    worksheet['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
+                    XLSX.utils.book_append_sheet(workbook, worksheet, `Portão ${i}`);
+                }
+            }
+            if (!temDados) { alert("Não há dados para exportar."); return; }
+            XLSX.writeFile(workbook, `Controle_Carregamento_${dataAtual}.xlsx`);
+        }
+    </script>
+</body>
+</html>
