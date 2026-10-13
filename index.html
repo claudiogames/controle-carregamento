@@ -455,12 +455,12 @@
             inicializarDataHoje();
             gerarAbasPortoes();
             popularSelectPortoesModal();
-            inicializarMatrizVazia();
+            inicializarMatrizFixa();
             await carregarDadosSupabase();
             ativarEscutaRealtimeSupabase();
         });
 
-        function inicializarMatrizVazia() {
+        function inicializarMatrizFixa() {
             for (let i = 7; i <= 26; i++) {
                 dadosPortoes[i] = [];
                 rasgadasPortoes[i] = [];
@@ -482,7 +482,7 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v20')
+                    .channel('tabela-mudancas-global-v21')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -501,7 +501,7 @@
             } catch (e) {}
         }
 
-        // VERIFICAÇÃO DE CRUZAMENTO TOTALMENTE SEPARADA (OCORRE APÓS SALVAR COM SUCESSO)
+        // VERIFICAÇÃO DE CRUZAMENTO TOTALMENTE SEPARADA
         async function verificarCruzamentoAposSalvar(sscc, index, tipoTabela) {
             if (!supabaseClient || !sscc) return;
             const codigoLimpo = tratarSSCC(String(sscc));
@@ -543,7 +543,28 @@
         }
 
         async function carregarDadosSupabaseQuiet() {
-            inicializarMatrizVazia();
+            // Mantém os 5 slots fixos sem perder as referências de índice
+            for (let i = 7; i <= 26; i++) {
+                if (!dadosPortoes[i] || dadosPortoes[i].length === 0) {
+                    dadosPortoes[i] = [];
+                    for (let r = 0; r < 5; r++) {
+                        dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
+                    }
+                } else {
+                    // Limpa valores para remapear com segurança pelo BD
+                    dadosPortoes[i].forEach(item => {
+                        item.id = null;
+                        item.sscc = '';
+                        item.status = 'Pendente';
+                        item.origem = 'CD';
+                        item.ordem = '';
+                        item.noApp = 'Não';
+                        item.observacao = '';
+                        item.verificadoCruzamento = false;
+                    });
+                }
+                rasgadasPortoes[i] = [];
+            }
 
             if (supabaseClient) {
                 try {
@@ -553,15 +574,10 @@
                         .eq('data_operacao', dataAtual);
 
                     if (!error && data) {
-                        let contadorLinhasPortao = {};
+                        let contadorFaltasPortao = {};
                         data.forEach(row => {
                             const p = row.portao;
                             if (p >= 7 && p <= 26) {
-                                if (contadorLinhasPortao[p] === undefined) contadorLinhasPortao[p] = 0;
-                                const idx = contadorLinhasPortao[p];
-                                while (dadosPortoes[p].length <= idx) {
-                                    dadosPortoes[p].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
-                                }
                                 if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
                                     rasgadasPortoes[p].push({
                                         id: row.id,
@@ -574,6 +590,13 @@
                                         verificadoCruzamento: true
                                     });
                                 } else {
+                                    if (contadorFaltasPortao[p] === undefined) contadorFaltasPortao[p] = 0;
+                                    const idx = contadorFaltasPortao[p];
+                                    
+                                    while (dadosPortoes[p].length <= idx) {
+                                        dadosPortoes[p].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
+                                    }
+
                                     dadosPortoes[p][idx] = {
                                         id: row.id,
                                         sscc: row.sscc || '',
@@ -584,12 +607,19 @@
                                         observacao: row.observacao || '',
                                         verificadoCruzamento: true
                                     };
+                                    contadorFaltasPortao[p]++;
                                 }
-                                contadorLinhasPortao[p]++;
                             }
                         });
                     }
                 } catch (err) {}
+            }
+
+            // Garante mínimo de 5 linhas visíveis
+            for (let i = 7; i <= 26; i++) {
+                while (dadosPortoes[i].length < 5) {
+                    dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
+                }
             }
 
             renderizarTabelas();
@@ -621,7 +651,7 @@
             }
         }
 
-        // SALVAMENTO ATÔMICO QUE PRIMEIRO GRAVA E DEPOIS VERIFICA O CRUZAMENTO
+        // TRAVA RIGOROSA DE ANCORAGEM POR ÍNDICE FIXO
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta', dispararVerificacao = true) {
             if (!supabaseClient) return;
             const listaTarget = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum] : dadosPortoes[portaoNum];
@@ -669,7 +699,6 @@
             } catch (err) {}
             setTimeout(() => { mostrarLoadingGame(false); }, 400);
 
-            // A verificação de localização só roda DEPOIS do registro estar seguro e salvo
             if (dispararVerificacao && tipoTabela === 'falta' && !item.verificadoCruzamento) {
                 item.verificadoCruzamento = true;
                 await verificarCruzamentoAposSalvar(item.sscc, index, 'falta');
