@@ -448,7 +448,6 @@
         let responsavelAtual = '';
         let dataAtual = '';
         
-        let caixasAlertadasMemoria = new Set();
         let html5QrcodeScanner = null;
         let campoAlvoScannerId = null;
 
@@ -465,7 +464,7 @@
             for (let i = 7; i <= 26; i++) {
                 dadosPortoes[i] = [];
                 rasgadasPortoes[i] = [];
-                for (let r = 0; r < 20; r++) {
+                for (let r = 0; r < 5; r++) {
                     dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
                 }
             }
@@ -483,7 +482,7 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v19')
+                    .channel('tabela-mudancas-global-v20')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -502,13 +501,11 @@
             } catch (e) {}
         }
 
-        async function verificarCruzamentoOutroApp(sscc, index, tipoTabela) {
+        // VERIFICAÇÃO DE CRUZAMENTO TOTALMENTE SEPARADA (OCORRE APÓS SALVAR COM SUCESSO)
+        async function verificarCruzamentoAposSalvar(sscc, index, tipoTabela) {
             if (!supabaseClient || !sscc) return;
             const codigoLimpo = tratarSSCC(String(sscc));
             if (!codigoLimpo || codigoLimpo.length < 5) return;
-
-            const chaveAlerta = `${portaoAtual}_${tipoTabela}_${index}_${codigoLimpo}`;
-            if (caixasAlertadasMemoria.has(chaveAlerta)) return;
 
             try {
                 const { data, error } = await supabaseClient
@@ -519,8 +516,6 @@
                     const encontrado = data.find(r => tratarSSCC(String(r.sscc || '')) === codigoLimpo);
 
                     if (encontrado) {
-                        caixasAlertadasMemoria.add(chaveAlerta);
-
                         const categoria = encontrado.categoria || 'Reposição';
                         const rastro = encontrado.rastro ? ` (${encontrado.rastro})` : '';
                         const mensagem = `A caixa informada se encontra em "${categoria}"${rastro}.`;
@@ -534,7 +529,7 @@
                             const inputObs = document.getElementById(`input-obs-${portaoAtual}-${index}`);
                             if (inputObs) inputObs.value = item.observacao;
                             
-                            await salvarOuAtualizarNoSupabase(portaoAtual, index, tipoTabela);
+                            await salvarOuAtualizarNoSupabase(portaoAtual, index, tipoTabela, false);
                         }
                     }
                 }
@@ -564,32 +559,33 @@
                             if (p >= 7 && p <= 26) {
                                 if (contadorLinhasPortao[p] === undefined) contadorLinhasPortao[p] = 0;
                                 const idx = contadorLinhasPortao[p];
-                                if (idx < 20) {
-                                    if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
-                                        rasgadasPortoes[p][idx] = {
-                                            id: row.id,
-                                            sscc: row.sscc || '',
-                                            tipo: 'Lida',
-                                            status: row.status || 'Pendente',
-                                            origem: row.origem || 'CD',
-                                            ordem: row.ordem || '',
-                                            observacao: row.observacao.replace('[RASGADA] ', ''),
-                                            verificadoCruzamento: true
-                                        };
-                                    } else {
-                                        dadosPortoes[p][idx] = {
-                                            id: row.id,
-                                            sscc: row.sscc || '',
-                                            status: row.status || 'Pendente',
-                                            origem: row.origem || 'CD',
-                                            ordem: row.ordem || '',
-                                            noApp: row.no_app || 'Não',
-                                            observacao: row.observacao || '',
-                                            verificadoCruzamento: true
-                                        };
-                                    }
-                                    contadorLinhasPortao[p]++;
+                                while (dadosPortoes[p].length <= idx) {
+                                    dadosPortoes[p].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
                                 }
+                                if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
+                                    rasgadasPortoes[p].push({
+                                        id: row.id,
+                                        sscc: row.sscc || '',
+                                        tipo: 'Lida',
+                                        status: row.status || 'Pendente',
+                                        origem: row.origem || 'CD',
+                                        ordem: row.ordem || '',
+                                        observacao: row.observacao.replace('[RASGADA] ', ''),
+                                        verificadoCruzamento: true
+                                    });
+                                } else {
+                                    dadosPortoes[p][idx] = {
+                                        id: row.id,
+                                        sscc: row.sscc || '',
+                                        status: row.status || 'Pendente',
+                                        origem: row.origem || 'CD',
+                                        ordem: row.ordem || '',
+                                        noApp: row.no_app || 'Não',
+                                        observacao: row.observacao || '',
+                                        verificadoCruzamento: true
+                                    };
+                                }
+                                contadorLinhasPortao[p]++;
                             }
                         });
                     }
@@ -625,8 +621,8 @@
             }
         }
 
-        // SALVAMENTO ESTRICTAMENTE AMARRADO AO ÍNDICE FIXO DA LINHA
-        async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
+        // SALVAMENTO ATÔMICO QUE PRIMEIRO GRAVA E DEPOIS VERIFICA O CRUZAMENTO
+        async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta', dispararVerificacao = true) {
             if (!supabaseClient) return;
             const listaTarget = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum] : dadosPortoes[portaoNum];
             if (!listaTarget || !listaTarget[index]) return;
@@ -673,9 +669,10 @@
             } catch (err) {}
             setTimeout(() => { mostrarLoadingGame(false); }, 400);
 
-            if (tipoTabela === 'falta' && !item.verificadoCruzamento) {
+            // A verificação de localização só roda DEPOIS do registro estar seguro e salvo
+            if (dispararVerificacao && tipoTabela === 'falta' && !item.verificadoCruzamento) {
                 item.verificadoCruzamento = true;
-                await verificarCruzamentoOutroApp(item.sscc, index, 'falta');
+                await verificarCruzamentoAposSalvar(item.sscc, index, 'falta');
             }
         }
 
@@ -837,13 +834,12 @@
             if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
             if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
 
-            // Acha a primeira linha vazia de rasgadas
             let indexVazio = rasgadasPortoes[portaoAlvo].findIndex(x => !x.sscc || x.sscc.trim() === '');
-            if (indexVazio === -1) indexVazio = 0;
+            if (indexVazio === -1) indexVazio = rasgadasPortoes[portaoAlvo].length;
 
             rasgadasPortoes[portaoAlvo][indexVazio] = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: obs };
 
-            await salvarOuAtualizarNoSupabase(portaoAlvo, indexVazio, 'rasgada');
+            await salvarOuAtualizarNoSupabase(portaoAlvo, indexVazio, 'rasgada', false);
 
             tocarSomSucesso();
             fecharModalRasgada();
@@ -1098,16 +1094,8 @@
         }
 
         function adicionarLinhaVazia() {
-            // Apenas foca na primeira linha vazia disponível
-            const lista = dadosPortoes[portaoAtual];
-            const idxVazio = lista.findIndex(x => !x.sscc || x.sscc.trim() === '');
-            if (idxVazio !== -1) {
-                const inputs = document.querySelectorAll('#corpo-tabela-excel tr');
-                if (inputs[idxVazio]) {
-                    const inputSSCC = inputs[idxVazio].querySelector('.excel-input-sscc');
-                    if (inputSSCC) inputSSCC.focus();
-                }
-            }
+            dadosPortoes[portaoAtual].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
+            renderizarTabelaFaltas();
         }
 
         async function removerLinhaSupabase(index) {
