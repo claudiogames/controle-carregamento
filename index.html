@@ -137,12 +137,28 @@
         .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
         .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
 
+        /* LOADING ESTILO GAME FLUTUANTE */
+        @keyframes flutuarLoading {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(3deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .game-loading-icon {
+            animation: flutuarLoading 1.2s ease-in-out infinite;
+        }
+
         .scanner-frame { position: relative; overflow: hidden; border-radius: 4px; border: 1px solid #30363d; }
         .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="light p-2 sm:p-3">
+
+    <!-- INDICADOR DE LOADING FLUTUANTE (ESTILO GAME) -->
+    <div id="game-loading-indicator" class="fixed bottom-4 right-4 z-[999999] hidden items-center gap-2 bg-slate-900/90 text-white px-3 py-2 rounded-lg shadow-2xl border border-blue-500/50 backdrop-blur-md">
+        <img src="https://pub-f46b0cda8b8d434aabcf14ccac85f3af.r2.dev/1791682069820.png" alt="Salvando..." class="w-6 h-6 object-contain game-loading-icon">
+        <span class="text-[11px] font-mono font-bold tracking-wider text-blue-400">SALVANDO...</span>
+    </div>
 
     <!-- MODAL DE SELEÇÃO DE DISPOSITIVO -->
     <div id="modal-dispositivo" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
@@ -434,6 +450,14 @@
             await carregarDadosSupabase();
         });
 
+        function mostrarLoadingGame(mostrar) {
+            const el = document.getElementById('game-loading-indicator');
+            if (el) {
+                if (mostrar) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            }
+        }
+
         function inicializarDataHoje() {
             const hoje = new Date().toISOString().split('T')[0];
             const dataSalva = localStorage.getItem('data_controle_carregamento');
@@ -529,6 +553,7 @@
                 responsavel: String(responsavelAtual || 'Não informado')
             };
 
+            mostrarLoadingGame(true);
             try {
                 let res;
                 if (item.id) {
@@ -542,6 +567,7 @@
                 }
                 atualizarIndicadoresKPI();
             } catch (err) {}
+            setTimeout(() => { mostrarLoadingGame(false); }, 400);
         }
 
         function definirModoDispositivo(modo) {
@@ -893,7 +919,7 @@
             document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
         }
 
-        // Sistema de debounce para salvar em tempo real sem sobrecarregar o banco
+        // Sistema de debounce otimizado (salva 800ms após terminar de digitar/bipar)
         let timerAutossave = null;
         function atualizarCampoFaltaEmTempoReal(index, campo, valor) {
             dadosPortoes[portaoAtual][index][campo] = valor;
@@ -901,7 +927,7 @@
             clearTimeout(timerAutossave);
             timerAutossave = setTimeout(() => {
                 salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
-            }, 400);
+            }, 800);
         }
 
         function atualizarCampoRasgadaEmTempoReal(index, campo, valor) {
@@ -910,7 +936,7 @@
             clearTimeout(timerAutossave);
             timerAutossave = setTimeout(() => {
                 salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
-            }, 400);
+            }, 800);
         }
 
         async function atualizarCampoFalta(index, campo, valor) {
