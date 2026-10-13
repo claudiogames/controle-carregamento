@@ -459,12 +459,11 @@
             }
         }
 
-        // Canal em tempo real garantindo captura de inserções, atualizações e exclusões em qualquer campo
         function ativarEscutaRealtimeSupabase() {
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v2')
+                    .channel('tabela-mudancas-global-v3')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -585,10 +584,25 @@
             mostrarLoadingGame(true);
             try {
                 let res;
+                // Se já tem ID, atualiza diretamente
                 if (item.id) {
                     res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
                 } else {
-                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
+                    // Evita duplicidade verificando se já existe um registro idêntico sem ID na lista
+                    const { data: existente } = await supabaseClient
+                        .from('controle_faltas_portao')
+                        .select('id')
+                        .eq('data_operacao', dataAtual)
+                        .eq('portao', Number(portaoNum))
+                        .eq('sscc', String(item.sscc).trim())
+                        .maybeSingle();
+
+                    if (existente && existente.id) {
+                        item.id = existente.id;
+                        res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
+                    } else {
+                        res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
+                    }
                 }
 
                 if (res.data && res.data[0] && res.data[0].id) {
