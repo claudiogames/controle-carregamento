@@ -472,7 +472,7 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v17')
+                    .channel('tabela-mudancas-global-v18')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -589,7 +589,7 @@
             }
 
             for (let i = 7; i <= 26; i++) {
-                while (dadosPortoes[i].length < 4) {
+                while (dadosPortoes[i].length < 6) {
                     dadosPortoes[i].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
                 }
             }
@@ -623,7 +623,7 @@
             }
         }
 
-        // SALVAMENTO RIGOROSO POR ÍNDICE (SEM REORDENAR A LISTA DA TELA)
+        // SALVAMENTO FIXO POR ÍNDICE SEM ALTERAR ORDEM DA TELA
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
             if (!supabaseClient) return;
             const listaTarget = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum] : dadosPortoes[portaoNum];
@@ -913,7 +913,7 @@
                 tr.innerHTML = `
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
-                        <input type="text" id="input-sscc-${portaoAtual}-${index}" value="${item.sscc || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                        <input type="text" value="${item.sscc || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
                     </td>
                     <td class="${classeStatus}" id="td-status-${index}" data-label="Status">
                         <select onchange="atualizarCampoFalta(${index}, 'status', this.value)" class="excel-select ${classeStatus}">
@@ -1115,10 +1115,10 @@
                 mostrarLoadingGame(false);
             }
             dadosPortoes[portaoAtual].splice(index, 1);
-            while (dadosPortoes[portaoAtual].length < 4) {
+            while (dadosPortoes[portaoAtual].length < 6) {
                 dadosPortoes[portaoAtual].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
             }
-            renderizarTabelaFaltas();
+            renderizarTabelas();
             atualizarIndicadoresKPI();
         }
 
