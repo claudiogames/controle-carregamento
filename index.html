@@ -156,7 +156,7 @@
         <span class="text-[11px] font-mono font-bold tracking-wider text-blue-400">SINCRONIZANDO...</span>
     </div>
 
-    <!-- MODAL DE ALERTA INTEGRAÇÃO (FIXO E CENTRALIZADO NO CELULAR) -->
+    <!-- MODAL DE ALERTA INTEGRAÇÃO -->
     <div id="modal-alerta-integracao" class="fixed inset-0 top-0 left-0 w-full h-full bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
         <div class="ui-card rounded-lg max-w-sm w-full p-5 text-center shadow-2xl border border-amber-500 my-auto">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
@@ -472,7 +472,7 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v16')
+                    .channel('tabela-mudancas-global-v17')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -537,7 +537,6 @@
         }
 
         async function carregarDadosSupabaseQuiet() {
-            // CORREÇÃO CRÍTICA: Reseta totalmente os objetos antes de popular para ELIMINAR DUPLICAÇÕES
             dadosPortoes = {};
             rasgadasPortoes = {};
             for (let i = 7; i <= 26; i++) {
@@ -553,7 +552,6 @@
                         .eq('data_operacao', dataAtual);
 
                     if (!error && data) {
-                        // Deduplicação pelo ID caso venha duplicado do banco
                         const idsProcessados = new Set();
                         data.forEach(row => {
                             if (idsProcessados.has(row.id)) return;
@@ -625,12 +623,16 @@
             }
         }
 
+        // SALVAMENTO RIGOROSO POR ÍNDICE (SEM REORDENAR A LISTA DA TELA)
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
             if (!supabaseClient) return;
-            const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum][index] : dadosPortoes[portaoNum][index];
+            const listaTarget = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum] : dadosPortoes[portaoNum];
+            if (!listaTarget || !listaTarget[index]) return;
+
+            const item = listaTarget[index];
             
-            if (!item || !item.sscc || item.sscc.trim() === '') {
-                if (item && item.id) {
+            if (!item.sscc || item.sscc.trim() === '') {
+                if (item.id) {
                     mostrarLoadingGame(true);
                     await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
                     item.id = null;
@@ -911,7 +913,7 @@
                 tr.innerHTML = `
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
-                        <input type="text" value="${item.sscc || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                        <input type="text" id="input-sscc-${portaoAtual}-${index}" value="${item.sscc || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
                     </td>
                     <td class="${classeStatus}" id="td-status-${index}" data-label="Status">
                         <select onchange="atualizarCampoFalta(${index}, 'status', this.value)" class="excel-select ${classeStatus}">
@@ -1043,7 +1045,7 @@
         }
 
         function atualizarCampoFaltaLocal(index, campo, valor) {
-            if (!dadosPortoes[portaoAtual][index]) return;
+            if (!dadosPortoes[portaoAtual] || !dadosPortoes[portaoAtual][index]) return;
             if (campo === 'sscc') {
                 valor = tratarSSCC(valor);
                 dadosPortoes[portaoAtual][index].verificadoCruzamento = false;
@@ -1053,7 +1055,7 @@
         }
 
         function atualizarCampoRasgadaLocal(index, campo, valor) {
-            if (!rasgadasPortoes[portaoAtual][index]) return;
+            if (!rasgadasPortoes[portaoAtual] || !rasgadasPortoes[portaoAtual][index]) return;
             if (campo === 'sscc') valor = tratarSSCC(valor);
             rasgadasPortoes[portaoAtual][index][campo] = valor;
             atualizarIndicadoresKPI();
