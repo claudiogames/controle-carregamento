@@ -60,7 +60,6 @@
             border-radius: 0px !important;
         }
 
-        /* EXPANSÃO FLUIDA DO SSCC NO CELULAR */
         .td-sscc-container {
             position: relative;
             z-index: 1;
@@ -90,7 +89,6 @@
             border: 2px solid #3b82f6 !important;
         }
 
-        /* OTIMIZAÇÃO MOBILE (MODO CARTÕES PARA NÃO FICAR APERTADO) */
         @media (max-width: 768px) {
             .excel-table thead { display: none; }
             .excel-table, .excel-table tbody, .excel-table tr, .excel-table td { display: block; width: 100%; }
@@ -121,7 +119,6 @@
             .excel-input, .excel-select { text-align: right; }
         }
 
-        /* Cores de Status Gerais */
         .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
         .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; font-weight: bold; border-radius: 2px !important; }
         .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
@@ -137,7 +134,6 @@
         .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
         .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
 
-        /* LOADING ESTILO GAME FLUTUANTE */
         @keyframes flutuarLoading {
             0% { transform: translateY(0px) rotate(0deg); }
             50% { transform: translateY(-8px) rotate(3deg); }
@@ -154,26 +150,26 @@
 </head>
 <body class="light p-2 sm:p-3">
 
-    <!-- INDICADOR DE LOADING FLUTUANTE (ESTILO GAME) -->
+    <!-- INDICADOR DE LOADING FLUTUANTE -->
     <div id="game-loading-indicator" class="fixed bottom-4 right-4 z-[999999] hidden items-center gap-2 bg-slate-900/90 text-white px-3 py-2 rounded-lg shadow-2xl border border-blue-500/50 backdrop-blur-md">
         <img src="https://pub-f46b0cda8b8d434aabcf14ccac85f3af.r2.dev/1791682069820.png" alt="Salvando..." class="w-6 h-6 object-contain game-loading-icon">
         <span class="text-[11px] font-mono font-bold tracking-wider text-blue-400">SINCRONIZANDO...</span>
     </div>
 
-    <!-- MODAL DE ALERTA INTEGRAÇÃO -->
-    <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
-        <div class="ui-card rounded-lg max-w-sm w-full p-6 text-center shadow-2xl border border-amber-500">
+    <!-- MODAL DE ALERTA INTEGRAÇÃO (FIXO E CENTRALIZADO NO CELULAR) -->
+    <div id="modal-alerta-integracao" class="fixed inset-0 top-0 left-0 w-full h-full bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
+        <div class="ui-card rounded-lg max-w-sm w-full p-5 text-center shadow-2xl border border-amber-500 my-auto">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">Aviso de Localização</h2>
-            <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono">A caixa informada se encontra em...</p>
+            <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono break-words">A caixa informada se encontra em...</p>
             <button onclick="fecharAlertaIntegracao()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-xs cursor-pointer shadow">Entendido / Fechar</button>
         </div>
     </div>
 
     <!-- MODAL DE SELEÇÃO DE DISPOSITIVO -->
-    <div id="modal-dispositivo" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
+    <div id="modal-dispositivo" class="fixed inset-0 top-0 left-0 w-full h-full bg-slate-900/90 z-50 flex items-center justify-center p-4">
         <div class="ui-card rounded-lg max-w-sm w-full p-6 text-center shadow-2xl border">
             <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
                 <i class="fa-solid fa-display"></i>
@@ -194,8 +190,8 @@
         </div>
     </div>
 
-    <!-- MODAL DE SCANNER (RASGADAS) -->
-    <div id="modal-scanner" class="fixed inset-0 bg-black/90 hidden z-[99999] flex items-center justify-center p-4">
+    <!-- MODAL DE SCANNER -->
+    <div id="modal-scanner" class="fixed inset-0 top-0 left-0 w-full h-full bg-black/90 hidden z-[99999] flex items-center justify-center p-4">
         <div class="ui-card border rounded max-w-md w-full p-5 shadow-2xl">
             <div class="flex justify-between items-center pb-3 border-b mb-4">
                 <h3 class="text-sm font-bold flex items-center gap-2 text-amber-500">
@@ -216,7 +212,7 @@
     </div>
 
     <!-- MODAL REGISTRO DE CAIXA RASGADA -->
-    <div id="modal-rasgada" class="fixed inset-0 bg-black/60 hidden z-40 flex items-center justify-center p-4">
+    <div id="modal-rasgada" class="fixed inset-0 top-0 left-0 w-full h-full bg-black/60 hidden z-40 flex items-center justify-center p-4">
         <div class="ui-card rounded max-w-md w-full p-5 shadow-xl border">
             <div class="flex justify-between items-center pb-2 border-b mb-3">
                 <h3 class="text-xs font-bold text-amber-500 flex items-center gap-1.5">
@@ -476,7 +472,7 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v15')
+                    .channel('tabela-mudancas-global-v16')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -527,7 +523,6 @@
                             const inputObs = document.getElementById(`input-obs-${portaoAtual}-${index}`);
                             if (inputObs) inputObs.value = item.observacao;
                             
-                            // Salva de forma cirúrgica e limpa sem recriar tabela
                             await salvarOuAtualizarNoSupabase(portaoAtual, index, tipoTabela);
                         }
                     }
@@ -542,6 +537,7 @@
         }
 
         async function carregarDadosSupabaseQuiet() {
+            // CORREÇÃO CRÍTICA: Reseta totalmente os objetos antes de popular para ELIMINAR DUPLICAÇÕES
             dadosPortoes = {};
             rasgadasPortoes = {};
             for (let i = 7; i <= 26; i++) {
@@ -557,7 +553,12 @@
                         .eq('data_operacao', dataAtual);
 
                     if (!error && data) {
+                        // Deduplicação pelo ID caso venha duplicado do banco
+                        const idsProcessados = new Set();
                         data.forEach(row => {
+                            if (idsProcessados.has(row.id)) return;
+                            idsProcessados.add(row.id);
+
                             const p = row.portao;
                             if (p >= 7 && p <= 26) {
                                 if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
@@ -568,7 +569,8 @@
                                         status: row.status || 'Pendente',
                                         origem: row.origem || 'CD',
                                         ordem: row.ordem || '',
-                                        observacao: row.observacao.replace('[RASGADA] ', '')
+                                        observacao: row.observacao.replace('[RASGADA] ', ''),
+                                        verificadoCruzamento: true
                                     });
                                 } else {
                                     dadosPortoes[p].push({
@@ -578,7 +580,8 @@
                                         origem: row.origem || 'CD',
                                         ordem: row.ordem || '',
                                         noApp: row.no_app || 'Não',
-                                        observacao: row.observacao || ''
+                                        observacao: row.observacao || '',
+                                        verificadoCruzamento: true
                                     });
                                 }
                             }
@@ -589,7 +592,7 @@
 
             for (let i = 7; i <= 26; i++) {
                 while (dadosPortoes[i].length < 4) {
-                    dadosPortoes[i].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '' });
+                    dadosPortoes[i].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
                 }
             }
 
@@ -622,7 +625,6 @@
             }
         }
 
-        // Função de salvamento unificada, atômica e blindada contra duplicidades
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
             if (!supabaseClient) return;
             const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum][index] : dadosPortoes[portaoNum][index];
@@ -1044,7 +1046,6 @@
             if (!dadosPortoes[portaoAtual][index]) return;
             if (campo === 'sscc') {
                 valor = tratarSSCC(valor);
-                // Reseta a flag de cruzamento se o SSCC foi alterado para buscar novamente
                 dadosPortoes[portaoAtual][index].verificadoCruzamento = false;
             }
             dadosPortoes[portaoAtual][index][campo] = valor;
