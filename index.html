@@ -463,7 +463,7 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v4')
+                    .channel('tabela-mudancas-global-v5')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -565,7 +565,6 @@
             if (!supabaseClient) return;
             const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum][index] : dadosPortoes[portaoNum][index];
             
-            // Se o SSCC foi limpo/apagado, removemos do banco se tiver ID
             if (!item.sscc || item.sscc.trim() === '') {
                 if (item.id) {
                     mostrarLoadingGame(true);
@@ -598,7 +597,6 @@
                 if (item.id) {
                     res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
                 } else {
-                    // Verifica se já existe um registro com esse mesmo SSCC para evitar duplicações
                     const { data: existente } = await supabaseClient
                         .from('controle_faltas_portao')
                         .select('id')
@@ -902,6 +900,11 @@
                 const tr = document.createElement('tr');
                 const inputId = `input-rasg-sscc-${index}`;
 
+                let st = (item.status || 'Pendente').toLowerCase();
+                let classeStatusRasgada = st.includes('requisitada') ? 'status-rasgada-requisitada' :
+                                          st.includes('restaurada') ? 'status-rasgada-restaurada' :
+                                          st.includes('entregue') ? 'status-rasgada-entregue' : 'status-rasgada-pendente';
+
                 tr.innerHTML = `
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
@@ -916,8 +919,8 @@
                             <option value="Nao Lida" ${item.tipo === 'Nao Lida' ? 'selected' : ''}>Rasgada (Não Lida)</option>
                         </select>
                     </td>
-                    <td data-label="Status">
-                        <select onchange="atualizarCampoRasgada(${index}, 'status', this.value)" class="excel-select status-rasgada-pendente">
+                    <td class="${classeStatusRasgada}" data-label="Status">
+                        <select onchange="atualizarCampoRasgada(${index}, 'status', this.value)" class="excel-select ${classeStatusRasgada}">
                             <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
                             <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
                             <option value="Restaurada" ${item.status === 'Restaurada' ? 'selected' : ''}>Restaurada</option>
@@ -1004,7 +1007,8 @@
             rasgadasPortoes[portaoAtual][index][campo] = valor;
             if (campo === 'status' && valor === 'Entregue no Portão') tocarSomConquistaAnimada();
             await salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
-            if (campo === 'status' || campo === 'tipo') { renderizarTabelaRasgadas(); verificarBannerRasgadas(); }
+            renderizarTabelaRasgadas();
+            verificarBannerRasgadas();
         }
 
         function adicionarLinhaVaziaObjeto() {
