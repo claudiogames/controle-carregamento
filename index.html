@@ -461,6 +461,7 @@
             gerarAbasPortoes();
             popularSelectPortoesModal();
             await carregarDadosSupabase();
+            ativarEscutaRealtimeSupabase();
         });
 
         function mostrarLoadingGame(mostrar) {
@@ -469,6 +470,31 @@
                 if (mostrar) el.classList.remove('hidden');
                 else el.classList.add('hidden');
             }
+        }
+
+        // Sincronização em tempo real segura com trava para não atrapalhar digitação ativa
+        function ativarEscutaRealtimeSupabase() {
+            if (!supabaseClient) return;
+            try {
+                supabaseClient
+                    .channel('tabela-mudancas-global-v14')
+                    .on(
+                        'postgres_changes',
+                        { event: '*', schema: 'public', table: 'controle_faltas_portao' },
+                        async (payload) => {
+                            const alterado = payload.new || payload.old;
+                            if (alterado && alterado.data_operacao === dataAtual) {
+                                const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                                const activeClass = document.activeElement ? document.activeElement.className : '';
+                                // Só atualiza se o usuário não estiver focado em um input de texto digitando
+                                if (activeTag !== 'INPUT' || !activeClass.includes('excel-input')) {
+                                    await carregarDadosSupabaseQuiet();
+                                }
+                            }
+                        }
+                    )
+                    .subscribe();
+            } catch (e) {}
         }
 
         async function verificarCruzamentoOutroApp(sscc, index, tipoTabela) {
@@ -500,7 +526,12 @@
                         const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual][index] : dadosPortoes[portaoAtual][index];
                         if (item) {
                             item.observacao = `[Mapeado: ${categoria}]`;
-                            salvarOuAtualizarNoSupabase(portaoAtual, index, tipoTabela);
+                            // Atualiza o input visualmente na tela sem recriar a tabela
+                            const inputObs = document.getElementById(`input-obs-${portaoAtual}-${index}`);
+                            if (inputObs) inputObs.value = item.observacao;
+                            
+                            // Salva de forma isolada e silenciosa
+                            await salvarOuAtualizarNoSupabaseSilencioso(portaoAtual, index, tipoTabela);
                         }
                     }
                 }
@@ -513,8 +544,7 @@
             document.getElementById('modal-alerta-integracao').classList.add('hidden');
         }
 
-        async function carregarDadosSupabase() {
-            mostrarLoadingGame(true);
+        async function carregarDadosSupabaseQuiet() {
             dadosPortoes = {};
             rasgadasPortoes = {};
             for (let i = 7; i <= 26; i++) {
@@ -569,6 +599,11 @@
             renderizarTabelas();
             atualizarIndicadoresKPI();
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
+        }
+
+        async function carregarDadosSupabase() {
+            mostrarLoadingGame(true);
+            await carregarDadosSupabaseQuiet();
             setTimeout(() => { mostrarLoadingGame(false); }, 400);
         }
 
@@ -590,7 +625,7 @@
             }
         }
 
-        // Salvamento isolado e blindado: nunca redesenha a tabela ao salvar
+        // Salvamento seguro e isolado sem re-renderizar a tabela
         async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta') {
             if (!supabaseClient) return;
             const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum][index] : dadosPortoes[portaoNum][index];
@@ -653,6 +688,49 @@
             if (tipoTabela === 'falta') {
                 await verificarCruzamentoOutroApp(item.sscc, index, 'falta');
             }
+        }
+
+        async function salvarOuAtualizarNoSupabaseSilencioso(portaoNum, index, tipoTabela = 'falta') {
+            if (!supabaseClient) return;
+            const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum][index] : dadosPortoes[portaoNum][index];
+            if (!item || !item.sscc || item.sscc.trim() === '') return;
+
+            const obsFinal = tipoTabela === 'rasgada' ? `[RASGADA] ${item.observacao || ''}` : (item.observacao || '');
+            const payload = {
+                data_operacao: dataAtual,
+                portao: Number(portaoNum),
+                sscc: String(item.sscc).trim(),
+                status: String(item.status || 'Pendente'),
+                origem: String(item.origem || 'CD'),
+                ordem: String(item.ordem || ''),
+                no_app: tipoTabela === 'rasgada' ? 'Sim' : String(item.noApp || 'Não'),
+                observacao: String(obsFinal),
+                turno: String(turnoAtual || 'Turno 1'),
+                responsavel: String(responsavelAtual || 'Não informado')
+            };
+
+            try {
+                if (item.id) {
+                    await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id);
+                } else {
+                    const { data: existente } = await supabaseClient
+                        .from('controle_faltas_portao')
+                        .select('id')
+                        .eq('data_operacao', dataAtual)
+                        .eq('portao', Number(portaoNum))
+                        .eq('sscc', String(item.sscc).trim())
+                        .maybeSingle();
+
+                    if (existente && existente.id) {
+                        item.id = existente.id;
+                        await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id);
+                    } else {
+                        const res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
+                        if (res.data && res.data[0]) item.id = res.data[0].id;
+                    }
+                }
+                atualizarIndicadoresKPI();
+            } catch (e) {}
         }
 
         function definirModoDispositivo(modo) {
@@ -909,7 +987,7 @@
                         </select>
                     </td>
                     <td data-label="Observação">
-                        <input type="text" value="${item.observacao || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'observacao', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Obs..." class="excel-input">
+                        <input type="text" id="input-obs-${portaoAtual}-${index}" value="${item.observacao || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'observacao', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Obs..." class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
                         <button onclick="removerLinhaSupabase(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
@@ -1023,7 +1101,7 @@
             atualizarIndicadoresKPI();
         }
 
-        // Atualização cirúrgica de status sem recriar a tabela inteira (evita pular de linha ou trocar status do vizinho)
+        // Atualização cirúrgica de status sem recriar a tabela
         async function atualizarCampoFalta(index, campo, valor) {
             if (campo === 'sscc') valor = tratarSSCC(valor);
             dadosPortoes[portaoAtual][index][campo] = valor;
@@ -1032,7 +1110,6 @@
                 tocarSomConquistaAnimada();
             }
 
-            // Atualiza apenas a classe visual e cor da célula atual sem recriar o DOM
             const tdStatus = document.getElementById(`td-status-${index}`);
             if (tdStatus && campo === 'status') {
                 let st = valor.toLowerCase();
