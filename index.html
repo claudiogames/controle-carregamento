@@ -57,7 +57,7 @@
             font-size: 12px;
             font-family: monospace;
             padding: 4px;
-            border-radius: 4px;
+            border-radius: 0px !important; /* Estilo reto / corporativo */
         }
 
         /* EXPANSÃO FLUIDA DO SSCC NO CELULAR */
@@ -78,7 +78,7 @@
             z-index: 99999 !important;
             background-color: #ffffff !important;
             border: 2px solid #2563eb !important;
-            border-radius: 8px;
+            border-radius: 2px;
             box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
             font-size: 14px !important;
             padding: 10px !important;
@@ -97,7 +97,7 @@
             .excel-table tr {
                 margin-bottom: 12px;
                 border: 1px solid #30363d;
-                border-radius: 8px;
+                border-radius: 4px;
                 padding: 8px;
                 background: inherit;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -121,24 +121,24 @@
             .excel-input, .excel-select { text-align: right; }
         }
 
-        /* Cores de Status Gerais */
-        .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; font-weight: bold; border-radius: 4px; }
-        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-apareceu { background-color: #06b6d4 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-portao-1 { background-color: #3b82f6 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-entregue { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        /* Cores de Status Gerais - Retas e sem arredondamentos estilo game */
+        .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; font-weight: bold; border-radius: 2px !important; }
+        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .status-apareceu { background-color: #06b6d4 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .status-portao-1 { background-color: #3b82f6 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .status-entregue { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
 
         /* Cores de Status Específicas para Rasgadas */
-        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
 
-        .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
 
-        .scanner-frame { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid #30363d; }
+        .scanner-frame { position: relative; overflow: hidden; border-radius: 4px; border: 1px solid #30363d; }
         .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -147,7 +147,7 @@
 
     <!-- MODAL DE SELEÇÃO DE DISPOSITIVO -->
     <div id="modal-dispositivo" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
-        <div class="ui-card rounded-xl max-w-sm w-full p-6 text-center shadow-2xl border">
+        <div class="ui-card rounded-lg max-w-sm w-full p-6 text-center shadow-2xl border">
             <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
                 <i class="fa-solid fa-display"></i>
             </div>
@@ -155,11 +155,11 @@
             <p class="text-xs opacity-75 mb-5">Escolha o seu dispositivo para ajustar a interface automaticamente.</p>
             
             <div class="grid grid-cols-2 gap-3">
-                <button onclick="definirModoDispositivo('celular')" class="flex flex-col items-center justify-center p-4 border-2 border-blue-500 bg-blue-50/50 hover:bg-blue-100 rounded-lg text-blue-700 transition-all cursor-pointer">
+                <button onclick="definirModoDispositivo('celular')" class="flex flex-col items-center justify-center p-4 border-2 border-blue-500 bg-blue-50/50 hover:bg-blue-100 rounded text-blue-700 transition-all cursor-pointer">
                     <i class="fa-solid fa-mobile-screen-button text-2xl mb-1"></i>
                     <span class="text-xs font-bold">Celular</span>
                 </button>
-                <button onclick="definirModoDispositivo('computador')" class="flex flex-col items-center justify-center p-4 border-2 border-gray-300 hover:border-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-700 transition-all cursor-pointer">
+                <button onclick="definirModoDispositivo('computador')" class="flex flex-col items-center justify-center p-4 border-2 border-gray-300 hover:border-gray-500 bg-gray-50 hover:bg-gray-100 rounded text-gray-700 transition-all cursor-pointer">
                     <i class="fa-solid fa-desktop text-2xl mb-1"></i>
                     <span class="text-xs font-bold">Computador</span>
                 </button>
@@ -169,7 +169,7 @@
 
     <!-- MODAL DE SCANNER (RASGADAS) -->
     <div id="modal-scanner" class="fixed inset-0 bg-black/90 hidden z-[99999] flex items-center justify-center p-4">
-        <div class="ui-card border rounded-lg max-w-md w-full p-5 shadow-2xl">
+        <div class="ui-card border rounded max-w-md w-full p-5 shadow-2xl">
             <div class="flex justify-between items-center pb-3 border-b mb-4">
                 <h3 class="text-sm font-bold flex items-center gap-2 text-amber-500">
                     <i class="fa-solid fa-barcode"></i> Leitor de SSCC (Caixa Rasgada)
@@ -190,7 +190,7 @@
 
     <!-- MODAL REGISTRO DE CAIXA RASGADA -->
     <div id="modal-rasgada" class="fixed inset-0 bg-black/60 hidden z-40 flex items-center justify-center p-4">
-        <div class="ui-card rounded-lg max-w-md w-full p-5 shadow-xl border">
+        <div class="ui-card rounded max-w-md w-full p-5 shadow-xl border">
             <div class="flex justify-between items-center pb-2 border-b mb-3">
                 <h3 class="text-xs font-bold text-amber-500 flex items-center gap-1.5">
                     <i class="fa-solid fa-triangle-exclamation"></i> Registar Caixa Rasgada
@@ -231,7 +231,7 @@
     <!-- CABEÇALHO -->
     <header class="ui-card p-3 sm:p-4 rounded-xl shadow-sm border mb-3 flex flex-col xl:flex-row justify-between items-center gap-3">
         <div class="flex items-center gap-3 w-full xl:w-auto justify-center sm:justify-start">
-            <div class="bg-white p-1.5 rounded-lg border border-gray-200 flex items-center justify-center min-w-[110px]">
+            <div class="bg-white p-1.5 rounded border border-gray-200 flex items-center justify-center min-w-[110px]">
                 <img src="https://sindcalf.org.br/wp-content/uploads/2017/06/grendene.jpg" alt="Grendene" class="h-7 w-auto object-contain">
             </div>
             <div>
@@ -244,12 +244,12 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full xl:w-auto justify-center xl:justify-end">
-            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
+            <div class="flex items-center gap-1 ui-card border rounded px-2 py-1 text-xs shadow-sm">
                 <i class="fa-solid fa-calendar-days text-blue-500"></i>
                 <input type="date" id="input-data-controle" onchange="mudarDataOperacional(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
             </div>
 
-            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
+            <div class="flex items-center gap-1 ui-card border rounded px-2 py-1 text-xs shadow-sm">
                 <i class="fa-solid fa-user-tie text-blue-500"></i>
                 <select id="select-responsavel" onchange="mudarResponsavel(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
                     <option value="" disabled selected>Responsável</option>
@@ -261,7 +261,7 @@
                 </select>
             </div>
 
-            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
+            <div class="flex items-center gap-1 ui-card border rounded px-2 py-1 text-xs shadow-sm">
                 <i class="fa-solid fa-clock text-blue-500"></i>
                 <select id="select-turno" onchange="mudarTurno(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
                     <option value="Turno 1">T1</option>
@@ -271,43 +271,43 @@
                 </select>
             </div>
 
-            <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
-            <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
-            <button onclick="adicionarLinhaVazia()" class="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-plus"></i> Linha</button>
-            <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
+            <button onclick="alternarTema()" class="ui-card border p-2 rounded text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
+            <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
+            <button onclick="adicionarLinhaVazia()" class="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-plus"></i> Linha</button>
+            <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
         </div>
     </header>
 
     <!-- KPI / INDICADORES -->
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
-        <div class="ui-card border p-2 rounded-lg shadow-sm">
+        <div class="ui-card border p-2 rounded shadow-sm">
             <span class="text-[9px] font-bold opacity-75 uppercase block">Total Faltas</span>
             <div class="text-base sm:text-lg font-black font-mono" id="kpi-total-faltas">0</div>
         </div>
-        <div class="ui-card border p-2 rounded-lg shadow-sm">
+        <div class="ui-card border p-2 rounded shadow-sm">
             <span class="text-[9px] font-bold text-emerald-600 uppercase block">Concluídas</span>
             <div class="text-base sm:text-lg font-black font-mono text-emerald-600" id="kpi-entregues">0</div>
         </div>
-        <div class="ui-card border p-2 rounded-lg shadow-sm">
+        <div class="ui-card border p-2 rounded shadow-sm">
             <span class="text-[9px] font-bold text-red-500 uppercase block">Pendentes</span>
             <div class="text-base sm:text-lg font-black font-mono text-red-500" id="kpi-pendentes">0</div>
         </div>
-        <div class="ui-card border p-2 rounded-lg shadow-sm">
+        <div class="ui-card border p-2 rounded shadow-sm">
             <span class="text-[9px] font-bold text-amber-500 uppercase block">Rasgadas</span>
             <div class="text-base sm:text-lg font-black font-mono text-amber-500" id="kpi-rasgadas">0</div>
         </div>
-        <div class="ui-card border p-2 rounded-lg shadow-sm col-span-2 sm:col-span-1">
+        <div class="ui-card border p-2 rounded shadow-sm col-span-2 sm:col-span-1">
             <span class="text-[9px] font-bold text-cyan-500 uppercase block">No App</span>
             <div class="text-base sm:text-lg font-black font-mono text-cyan-500" id="kpi-no-app">0</div>
         </div>
     </div>
 
     <!-- ABAS PORTÕES -->
-    <div class="flex border-b mb-3 overflow-x-auto ui-card rounded-t-lg border p-1 gap-1" id="container-abas-portoes"></div>
+    <div class="flex border-b mb-3 overflow-x-auto ui-card rounded-t border p-1 gap-1" id="container-abas-portoes"></div>
 
     <!-- CONTEÚDO PRINCIPAL -->
     <div id="wrapper-conteudo-dinamico" class="fade-in">
-        <div class="ui-card rounded-lg border shadow-sm overflow-hidden mb-4">
+        <div class="ui-card rounded border shadow-sm overflow-hidden mb-4">
             <div id="banner-rasgadas-lidas" class="hidden bg-red-600 text-white p-2.5 flex items-center justify-between text-xs font-bold animate-pulse">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation"></i>
@@ -342,7 +342,7 @@
         </div>
 
         <!-- TABELA DE RASGADAS -->
-        <div id="secao-tabela-rasgadas" class="hidden ui-card rounded-lg border shadow-sm overflow-hidden mb-6 fade-in">
+        <div id="secao-tabela-rasgadas" class="hidden ui-card rounded border shadow-sm overflow-hidden mb-6 fade-in">
             <div class="p-2.5 border-b flex justify-between items-center bg-amber-500/10">
                 <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
                     <i class="fa-solid fa-triangle-exclamation"></i> Caixas Rasgadas - <span id="titulo-portao-rasgadas">Portão 7</span>
@@ -371,7 +371,7 @@
 
     <!-- VISÃO GLOBAL -->
     <div id="wrapper-todos-portoes" class="hidden fade-in space-y-4 mb-6">
-        <div class="ui-card border p-4 rounded-lg shadow-sm">
+        <div class="ui-card border p-4 rounded shadow-sm">
             <div class="flex justify-between items-center border-b pb-3 mb-3">
                 <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2 text-blue-500">
                     <i class="fa-solid fa-layer-group"></i> Panorama Unificado - Todos os Portões
@@ -472,7 +472,6 @@
                         data.forEach(row => {
                             const p = row.portao;
                             if (p >= 7 && p <= 26) {
-                                // Separação correta: se for rasgada, vai direto para rasgadasPortoes e NÃ£o entra na tabela de faltas normal
                                 if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
                                     rasgadasPortoes[p].push({
                                         id: row.id,
@@ -500,7 +499,6 @@
                 } catch (err) {}
             }
 
-            // Garante que cada portão abra sempre com pelo menos 4 linhas em branco na tabela normal
             for (let i = 7; i <= 26; i++) {
                 while (dadosPortoes[i].length < 4) {
                     dadosPortoes[i].push({ sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '' });
@@ -705,7 +703,6 @@
             if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
             if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
 
-            // Adiciona APENAS na tabela de rasgadas (evitando duplicar na tabela de faltas de cima)
             rasgadasPortoes[portaoAlvo].unshift({ sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: obs });
 
             await salvarOuAtualizarNoSupabase(portaoAlvo, 0, 'rasgada');
@@ -978,12 +975,9 @@
             } catch (err) {}
         }
 
-        // Função robusta de tratamento de SSCC para limpar prefixos de leitores/bipadores industriais
         function tratarSSCC(texto) {
             if (!texto) return '';
-            // Remove prefixos simbólicos padrão (ex: ]C1, ]E0, AIM ID, etc) e mantém apenas números
             let limpo = texto.replace(/^\][A-Za-z]\d+/, '').replace(/[^\d]/g, '');
-            // Se o código tiver comprimento superior padrão e conter dígito extra, normaliza se necessário
             if (limpo.length > 20) {
                 limpo = limpo.substring(limpo.length - 20);
             }
@@ -1006,20 +1000,23 @@
             } catch (e) {}
         }
 
+        // Som de conquista customizado, mais longo, alegre e divertido
         function tocarSomConquistaAnimada() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const now = audioCtx.currentTime;
-                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                // Notas empolgantes e progressivas (Arpejo festivo mais longo)
+                const notas = [392.00, 523.25, 659.25, 783.99, 659.25, 783.99, 1046.50];
+                notas.forEach((freq, i) => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
-                    const inicio = now + (i * 0.08);
-                    osc.type = 'triangle';
+                    const inicio = now + (i * 0.1);
+                    osc.type = i === notas.length - 1 ? 'triangle' : 'sine';
                     osc.frequency.setValueAtTime(freq, inicio);
-                    gain.gain.setValueAtTime(0.15, inicio);
-                    gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.25);
+                    gain.gain.setValueAtTime(0.2, inicio);
+                    gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.35);
                     osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.start(inicio); osc.stop(inicio + 0.25);
+                    osc.start(inicio); osc.stop(inicio + 0.35);
                 });
             } catch (e) {}
         }
