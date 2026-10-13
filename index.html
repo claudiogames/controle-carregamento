@@ -160,7 +160,7 @@
         <span class="text-[11px] font-mono font-bold tracking-wider text-blue-400">SINCRONIZANDO...</span>
     </div>
 
-    <!-- MODAL DE ALERTA INTEGRAÇÃO (LOCALIZADO NO OUTRO APP) -->
+    <!-- MODAL DE ALERTA INTEGRAÇÃO -->
     <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
         <div class="ui-card rounded-lg max-w-sm w-full p-6 text-center shadow-2xl border border-amber-500">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
@@ -401,7 +401,7 @@
         <div class="ui-card border p-4 rounded shadow-sm">
             <div class="flex justify-between items-center border-b pb-3 mb-3">
                 <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2 text-blue-500">
-                    <i class="fa-solid fa-layer-group"></i> Panorama Unificado - Todos os Portões
+                    <i class="fa-solid fa-layer-group"></i> Panorama Unificado - Todos los Portões
                 </h2>
                 <span class="text-xs opacity-75 font-mono" id="contador-total-geral">0 itens gerais</span>
             </div>
@@ -471,45 +471,42 @@
             }
         }
 
-        // Função corrigida e robusta de cruzamento com registros_sscc
+        // Cruzamento infalível: busca todos os registros e cruza no navegador
         async function verificarCruzamentoOutroApp(sscc, index, tipoTabela) {
             if (!supabaseClient || !sscc) return;
-            const codigoLimpo = String(sscc).trim();
-            if (codigoLimpo === '') return;
+            const codigoLimpo = tratarSSCC(String(sscc));
+            if (!codigoLimpo) return;
 
             try {
-                // Consulta na tabela registros_sscc
                 const { data, error } = await supabaseClient
                     .from('registros_sscc')
-                    .select('*')
-                    .eq('sscc', codigoLimpo);
+                    .select('*');
 
                 if (!error && data && data.length > 0) {
-                    const reg = data[0];
-                    const cat = reg.categoria || 'Outro Setor';
-                    const detalheRastro = reg.rastro ? ` (${reg.rastro})` : '';
-                    const mensagem = `Atenção: A caixa ${codigoLimpo} foi encontrada no sistema de rastreio na categoria [${cat}]${detalheRastro}!`;
-                    
-                    // Exibir modal de alerta de integração
-                    document.getElementById('texto-alerta-integracao').innerText = mensagem;
-                    document.getElementById('modal-alerta-integracao').classList.remove('hidden');
+                    const encontrado = data.find(r => tratarSSCC(String(r.sscc || '')) === codigoLimpo);
 
-                    // Preencher a observação automaticamente
-                    const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual][index] : dadosPortoes[portaoAtual][index];
-                    if (item) {
-                        item.observacao = `[Localizado: ${cat}${detalheRastro}]`;
-                        if (tipoTabela === 'rasgada') {
-                            renderizarTabelaRasgadas();
-                            salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
-                        } else {
-                            renderizarTabelaFaltas();
-                            salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
+                    if (encontrado) {
+                        const cat = encontrado.categoria || 'Outro Setor';
+                        const detalheRastro = encontrado.rastro ? ` (${encontrado.rastro})` : '';
+                        const mensagem = `Atenção: A caixa ${codigoLimpo} foi encontrada no outro aplicativo na categoria [${cat}]${detalheRastro}!`;
+                        
+                        document.getElementById('texto-alerta-integracao').innerText = mensagem;
+                        document.getElementById('modal-alerta-integracao').classList.remove('hidden');
+
+                        const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual][index] : dadosPortoes[portaoAtual][index];
+                        if (item) {
+                            item.observacao = `[Localizado: ${cat}${detalheRastro}]`;
+                            if (tipoTabela === 'rasgada') {
+                                renderizarTabelaRasgadas();
+                                salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
+                            } else {
+                                renderizarTabelaFaltas();
+                                salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
+                            }
                         }
                     }
                 }
-            } catch (err) {
-                console.warn("Erro ao cruzar dados com registros_sscc:", err);
-            }
+            } catch (err) {}
         }
 
         function fecharAlertaIntegracao() {
@@ -520,7 +517,7 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v7')
+                    .channel('tabela-mudancas-global-v9')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
@@ -677,7 +674,7 @@
             } catch (err) {}
             setTimeout(() => { mostrarLoadingGame(false); }, 400);
 
-            // Executar verificação cruzada com a tabela registros_sscc
+            // Verificar cruzamento
             await verificarCruzamentoOutroApp(item.sscc, index, tipoTabela);
         }
 
