@@ -487,7 +487,9 @@
                     const { data, error } = await supabaseClient
                         .from('controle_faltas_portao')
                         .select('*')
-                        .eq('data_operacao', dataAtual);
+                        .eq('data_operacao', dataAtual)
+                        .order('created_at', { ascending: true }) // Garante ordem cronológica fixa da nuvem
+                        .order('id', { ascending: true });
 
                     if (!error && data) {
                         data.forEach(reg => {
@@ -495,7 +497,7 @@
                             if (p >= 7 && p <= 26) {
                                 const itemObj = {
                                     id: reg.id,
-                                    sscc: reg.sscc || '',
+                                    sscc: tratarSSCC(reg.sscc || ''),
                                     status: reg.status || 'Pendente',
                                     origem: reg.origem || 'CD',
                                     ordem: reg.ordem || '',
@@ -525,7 +527,9 @@
                     const chaveF = `grendene_faltas_${dataAtual}_p${i}`;
                     const salvoF = localStorage.getItem(chaveF);
                     if (salvoF) {
-                        try { dadosPortoes[i] = JSON.parse(salvoF); } catch(e){}
+                        try { 
+                            dadosPortoes[i] = JSON.parse(salvoF).map(item => ({ ...item, sscc: tratarSSCC(item.sscc) })); 
+                        } catch(e){}
                     }
                 }
             }
@@ -593,7 +597,7 @@
                 const payload = {
                     data_operacao: dataAtual,
                     portao: Number(portaoAtual),
-                    sscc: String(item.sscc).trim(),
+                    sscc: String(codigoLimpo),
                     status: String(item.status || 'Pendente'),
                     origem: String(item.origem || 'CD'),
                     ordem: String(item.ordem || ''),
@@ -627,10 +631,11 @@
             if (!item || !item.sscc || item.sscc.trim() === '') return;
 
             try {
+                const codigoLimpo = tratarSSCC(item.sscc);
                 const payload = {
                     data_operacao: dataAtual,
                     portao: Number(portaoAtual),
-                    sscc: String(item.sscc).trim(),
+                    sscc: String(codigoLimpo),
                     status: String(item.status || 'Pendente'),
                     origem: String(item.origem || 'CD'),
                     ordem: String(item.ordem || 'URGENTE'),
@@ -800,7 +805,7 @@
             if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
 
             const novoItem = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: `Rasgada (${tipo}): ${obs}` };
-            rasgadasPortoes[portaoAlvo].unshift(novoItem);
+            rasgadasPortoes[portaoAlvo].push(novoItem);
 
             tocarSomSucesso();
             persistirDadosLocal();
@@ -1050,7 +1055,11 @@
         }
 
         function alterarCampoFaltaImediato(index, campo, valor) {
-            if (campo === 'sscc') valor = tratarSSCC(valor);
+            if (campo === 'sscc') {
+                valor = tratarSSCC(valor);
+                const inputEl = document.getElementById(`input-sscc-${index}`);
+                if (inputEl) inputEl.value = valor;
+            }
             const item = dadosPortoes[portaoAtual][index];
             if (item[campo] !== valor) {
                 item[campo] = valor;
@@ -1060,7 +1069,11 @@
         }
 
         function alterarCampoRasgadaImediato(index, campo, valor) {
-            if (campo === 'sscc') valor = tratarSSCC(valor);
+            if (campo === 'sscc') {
+                valor = tratarSSCC(valor);
+                const inputEl = document.getElementById(`input-rasg-sscc-${index}`);
+                if (inputEl) inputEl.value = valor;
+            }
             const item = rasgadasPortoes[portaoAtual][index];
             if (item[campo] !== valor) {
                 item[campo] = valor;
@@ -1152,9 +1165,11 @@
 
         function tratarSSCC(texto) {
             if (!texto) return '';
-            let limpo = texto.replace(/^\][A-Za-z]\d+/, '').replace(/\D/g, '');
+            let limpo = String(texto)
+                .replace(/\][A-Za-z0-9]+/g, '')
+                .replace(/\D/g, '');
             if (limpo.length === 21) limpo = limpo.substring(1);
-            return limpo || texto;
+            return limpo || String(texto).replace(/\][A-Za-z0-9]+/g, '').trim();
         }
 
         function tocarSomSucesso() {
