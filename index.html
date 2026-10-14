@@ -57,7 +57,7 @@
             font-size: 12px;
             font-family: monospace;
             padding: 4px;
-            border-radius: 0px !important;
+            border-radius: 4px;
         }
 
         .td-sscc-container {
@@ -77,7 +77,7 @@
             z-index: 99999 !important;
             background-color: #ffffff !important;
             border: 2px solid #2563eb !important;
-            border-radius: 2px;
+            border-radius: 8px;
             box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
             font-size: 14px !important;
             padding: 10px !important;
@@ -95,7 +95,7 @@
             .excel-table tr {
                 margin-bottom: 12px;
                 border: 1px solid #30363d;
-                border-radius: 4px;
+                border-radius: 8px;
                 padding: 8px;
                 background: inherit;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -119,58 +119,45 @@
             .excel-input, .excel-select { text-align: right; }
         }
 
-        .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
-        .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; font-weight: bold; border-radius: 2px !important; }
-        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
-        .status-apareceu { background-color: #06b6d4 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
-        .status-portao-1 { background-color: #3b82f6 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
-        .status-entregue { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; font-weight: bold; border-radius: 4px; }
+        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-apareceu-no-portao { background-color: #06b6d4 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-entregue-no-portao { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
 
-        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
-        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
-        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
-        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
 
-        .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
-        .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 2px !important; }
+        .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
 
-        @keyframes flutuarLoading {
-            0% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-8px) rotate(3deg); }
-            100% { transform: translateY(0px) rotate(0deg); }
-        }
-        .game-loading-icon {
-            animation: flutuarLoading 1.2s ease-in-out infinite;
-        }
+        .excel-select option { background-color: #ffffff; color: #1f2937; }
+        body.dark .excel-select option { background-color: #161b22; color: #c9d1d9; }
 
-        .scanner-frame { position: relative; overflow: hidden; border-radius: 4px; border: 1px solid #30363d; }
+        .scanner-frame { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid #30363d; }
         .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="light p-2 sm:p-3">
 
-    <!-- INDICADOR DE LOADING FLUTUANTE -->
-    <div id="game-loading-indicator" class="fixed bottom-4 right-4 z-[999999] hidden items-center gap-2 bg-slate-900/90 text-white px-3 py-2 rounded-lg shadow-2xl border border-blue-500/50 backdrop-blur-md">
-        <img src="https://pub-f46b0cda8b8d434aabcf14ccac85f3af.r2.dev/1791682069820.png" alt="Salvando..." class="w-6 h-6 object-contain game-loading-icon">
-        <span class="text-[11px] font-mono font-bold tracking-wider text-blue-400">SINCRONIZANDO...</span>
-    </div>
-
-    <!-- MODAL DE ALERTA INTEGRAÇÃO -->
-    <div id="modal-alerta-integracao" class="fixed inset-0 top-0 left-0 w-full h-full bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
-        <div class="ui-card rounded-lg max-w-sm w-full p-5 text-center shadow-2xl border border-amber-500 my-auto">
+    <!-- MODAL DE ALERTA DE CRUZAMENTO -->
+    <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
+        <div class="ui-card rounded-xl max-w-sm w-full p-5 text-center shadow-2xl border border-amber-500 my-auto">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
-            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">Aviso de Localização</h2>
+            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">Aviso de Localização (Cruzamento)</h2>
             <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono break-words">A caixa informada se encontra em...</p>
             <button onclick="fecharAlertaIntegracao()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-xs cursor-pointer shadow">Entendido / Fechar</button>
         </div>
     </div>
 
     <!-- MODAL DE SELEÇÃO DE DISPOSITIVO -->
-    <div id="modal-dispositivo" class="fixed inset-0 top-0 left-0 w-full h-full bg-slate-900/90 z-50 flex items-center justify-center p-4">
-        <div class="ui-card rounded-lg max-w-sm w-full p-6 text-center shadow-2xl border">
+    <div id="modal-dispositivo" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
+        <div class="ui-card rounded-xl max-w-sm w-full p-6 text-center shadow-2xl border">
             <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
                 <i class="fa-solid fa-display"></i>
             </div>
@@ -178,11 +165,11 @@
             <p class="text-xs opacity-75 mb-5">Escolha o seu dispositivo para ajustar a interface automaticamente.</p>
             
             <div class="grid grid-cols-2 gap-3">
-                <button onclick="definirModoDispositivo('celular')" class="flex flex-col items-center justify-center p-4 border-2 border-blue-500 bg-blue-50/50 hover:bg-blue-100 rounded text-blue-700 transition-all cursor-pointer">
+                <button onclick="definirModoDispositivo('celular')" class="flex flex-col items-center justify-center p-4 border-2 border-blue-500 bg-blue-50/50 hover:bg-blue-100 rounded-lg text-blue-700 transition-all cursor-pointer">
                     <i class="fa-solid fa-mobile-screen-button text-2xl mb-1"></i>
                     <span class="text-xs font-bold">Celular</span>
                 </button>
-                <button onclick="definirModoDispositivo('computador')" class="flex flex-col items-center justify-center p-4 border-2 border-gray-300 hover:border-gray-500 bg-gray-50 hover:bg-gray-100 rounded text-gray-700 transition-all cursor-pointer">
+                <button onclick="definirModoDispositivo('computador')" class="flex flex-col items-center justify-center p-4 border-2 border-gray-300 hover:border-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-700 transition-all cursor-pointer">
                     <i class="fa-solid fa-desktop text-2xl mb-1"></i>
                     <span class="text-xs font-bold">Computador</span>
                 </button>
@@ -190,9 +177,9 @@
         </div>
     </div>
 
-    <!-- MODAL DE SCANNER -->
-    <div id="modal-scanner" class="fixed inset-0 top-0 left-0 w-full h-full bg-black/90 hidden z-[99999] flex items-center justify-center p-4">
-        <div class="ui-card border rounded max-w-md w-full p-5 shadow-2xl">
+    <!-- MODAL DE SCANNER (RASGADAS) -->
+    <div id="modal-scanner" class="fixed inset-0 bg-black/90 hidden z-[99999] flex items-center justify-center p-4">
+        <div class="ui-card border rounded-lg max-w-md w-full p-5 shadow-2xl">
             <div class="flex justify-between items-center pb-3 border-b mb-4">
                 <h3 class="text-sm font-bold flex items-center gap-2 text-amber-500">
                     <i class="fa-solid fa-barcode"></i> Leitor de SSCC (Caixa Rasgada)
@@ -212,8 +199,8 @@
     </div>
 
     <!-- MODAL REGISTRO DE CAIXA RASGADA -->
-    <div id="modal-rasgada" class="fixed inset-0 top-0 left-0 w-full h-full bg-black/60 hidden z-40 flex items-center justify-center p-4">
-        <div class="ui-card rounded max-w-md w-full p-5 shadow-xl border">
+    <div id="modal-rasgada" class="fixed inset-0 bg-black/60 hidden z-40 flex items-center justify-center p-4">
+        <div class="ui-card rounded-lg max-w-md w-full p-5 shadow-xl border">
             <div class="flex justify-between items-center pb-2 border-b mb-3">
                 <h3 class="text-xs font-bold text-amber-500 flex items-center gap-1.5">
                     <i class="fa-solid fa-triangle-exclamation"></i> Registar Caixa Rasgada
@@ -230,7 +217,7 @@
                         <label class="opacity-75">Código SSCC</label>
                         <button type="button" onclick="abrirModalScannerParaCampo('rasgada-sscc')" class="text-amber-500 hover:underline flex items-center gap-1 cursor-pointer font-bold"><i class="fa-solid fa-camera"></i> Bipar com Câmera</button>
                     </div>
-                    <input type="text" id="rasgada-sscc" placeholder="Bipe ou digite o SSCC..." class="w-full ui-card border rounded p-2 font-mono font-bold" oninput="this.value = tratarSSCC(this.value)">
+                    <input type="text" id="rasgada-sscc" placeholder="Bipe ou digite o SSCC..." class="w-full ui-card border rounded p-2 font-mono font-bold">
                 </div>
                 <div>
                     <label class="block opacity-75 mb-1">Tipo</label>
@@ -254,7 +241,7 @@
     <!-- CABEÇALHO -->
     <header class="ui-card p-3 sm:p-4 rounded-xl shadow-sm border mb-3 flex flex-col xl:flex-row justify-between items-center gap-3">
         <div class="flex items-center gap-3 w-full xl:w-auto justify-center sm:justify-start">
-            <div class="bg-white p-1.5 rounded border border-gray-200 flex items-center justify-center min-w-[110px]">
+            <div class="bg-white p-1.5 rounded-lg border border-gray-200 flex items-center justify-center min-w-[110px]">
                 <img src="https://sindcalf.org.br/wp-content/uploads/2017/06/grendene.jpg" alt="Grendene" class="h-7 w-auto object-contain">
             </div>
             <div>
@@ -262,17 +249,17 @@
                     <h1 class="text-sm sm:text-base font-extrabold tracking-tight">Controle de Carregamento</h1>
                     <span class="hidden sm:inline-block bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-mono font-bold">Portão 1 CD</span>
                 </div>
-                <p class="text-[11px] opacity-75">Gestão Operacional &bull; Faltas e Ocorrências (Supabase)</p>
+                <p class="text-[11px] opacity-75">Gestão Operacional &bull; Faltas e Ocorrências</p>
             </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full xl:w-auto justify-center xl:justify-end">
-            <div class="flex items-center gap-1 ui-card border rounded px-2 py-1 text-xs shadow-sm">
+            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
                 <i class="fa-solid fa-calendar-days text-blue-500"></i>
                 <input type="date" id="input-data-controle" onchange="mudarDataOperacional(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
             </div>
 
-            <div class="flex items-center gap-1 ui-card border rounded px-2 py-1 text-xs shadow-sm">
+            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
                 <i class="fa-solid fa-user-tie text-blue-500"></i>
                 <select id="select-responsavel" onchange="mudarResponsavel(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
                     <option value="" disabled selected>Responsável</option>
@@ -284,7 +271,7 @@
                 </select>
             </div>
 
-            <div class="flex items-center gap-1 ui-card border rounded px-2 py-1 text-xs shadow-sm">
+            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
                 <i class="fa-solid fa-clock text-blue-500"></i>
                 <select id="select-turno" onchange="mudarTurno(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
                     <option value="Turno 1">T1</option>
@@ -294,43 +281,46 @@
                 </select>
             </div>
 
-            <button onclick="alternarTema()" class="ui-card border p-2 rounded text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
-            <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
-            <button onclick="adicionarLinhaVazia()" class="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-plus"></i> Linha</button>
-            <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
+            <span id="status-tempo-real" class="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold flex items-center gap-1 border border-emerald-500/30">
+                <i class="fa-solid fa-bolt"></i> Tempo Real Ativo
+            </span>
+            <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
+            <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
+            <button onclick="adicionarLinhaVazia()" class="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-plus"></i> Linha</button>
+            <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
         </div>
     </header>
 
     <!-- KPI / INDICADORES -->
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
-        <div class="ui-card border p-2 rounded shadow-sm">
+        <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold opacity-75 uppercase block">Total Faltas</span>
             <div class="text-base sm:text-lg font-black font-mono" id="kpi-total-faltas">0</div>
         </div>
-        <div class="ui-card border p-2 rounded shadow-sm">
+        <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold text-emerald-600 uppercase block">Concluídas</span>
             <div class="text-base sm:text-lg font-black font-mono text-emerald-600" id="kpi-entregues">0</div>
         </div>
-        <div class="ui-card border p-2 rounded shadow-sm">
+        <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold text-red-500 uppercase block">Pendentes</span>
             <div class="text-base sm:text-lg font-black font-mono text-red-500" id="kpi-pendentes">0</div>
         </div>
-        <div class="ui-card border p-2 rounded shadow-sm">
+        <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold text-amber-500 uppercase block">Rasgadas</span>
             <div class="text-base sm:text-lg font-black font-mono text-amber-500" id="kpi-rasgadas">0</div>
         </div>
-        <div class="ui-card border p-2 rounded shadow-sm col-span-2 sm:col-span-1">
+        <div class="ui-card border p-2 rounded-lg shadow-sm col-span-2 sm:col-span-1">
             <span class="text-[9px] font-bold text-cyan-500 uppercase block">No App</span>
             <div class="text-base sm:text-lg font-black font-mono text-cyan-500" id="kpi-no-app">0</div>
         </div>
     </div>
 
     <!-- ABAS PORTÕES -->
-    <div class="flex border-b mb-3 overflow-x-auto ui-card rounded-t border p-1 gap-1" id="container-abas-portoes"></div>
+    <div class="flex border-b mb-3 overflow-x-auto ui-card rounded-t-lg border p-1 gap-1" id="container-abas-portoes"></div>
 
     <!-- CONTEÚDO PRINCIPAL -->
     <div id="wrapper-conteudo-dinamico" class="fade-in">
-        <div class="ui-card rounded border shadow-sm overflow-hidden mb-4">
+        <div class="ui-card rounded-lg border shadow-sm overflow-hidden mb-4">
             <div id="banner-rasgadas-lidas" class="hidden bg-red-600 text-white p-2.5 flex items-center justify-between text-xs font-bold animate-pulse">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation"></i>
@@ -365,7 +355,7 @@
         </div>
 
         <!-- TABELA DE RASGADAS -->
-        <div id="secao-tabela-rasgadas" class="hidden ui-card rounded border shadow-sm overflow-hidden mb-6 fade-in">
+        <div id="secao-tabela-rasgadas" class="hidden ui-card rounded-lg border shadow-sm overflow-hidden mb-6 fade-in">
             <div class="p-2.5 border-b flex justify-between items-center bg-amber-500/10">
                 <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
                     <i class="fa-solid fa-triangle-exclamation"></i> Caixas Rasgadas - <span id="titulo-portao-rasgadas">Portão 7</span>
@@ -394,7 +384,7 @@
 
     <!-- VISÃO GLOBAL -->
     <div id="wrapper-todos-portoes" class="hidden fade-in space-y-4 mb-6">
-        <div class="ui-card border p-4 rounded shadow-sm">
+        <div class="ui-card border p-4 rounded-lg shadow-sm">
             <div class="flex justify-between items-center border-b pb-3 mb-3">
                 <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2 text-blue-500">
                     <i class="fa-solid fa-layer-group"></i> Panorama Unificado - Todos os Portões
@@ -427,16 +417,14 @@
         
         let supabaseClient = null;
         try {
-            if (typeof supabase !== 'undefined' && supabase.createClient) {
+            if (typeof supabase !== 'undefined') {
                 supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
                     auth: { persistSession: false, autoRefreshToken: false }
                 });
-            } else if (typeof supabase !== 'undefined' && supabase.default && supabase.default.createClient) {
-                supabaseClient = supabase.default.createClient(SUPABASE_URL, SUPABASE_KEY, {
-                    auth: { persistSession: false, autoRefreshToken: false }
-                });
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn("Supabase SDK indisponível");
+        }
 
         let portaoAtual = 7;
         let dadosPortoes = {};
@@ -451,249 +439,126 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             inicializarDataHoje();
+            carregarDadosLocais();
             gerarAbasPortoes();
             popularSelectPortoesModal();
-            inicializarMatrizFixa();
-            await carregarDadosSupabase();
-            ativarEscutaRealtimeSupabase();
         });
 
-        function inicializarMatrizFixa() {
-            for (let i = 7; i <= 26; i++) {
-                dadosPortoes[i] = [];
-                rasgadasPortoes[i] = [];
-                for (let r = 0; r < 5; r++) {
-                    dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
-                }
-            }
-        }
-
-        function mostrarLoadingGame(mostrar) {
-            const el = document.getElementById('game-loading-indicator');
-            if (el) {
-                if (mostrar) el.classList.remove('hidden');
-                else el.classList.add('hidden');
-            }
-        }
-
-        function ativarEscutaRealtimeSupabase() {
-            if (!supabaseClient) return;
-            try {
-                supabaseClient
-                    .channel('tabela-mudancas-global-v25')
-                    .on(
-                        'postgres_changes',
-                        { event: '*', schema: 'public', table: 'controle_faltas_portao' },
-                        async (payload) => {
-                            const alterado = payload.new || payload.old;
-                            if (alterado && alterado.data_operacao === dataAtual) {
-                                const activeTag = document.activeElement ? document.activeElement.tagName : '';
-                                const activeClass = document.activeElement ? document.activeElement.className : '';
-                                if (activeTag !== 'INPUT' || !activeClass.includes('excel-input')) {
-                                    await carregarDadosSupabaseQuiet();
-                                }
-                            }
-                        }
-                    )
-                    .subscribe();
-            } catch (e) {}
-        }
-
-        async function verificarCruzamentoAposSalvar(sscc, index, tipoTabela) {
-            if (!supabaseClient || !sscc) return;
-            const codigoLimpo = tratarSSCC(String(sscc));
-            if (!codigoLimpo || codigoLimpo.length < 5) return;
-
-            try {
-                const { data, error } = await supabaseClient
-                    .from('registros_sscc')
-                    .select('*');
-
-                if (!error && data && data.length > 0) {
-                    const encontrado = data.find(r => tratarSSCC(String(r.sscc || '')) === codigoLimpo);
-
-                    if (encontrado) {
-                        const categoria = encontrado.categoria || 'Reposição';
-                        const rastro = encontrado.rastro ? ` (${encontrado.rastro})` : '';
-                        const mensagem = `A caixa informada se encontra em "${categoria}"${rastro}.`;
-                        
-                        document.getElementById('texto-alerta-integracao').innerText = mensagem;
-                        document.getElementById('modal-alerta-integracao').classList.remove('hidden');
-
-                        const item = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoAtual][index] : dadosPortoes[portaoAtual][index];
-                        if (item) {
-                            item.observacao = `[Mapeado: ${categoria}]`;
-                            const inputObs = document.getElementById(`input-obs-${portaoAtual}-${index}`);
-                            if (inputObs) inputObs.value = item.observacao;
-                            
-                            await salvarOuAtualizarNoSupabase(portaoAtual, index, tipoTabela, false);
-                        }
-                    }
-                }
-            } catch (err) {}
-        }
-
-        function fecharAlertaIntegracao() {
-            document.getElementById('modal-alerta-integracao').classList.add('hidden');
-        }
-
-        async function carregarDadosSupabaseQuiet() {
-            for (let i = 7; i <= 26; i++) {
-                if (!dadosPortoes[i] || dadosPortoes[i].length === 0) {
-                    dadosPortoes[i] = [];
-                    for (let r = 0; r < 5; r++) {
-                        dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
-                    }
-                } else {
-                    dadosPortoes[i].forEach(item => {
-                        item.id = null;
-                        item.sscc = '';
-                        item.status = 'Pendente';
-                        item.origem = 'CD';
-                        item.ordem = '';
-                        item.noApp = 'Não';
-                        item.observacao = '';
-                        item.verificadoCruzamento = false;
-                    });
-                }
-                rasgadasPortoes[i] = [];
-            }
-
-            if (supabaseClient) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('controle_faltas_portao')
-                        .select('*')
-                        .eq('data_operacao', dataAtual);
-
-                    if (!error && data) {
-                        let contadorFaltasPortao = {};
-                        data.forEach(row => {
-                            const p = row.portao;
-                            if (p >= 7 && p <= 26) {
-                                if (row.observacao && row.observacao.startsWith('[RASGADA]')) {
-                                    rasgadasPortoes[p].push({
-                                        id: row.id,
-                                        sscc: row.sscc || '',
-                                        tipo: 'Lida',
-                                        status: row.status || 'Pendente',
-                                        origem: row.origem || 'CD',
-                                        ordem: row.ordem || '',
-                                        observacao: row.observacao.replace('[RASGADA] ', ''),
-                                        verificadoCruzamento: true
-                                    });
-                                } else {
-                                    if (contadorFaltasPortao[p] === undefined) contadorFaltasPortao[p] = 0;
-                                    const idx = contadorFaltasPortao[p];
-                                    
-                                    while (dadosPortoes[p].length <= idx) {
-                                        dadosPortoes[p].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
-                                    }
-
-                                    dadosPortoes[p][idx] = {
-                                        id: row.id,
-                                        sscc: row.sscc || '',
-                                        status: row.status || 'Pendente',
-                                        origem: row.origem || 'CD',
-                                        ordem: row.ordem || '',
-                                        noApp: row.no_app || 'Não',
-                                        observacao: row.observacao || '',
-                                        verificadoCruzamento: true
-                                    };
-                                    contadorFaltasPortao[p]++;
-                                }
-                            }
-                        });
-                    }
-                } catch (err) {}
-            }
-
-            for (let i = 7; i <= 26; i++) {
-                while (dadosPortoes[i].length < 5) {
-                    dadosPortoes[i].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
-                }
-            }
-
-            renderizarTabelas();
-            atualizarIndicadoresKPI();
-            if (portaoAtual !== 'todos') verificarBannerRasgadas();
-        }
-
-        async function carregarDadosSupabase() {
-            mostrarLoadingGame(true);
-            await carregarDadosSupabaseQuiet();
-            setTimeout(() => { mostrarLoadingGame(false); }, 400);
-        }
-
         function inicializarDataHoje() {
+            const inputData = document.getElementById('input-data-controle');
             const hoje = new Date().toISOString().split('T')[0];
-            const dataSalva = localStorage.getItem('data_controle_carregamento');
-            dataAtual = dataSalva || hoje;
-            if (!dataSalva) localStorage.setItem('data_controle_carregamento', hoje);
-            document.getElementById('input-data-controle').value = dataAtual;
+            dataAtual = hoje;
+            if (inputData) inputData.value = dataAtual;
         }
 
-        async function mudarDataOperacional(novaData) {
-            if (novaData !== dataAtual) {
+        function mudarDataOperacional(novaData) {
+            if (novaData) {
                 dataAtual = novaData;
-                localStorage.setItem('data_controle_carregamento', novaData);
+                carregarDadosLocais();
                 gerarAbasPortoes();
-                await carregarDadosSupabase();
+                selecionarPortao(7);
                 tocarSomTrocaData();
             }
         }
 
-        async function salvarOuAtualizarNoSupabase(portaoNum, index, tipoTabela = 'falta', dispararVerificacao = true) {
+        function carregarDadosLocais() {
+            if (!dataAtual) inicializarDataHoje();
+            dadosPortoes = {};
+            rasgadasPortoes = {};
+            for (let i = 7; i <= 26; i++) {
+                dadosPortoes[i] = [];
+                rasgadasPortoes[i] = [];
+            }
+
+            const chaveFaltas = `grendene_faltas_${dataAtual}`;
+            const chaveRasgadas = `grendene_rasgadas_${dataAtual}`;
+
+            const salvoFaltas = localStorage.getItem(chaveFaltas);
+            const salvoRasgadas = localStorage.getItem(chaveRasgadas);
+
+            if (salvoFaltas) {
+                try { dadosPortoes = JSON.parse(salvoFaltas); } catch(e){}
+            }
+            if (salvoRasgadas) {
+                try { rasgadasPortoes = JSON.parse(salvoRasgadas); } catch(e){}
+            }
+
+            for (let i = 7; i <= 26; i++) {
+                if (!dadosPortoes[i]) dadosPortoes[i] = [];
+                if (!rasgadasPortoes[i]) rasgadasPortoes[i] = [];
+            }
+        }
+
+        function persistirDados() {
+            if (!dataAtual) inicializarDataHoje();
+            const chaveFaltas = `grendene_faltas_${dataAtual}`;
+            const chaveRasgadas = `grendene_rasgadas_${dataAtual}`;
+
+            localStorage.setItem(chaveFaltas, JSON.stringify(dadosPortoes));
+            localStorage.setItem(chaveRasgadas, JSON.stringify(rasgadasPortoes));
+
+            atualizarIndicadoresKPI();
+            if (portaoAtual !== 'todos') verificarBannerRasgadas();
+        }
+
+        // SALVAMENTO EM TEMPO REAL INTELIGENTE POR CAMPO (NÃO MEXE NO DOM DA TABELA INTEIRA)
+        async function salvarLinhaTempoReal(index) {
+            persistirDados();
             if (!supabaseClient) return;
-            const listaTarget = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum] : dadosPortoes[portaoNum];
-            if (!listaTarget || !listaTarget[index]) return;
 
-            const item = listaTarget[index];
-            
-            if (!item.sscc || item.sscc.trim() === '') {
-                if (item.id) {
-                    mostrarLoadingGame(true);
-                    await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
-                    item.id = null;
-                    mostrarLoadingGame(false);
-                    atualizarIndicadoresKPI();
-                }
-                return;
-            }
+            const item = dadosPortoes[portaoAtual][index];
+            if (!item || !item.sscc || item.sscc.trim() === '') return;
 
-            const obsFinal = tipoTabela === 'rasgada' ? `[RASGADA] ${item.observacao || 'Caixa rasgada no carregamento'}` : (item.observacao || '');
-
-            const payload = {
-                data_operacao: dataAtual,
-                portao: Number(portaoNum),
-                sscc: String(item.sscc).trim(),
-                status: String(item.status || 'Pendente'),
-                origem: String(item.origem || 'CD'),
-                ordem: String(item.ordem || ''),
-                no_app: tipoTabela === 'rasgada' ? 'Sim' : String(item.noApp || 'Não'),
-                observacao: String(obsFinal),
-                turno: String(turnoAtual || 'Turno 1'),
-                responsavel: String(responsavelAtual || 'Não informado')
-            };
-
-            mostrarLoadingGame(true);
             try {
-                if (item.id) {
-                    await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id);
-                } else {
-                    const res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
-                    if (res.data && res.data[0]) {
-                        item.id = res.data[0].id;
+                // Tenta cruzar com a tabela de registros_sscc automaticamente
+                const codigoLimpo = tratarSSCC(item.sscc);
+                const resCruz = await supabaseClient.from('registros_sscc').select('*').eq('sscc', codigoLimpo).maybeSingle();
+                if (!resCruz.error && resCruz.data) {
+                    const categoria = resCruz.data.categoria || 'Reposição';
+                    const rastro = resCruz.data.rastro ? ` (${resCruz.data.rastro})` : '';
+                    item.observacao = `[Mapeado: ${categoria}${rastro}]`;
+                    
+                    // Atualiza o input de observação na tela sem perder o foco dos outros campos
+                    const inputObs = document.getElementById(`input-obs-${index}`);
+                    if (inputObs && document.activeElement !== inputObs) {
+                        inputObs.value = item.observacao;
                     }
-                }
-                atualizarIndicadoresKPI();
-            } catch (err) {}
-            setTimeout(() => { mostrarLoadingGame(false); }, 400);
 
-            if (dispararVerificacao && tipoTabela === 'falta' && !item.verificadoCruzamento) {
-                item.verificadoCruzamento = true;
-                await verificarCruzamentoAposSalvar(item.sscc, index, 'falta');
+                    document.getElementById('texto-alerta-integracao').innerText = `Caixa mapeada: ${categoria}${rastro}`;
+                    document.getElementById('modal-alerta-integracao').classList.remove('hidden');
+                }
+
+                const payload = {
+                    data_operacao: dataAtual,
+                    portao: Number(portaoAtual),
+                    sscc: String(item.sscc).trim(),
+                    status: String(item.status || 'Pendente'),
+                    origem: String(item.origem || 'CD'),
+                    ordem: String(item.ordem || ''),
+                    no_app: String(item.noApp || 'Não'),
+                    observacao: String(item.observacao || ''),
+                    turno: String(turnoAtual || 'Turno 1'),
+                    responsavel: String(responsavelAtual || 'Não informado')
+                };
+
+                let res;
+                if (item.id) {
+                    res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
+                } else {
+                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
+                }
+
+                if (res.data && res.data[0] && res.data[0].id) {
+                    item.id = res.data[0].id;
+                    persistirDados();
+                }
+            } catch (err) {
+                console.warn("Erro ao sincronizar em tempo real", err);
             }
+        }
+
+        function fecharAlertaIntegracao() {
+            document.getElementById('modal-alerta-integracao').classList.add('hidden');
         }
 
         function definirModoDispositivo(modo) {
@@ -723,27 +588,8 @@
             document.getElementById('icone-tema').className = "fa-solid fa-sun";
         }
 
-        function mudarTurno(turno) {
-            turnoAtual = turno;
-            localStorage.setItem('turno_grendene', turno);
-        }
-
-        const turnoSalvo = localStorage.getItem('turno_grendene');
-        if (turnoSalvo) {
-            turnoAtual = turnoSalvo;
-            document.getElementById('select-turno').value = turnoSalvo;
-        }
-
-        function mudarResponsavel(resp) {
-            responsavelAtual = resp;
-            localStorage.setItem('responsavel_grendene', resp);
-        }
-
-        const respSalvo = localStorage.getItem('responsavel_grendene');
-        if (respSalvo) {
-            responsavelAtual = respSalvo;
-            document.getElementById('select-responsavel').value = respSalvo;
-        }
+        function mudarTurno(turno) { turnoAtual = turno; }
+        function mudarResponsavel(resp) { responsavelAtual = resp; }
 
         function popularSelectPortoesModal() {
             const select = document.getElementById('rasgada-portao');
@@ -782,7 +628,7 @@
             for (let i = 7; i <= 26; i++) {
                 const badge = document.getElementById(`badge-rasgada-${i}`);
                 if (badge) {
-                    const rasgadas = (rasgadasPortoes[i] || []).filter(x => x.sscc && x.sscc.trim() !== '');
+                    const rasgadas = rasgadasPortoes[i] || [];
                     if (rasgadas.length > 0) badge.classList.remove('hidden');
                     else badge.classList.add('hidden');
                 }
@@ -825,7 +671,7 @@
         function verificarBannerRasgadas() {
             const banner = document.getElementById('banner-rasgadas-lidas');
             const textoAlerta = document.getElementById('texto-alerta-rasgada-lida');
-            const rasgadas = (rasgadasPortoes[portaoAtual] || []).filter(x => x.sscc && x.sscc.trim() !== '');
+            const rasgadas = rasgadasPortoes[portaoAtual] || [];
             const rasgadasLidas = rasgadas.filter(r => r.tipo === 'Lida');
 
             if (rasgadasLidas.length > 0) {
@@ -854,17 +700,27 @@
             if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
             if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
 
-            let indexVazio = rasgadasPortoes[portaoAlvo].findIndex(x => !x.sscc || x.sscc.trim() === '');
-            if (indexVazio === -1) indexVazio = rasgadasPortoes[portaoAlvo].length;
-
-            rasgadasPortoes[portaoAlvo][indexVazio] = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: obs };
-
-            await salvarOuAtualizarNoSupabase(portaoAlvo, indexVazio, 'rasgada', false);
+            const novoItem = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: obs };
+            rasgadasPortoes[portaoAlvo].unshift(novoItem);
 
             tocarSomSucesso();
+            persistirDados();
             fecharModalRasgada();
-            await carregarDadosSupabase();
             selecionarPortao(portaoAlvo);
+
+            if (supabaseClient) {
+                await supabaseClient.from('controle_faltas_portao').insert([{
+                    data_operacao: dataAtual,
+                    portao: Number(portaoAlvo),
+                    sscc: String(sscc),
+                    status: 'Pendente',
+                    origem: 'CD',
+                    ordem: 'URGENTE',
+                    observacao: `Rasgada (${tipo}): ${obs}`,
+                    turno: String(turnoAtual),
+                    responsavel: String(responsavelAtual)
+                }]);
+            }
         }
 
         function atualizarIndicadoresKPI() {
@@ -873,6 +729,7 @@
             for (let i = 7; i <= 26; i++) {
                 const lista = dadosPortoes[i] || [];
                 const rasgadas = rasgadasPortoes[i] || [];
+                totalRasgadas += rasgadas.length;
 
                 lista.forEach(item => {
                     if (item.sscc && item.sscc.trim() !== '') {
@@ -883,7 +740,6 @@
                 });
                 rasgadas.forEach(item => {
                     if (item.sscc && item.sscc.trim() !== '') {
-                        totalRasgadas++;
                         totalFaltas++;
                         if (item.status === 'Entregue no Portão') entregues++; else pendentes++;
                     }
@@ -902,62 +758,70 @@
             renderizarTabelaRasgadas();
         }
 
+        function getClassStatus(status) {
+            if (!status) return 'status-pendente';
+            const s = status.toLowerCase().trim();
+            if (s.includes('andamento')) return 'status-em-andamento';
+            if (s.includes('requisitada')) return 'status-requisitada';
+            if (s.includes('apareceu')) return 'status-apareceu-no-portao';
+            if (s.includes('entregue')) return 'status-entregue-no-portao';
+            return 'status-pendente';
+        }
+
         function renderizarTabelaFaltas() {
             const tbody = document.getElementById('corpo-tabela-excel');
             tbody.innerHTML = '';
             const lista = dadosPortoes[portaoAtual] || [];
-            const preenchidos = lista.filter(x => x.sscc && x.sscc.trim() !== '').length;
-            document.getElementById('contador-linhas-portao').innerText = `${preenchidos} registo(s)`;
+            document.getElementById('contador-linhas-portao').innerText = `${lista.length} registo(s)`;
 
-            lista.forEach((item, index) => {
+            if (lista.length === 0) {
+                adicionarLinhaVaziaObjeto();
+            }
+
+            dadosPortoes[portaoAtual].forEach((item, index) => {
                 const tr = document.createElement('tr');
-                let st = (item.status || 'Pendente').toLowerCase();
-                let classeStatus = st.includes('andamento') ? 'status-em-andamento' :
-                                   st.includes('requisitada') ? 'status-requisitada' :
-                                   st.includes('portão 1') ? 'status-portao-1' :
-                                   st.includes('apareceu') ? 'status-apareceu' :
-                                   st.includes('entregue') ? 'status-entregue' : 'status-pendente';
-
-                let classeApp = (item.noApp || 'Não') === 'Sim' ? 'app-sim' : 'app-nao';
+                let classeStatus = getClassStatus(item.status);
+                let classeApp = item.noApp === 'Sim' ? 'app-sim' : 'app-nao';
 
                 tr.innerHTML = `
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
-                        <input type="text" value="${item.sscc || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                        <input type="text" id="input-sscc-${index}" value="${item.sscc || ''}" onblur="alterarCampoFaltaImediato(${index}, 'sscc', this.value)" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
                     </td>
                     <td class="${classeStatus}" id="td-status-${index}" data-label="Status">
-                        <select onchange="atualizarCampoFalta(${index}, 'status', this.value)" class="excel-select ${classeStatus}">
+                        <select id="select-status-${index}" onchange="atualizarStatusImediatoVisual(${index}, this.value)" class="excel-select ${classeStatus}">
                             <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
                             <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
                             <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
                             <option value="Apareceu no Portão" ${item.status === 'Apareceu no Portão' ? 'selected' : ''}>Apareceu no Portão</option>
-                            <option value="Portão 1" ${item.status === 'Portão 1' ? 'selected' : ''}>Portão 1</option>
                             <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue no Portão</option>
                         </select>
                     </td>
                     <td data-label="Origem">
-                        <select onchange="atualizarCampoFalta(${index}, 'origem', this.value)" class="excel-select">
+                        <select onchange="alterarCampoFaltaImediato(${index}, 'origem', this.value)" class="excel-select">
                             <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
                             <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
                             <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
+                            <option value="Fábrica 3" ${item.origem === 'Fábrica 3' ? 'selected' : ''}>Fábrica 3</option>
+                            <option value="Fábrica 5" ${item.origem === 'Fábrica 5' ? 'selected' : ''}>Fábrica 5</option>
                             <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
                             <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
                         </select>
                     </td>
                     <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'ordem', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Ordem..." class="excel-input font-bold">
+                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoFaltaImediato(${index}, 'ordem', this.value)" placeholder="Ordem..." class="excel-input font-bold">
                     </td>
-                    <td class="${classeApp}" id="td-app-${index}" data-label="No App?">
-                        <select onchange="atualizarCampoFalta(${index}, 'noApp', this.value)" class="excel-select ${classeApp}">
+                    <td id="td-app-${index}" class="${classeApp}" data-label="No App?">
+                        <select id="select-app-${index}" onchange="atualizarAppImediatoVisual(${index}, this.value)" class="excel-select ${classeApp}">
                             <option value="Não" ${item.noApp === 'Não' ? 'selected' : ''}>Não</option>
                             <option value="Sim" ${item.noApp === 'Sim' ? 'selected' : ''}>Sim</option>
                         </select>
                     </td>
                     <td data-label="Observação">
-                        <input type="text" id="input-obs-${portaoAtual}-${index}" value="${item.observacao || ''}" oninput="atualizarCampoFaltaLocal(${index}, 'observacao', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'falta')" placeholder="Obs..." class="excel-input">
+                        <input type="text" id="input-obs-${index}" value="${item.observacao || ''}" onblur="alterarCampoFaltaImediato(${index}, 'observacao', this.value)" placeholder="Obs..." class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
-                        <button onclick="removerLinhaSupabase(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Limpar"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        <button onclick="removerLinhaFalta(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -968,39 +832,37 @@
             const secaoRasgadas = document.getElementById('secao-tabela-rasgadas');
             const tbody = document.getElementById('corpo-tabela-rasgadas');
             tbody.innerHTML = '';
-            const lista = (rasgadasPortoes[portaoAtual] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+            const lista = rasgadasPortoes[portaoAtual] || [];
             
             if (lista.length === 0) { secaoRasgadas.classList.add('hidden'); return; }
 
             secaoRasgadas.classList.remove('hidden');
             document.getElementById('contador-linhas-rasgadas').innerText = `${lista.length} registo(s)`;
 
-            rasgadasPortoes[portaoAtual].forEach((item, index) => {
-                if (!item.sscc || item.sscc.trim() === '') return;
+            lista.forEach((item, index) => {
                 const tr = document.createElement('tr');
                 const inputId = `input-rasg-sscc-${index}`;
-
-                let st = (item.status || 'Pendente').toLowerCase();
-                let classeStatusRasgada = st.includes('requisitada') ? 'status-rasgada-requisitada' :
-                                          st.includes('restaurada') ? 'status-rasgada-restaurada' :
-                                          st.includes('entregue') ? 'status-rasgada-entregue' : 'status-rasgada-pendente';
+                let classeStatusRasgada = 'status-rasgada-pendente';
+                if (item.status === 'Requisitada') classeStatusRasgada = 'status-rasgada-requisitada';
+                if (item.status === 'Restaurada') classeStatusRasgada = 'status-rasgada-restaurada';
+                if (item.status === 'Entregue no Portão') classeStatusRasgada = 'status-rasgada-entregue';
 
                 tr.innerHTML = `
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
                         <div class="flex items-center gap-1 w-full justify-end">
-                            <input type="text" id="${inputId}" value="${item.sscc || ''}" oninput="atualizarCampoRasgadaLocal(${index}, 'sscc', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" class="excel-input excel-input-sscc font-bold">
+                            <input type="text" id="${inputId}" value="${item.sscc || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'sscc', this.value)" class="excel-input excel-input-sscc font-bold">
                             <button type="button" onclick="abrirModalScannerParaCampo('${inputId}')" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
                         </div>
                     </td>
                     <td data-label="Tipo">
-                        <select onchange="atualizarCampoRasgada(${index}, 'tipo', this.value)" class="excel-select font-bold ${item.tipo === 'Lida' ? 'text-red-600' : 'text-amber-600'}">
+                        <select onchange="alterarCampoRasgadaImediato(${index}, 'tipo', this.value)" class="excel-select font-bold ${item.tipo === 'Lida' ? 'text-red-600' : 'text-amber-600'}">
                             <option value="Lida" ${item.tipo === 'Lida' ? 'selected' : ''}>Rasgada (Lida)</option>
                             <option value="Nao Lida" ${item.tipo === 'Nao Lida' ? 'selected' : ''}>Rasgada (Não Lida)</option>
                         </select>
                     </td>
                     <td class="${classeStatusRasgada}" data-label="Status">
-                        <select onchange="atualizarCampoRasgada(${index}, 'status', this.value)" class="excel-select ${classeStatusRasgada}">
+                        <select onchange="alterarCampoRasgadaImediato(${index}, 'status', this.value)" class="excel-select ${classeStatusRasgada}">
                             <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
                             <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
                             <option value="Restaurada" ${item.status === 'Restaurada' ? 'selected' : ''}>Restaurada</option>
@@ -1008,19 +870,21 @@
                         </select>
                     </td>
                     <td data-label="Origem">
-                        <select onchange="atualizarCampoRasgada(${index}, 'origem', this.value)" class="excel-select">
+                        <select onchange="alterarCampoRasgadaImediato(${index}, 'origem', this.value)" class="excel-select">
                             <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
                             <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
                             <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
+                            <option value="Fábrica 3" ${item.origem === 'Fábrica 3' ? 'selected' : ''}>Fábrica 3</option>
+                            <option value="Fábrica 5" ${item.origem === 'Fábrica 5' ? 'selected' : ''}>Fábrica 5</option>
                             <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
                             <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
                         </select>
                     </td>
                     <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" oninput="atualizarCampoRasgadaLocal(${index}, 'ordem', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" class="excel-input font-bold">
+                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'ordem', this.value)" class="excel-input font-bold">
                     </td>
                     <td data-label="Observação">
-                        <input type="text" value="${item.observacao || ''}" oninput="atualizarCampoRasgadaLocal(${index}, 'observacao', this.value)" onchange="salvarOuAtualizarNoSupabase(${portaoAtual}, ${index}, 'rasgada')" class="excel-input">
+                        <input type="text" value="${item.observacao || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'observacao', this.value)" class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
                         <button onclick="removerLinhaRasgada(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
@@ -1055,91 +919,94 @@
             document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
         }
 
-        function atualizarCampoFaltaLocal(index, campo, valor) {
-            if (!dadosPortoes[portaoAtual] || !dadosPortoes[portaoAtual][index]) return;
-            if (campo === 'sscc') {
-                valor = tratarSSCC(valor);
-                dadosPortoes[portaoAtual][index].verificadoCruzamento = false;
-            }
-            dadosPortoes[portaoAtual][index][campo] = valor;
-            atualizarIndicadoresKPI();
-        }
+        function atualizarStatusImediatoVisual(index, novoValor) {
+            const item = dadosPortoes[portaoAtual][index];
+            item.status = novoValor;
+            persistirDados();
+            salvarLinhaTempoReal(index);
 
-        function atualizarCampoRasgadaLocal(index, campo, valor) {
-            if (!rasgadasPortoes[portaoAtual] || !rasgadasPortoes[portaoAtual][index]) return;
-            if (campo === 'sscc') valor = tratarSSCC(valor);
-            rasgadasPortoes[portaoAtual][index][campo] = valor;
-            atualizarIndicadoresKPI();
-        }
+            const selectEl = document.getElementById(`select-status-${index}`);
+            const tdEl = selectEl.parentElement;
 
-        async function atualizarCampoFalta(index, campo, valor) {
-            if (campo === 'sscc') valor = tratarSSCC(valor);
-            dadosPortoes[portaoAtual][index][campo] = valor;
+            tdEl.className = '';
+            selectEl.className = 'excel-select';
 
-            if (campo === 'status' && valor === 'Entregue no Portão') {
+            const novaClasse = getClassStatus(novoValor);
+            tdEl.classList.add(novaClasse);
+            selectEl.classList.add(novaClasse);
+
+            if (novoValor === 'Entregue no Portão') {
                 tocarSomConquistaAnimada();
             }
-
-            const tdStatus = document.getElementById(`td-status-${index}`);
-            if (tdStatus && campo === 'status') {
-                let st = valor.toLowerCase();
-                let classeStatus = st.includes('andamento') ? 'status-em-andamento' :
-                                   st.includes('requisitada') ? 'status-requisitada' :
-                                   st.includes('portão 1') ? 'status-portao-1' :
-                                   st.includes('apareceu') ? 'status-apareceu' :
-                                   st.includes('entregue') ? 'status-entregue' : 'status-pendente';
-                tdStatus.className = classeStatus;
-                const selectEl = tdStatus.querySelector('select');
-                if (selectEl) selectEl.className = `excel-select ${classeStatus}`;
-            }
-
-            const tdApp = document.getElementById(`td-app-${index}`);
-            if (tdApp && campo === 'noApp') {
-                let classeApp = valor === 'Sim' ? 'app-sim' : 'app-nao';
-                tdApp.className = classeApp;
-                const selectEl = tdApp.querySelector('select');
-                if (selectEl) selectEl.className = `excel-select ${classeApp}`;
-            }
-
-            await salvarOuAtualizarNoSupabase(portaoAtual, index, 'falta');
         }
 
-        async function atualizarCampoRasgada(index, campo, valor) {
-            if (campo === 'sscc') valor = tratarSSCC(valor);
-            rasgadasPortoes[portaoAtual][index][campo] = valor;
-            if (campo === 'status' && valor === 'Entregue no Portão') tocarSomConquistaAnimada();
-            await salvarOuAtualizarNoSupabase(portaoAtual, index, 'rasgada');
-            renderizarTabelaRasgadas();
-            verificarBannerRasgadas();
-        }
-
-        function adicionarLinhaVazia() {
-            dadosPortoes[portaoAtual].push({ id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false });
-            renderizarTabelaFaltas();
-        }
-
-        async function removerLinhaSupabase(index) {
+        function atualizarAppImediatoVisual(index, novoValor) {
             const item = dadosPortoes[portaoAtual][index];
-            if (item.id && supabaseClient) {
-                mostrarLoadingGame(true);
-                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
-                mostrarLoadingGame(false);
-            }
-            dadosPortoes[portaoAtual][index] = { id: null, sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '', verificadoCruzamento: false };
-            renderizarTabelaFaltas();
-            atualizarIndicadoresKPI();
+            item.noApp = novoValor;
+            persistirDados();
+            salvarLinhaTempoReal(index);
+
+            const selectEl = document.getElementById(`select-app-${index}`);
+            const tdEl = document.getElementById(`td-app-${index}`);
+
+            tdEl.className = '';
+            selectEl.className = 'excel-select';
+
+            const novaClasse = novoValor === 'Sim' ? 'app-sim' : 'app-nao';
+            tdEl.classList.add(novaClasse);
+            selectEl.classList.add(novaClasse);
         }
 
-        async function removerLinhaRasgada(index) {
-            const item = rasgadasPortoes[portaoAtual][index];
-            if (item.id && supabaseClient) {
-                mostrarLoadingGame(true);
-                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
-                mostrarLoadingGame(false);
+        function alterarCampoFaltaImediato(index, campo, valor) {
+            if (campo === 'sscc') valor = tratarSSCC(valor);
+            const item = dadosPortoes[portaoAtual][index];
+            if (item[campo] !== valor) {
+                item[campo] = valor;
+                persistirDados();
+                salvarLinhaTempoReal(index);
             }
-            rasgadasPortoes[portaoAtual][index] = { id: null, sscc: '', tipo: 'Lida', status: 'Pendente', origem: 'CD', ordem: '', observacao: '', verificadoCruzamento: false };
+        }
+
+        function alterarCampoRasgadaImediato(index, campo, valor) {
+            if (campo === 'sscc') valor = tratarSSCC(valor);
+            const item = rasgadasPortoes[portaoAtual][index];
+            if (item[campo] !== valor) {
+                item[campo] = valor;
+                persistirDados();
+                if (campo === 'status' && valor === 'Entregue no Portão') {
+                    tocarSomConquistaAnimada();
+                    renderizarTabelaRasgadas();
+                }
+                verificarBannerRasgadas();
+            }
+        }
+
+        function adicionarLinhaVaziaObjeto() {
+            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '' };
+            dadosPortoes[portaoAtual].push(novoObj);
+        }
+
+        function adicionarLinhaVazia() { 
+            adicionarLinhaVaziaObjeto(); 
+            persistirDados(); 
+            renderizarTabelaFaltas(); 
+        }
+        
+        async function removerLinhaFalta(index) {
+            const item = dadosPortoes[portaoAtual][index];
+            if (item && item.id && supabaseClient) {
+                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+            }
+            dadosPortoes[portaoAtual].splice(index, 1);
+            if (dadosPortoes[portaoAtual].length === 0) adicionarLinhaVaziaObjeto();
+            persistirDados();
+            renderizarTabelaFaltas();
+        }
+
+        function removerLinhaRasgada(index) {
+            rasgadasPortoes[portaoAtual].splice(index, 1);
+            persistirDados();
             renderizarTabelas();
-            atualizarIndicadoresKPI();
         }
 
         function abrirModalScannerParaCampo(idCampo) {
@@ -1171,8 +1038,7 @@
                                 const inputEl = document.getElementById(campoAlvoScannerId);
                                 if (inputEl) { 
                                     inputEl.value = codigoTratado; 
-                                    inputEl.dispatchEvent(new Event('input')); 
-                                    inputEl.dispatchEvent(new Event('change')); 
+                                    inputEl.dispatchEvent(new Event('blur')); 
                                 }
                             }
                             fecharModalScanner();
@@ -1185,11 +1051,8 @@
 
         function tratarSSCC(texto) {
             if (!texto) return '';
-            let limpo = texto.replace(/^\][A-Za-z]\d+/, '');
-            limpo = limpo.replace(/\D/g, '');
-            if (limpo.length === 21) {
-                limpo = limpo.substring(1);
-            }
+            let limpo = texto.replace(/^\][A-Za-z]\d+/, '').replace(/\D/g, '');
+            if (limpo.length === 21) limpo = limpo.substring(1);
             return limpo || texto;
         }
 
@@ -1213,17 +1076,16 @@
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const now = audioCtx.currentTime;
-                const notas = [392.00, 523.25, 659.25, 783.99, 659.25, 783.99, 1046.50];
-                notas.forEach((freq, i) => {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
-                    const inicio = now + (i * 0.1);
-                    osc.type = i === notas.length - 1 ? 'triangle' : 'sine';
+                    const inicio = now + (i * 0.08);
+                    osc.type = 'triangle';
                     osc.frequency.setValueAtTime(freq, inicio);
-                    gain.gain.setValueAtTime(0.2, inicio);
-                    gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.35);
+                    gain.gain.setValueAtTime(0.15, inicio);
+                    gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.25);
                     osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.start(inicio); osc.stop(inicio + 0.35);
+                    osc.start(inicio); osc.stop(inicio + 0.25);
                 });
             } catch (e) {}
         }
@@ -1264,7 +1126,7 @@
                     XLSX.utils.book_append_sheet(workbook, worksheet, `Portão ${i}`);
                 }
             }
-            if (!temDados) { alert("Não há dados para exportar."); return; }
+            if (!temDados) { alert("Nenhum dado encontrado para exportar."); return; }
             XLSX.writeFile(workbook, `Controle_Carregamento_${dataAtual}.xlsx`);
         }
     </script>
