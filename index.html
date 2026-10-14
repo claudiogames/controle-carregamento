@@ -155,13 +155,13 @@
 </head>
 <body class="light p-2 sm:p-3">
 
-    <!-- MODAL DE ALERTA DE CRUZAMENTO -->
+    <!-- MODAL DE ALERTA DE LOCALIZAÇÃO -->
     <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-sm w-full p-5 text-center shadow-2xl border border-amber-500 my-auto">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
-            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">Localização / Cruzamento de Base</h2>
+            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">LOCALIZAÇÃO</h2>
             <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono break-words">A caixa informada foi localizada...</p>
             <button onclick="fecharAlertaIntegracao()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-xs cursor-pointer shadow">Entendido / Fechar</button>
         </div>
@@ -504,7 +504,10 @@
                                 };
 
                                 if (reg.observacao && reg.observacao.includes('Rasgada')) {
-                                    const tipoMatch = reg.observacao.includes('Lida') ? 'Lida' : 'Nao Lida';
+                                    let tipoMatch = 'Nao Lida';
+                                    if (reg.observacao.includes('Rasgada (Lid') || reg.observacao.includes('Rasgada (Lida)')) {
+                                        tipoMatch = 'Lida';
+                                    }
                                     rasgadasPortoes[p].push({ ...itemObj, tipo: tipoMatch });
                                 } else {
                                     dadosPortoes[p].push(itemObj);
@@ -613,6 +616,43 @@
                 }
             } catch (err) {
                 console.warn("Erro na gravação tempo real", err);
+            }
+        }
+
+        async function salvarLinhaRasgadaTempoReal(index) {
+            persistirDadosLocal();
+            if (!supabaseClient) return;
+
+            const item = rasgadasPortoes[portaoAtual][index];
+            if (!item || !item.sscc || item.sscc.trim() === '') return;
+
+            try {
+                const payload = {
+                    data_operacao: dataAtual,
+                    portao: Number(portaoAtual),
+                    sscc: String(item.sscc).trim(),
+                    status: String(item.status || 'Pendente'),
+                    origem: String(item.origem || 'CD'),
+                    ordem: String(item.ordem || 'URGENTE'),
+                    no_app: 'Sim',
+                    observacao: String(item.observacao || `Rasgada (${item.tipo})`),
+                    turno: String(turnoAtual || 'Turno 1'),
+                    responsavel: String(responsavelAtual || 'Não informado')
+                };
+
+                let res;
+                if (item.id) {
+                    res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
+                } else {
+                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
+                }
+
+                if (res.data && res.data[0] && res.data[0].id) {
+                    item.id = res.data[0].id;
+                    persistirDadosLocal();
+                }
+            } catch (err) {
+                console.warn("Erro na gravação tempo real de rasgada", err);
             }
         }
 
@@ -768,17 +808,23 @@
             selecionarPortao(portaoAlvo);
 
             if (supabaseClient) {
-                await supabaseClient.from('controle_faltas_portao').insert([{
+                const res = await supabaseClient.from('controle_faltas_portao').insert([{
                     data_operacao: dataAtual,
                     portao: Number(portaoAlvo),
                     sscc: String(sscc),
                     status: 'Pendente',
                     origem: 'CD',
                     ordem: 'URGENTE',
+                    no_app: 'Sim',
                     observacao: `Rasgada (${tipo}): ${obs}`,
                     turno: String(turnoAtual),
                     responsavel: String(responsavelAtual)
-                }]);
+                }]).select();
+
+                if (res.data && res.data[0] && res.data[0].id) {
+                    novoItem.id = res.data[0].id;
+                    persistirDadosLocal();
+                }
             }
         }
 
@@ -1018,11 +1064,16 @@
             const item = rasgadasPortoes[portaoAtual][index];
             if (item[campo] !== valor) {
                 item[campo] = valor;
+                if (campo === 'tipo') {
+                    item.observacao = `Rasgada (${valor}): ${item.observacao.replace(/Rasgada \([^)]+\):? /, '')}`;
+                }
                 persistirDadosLocal();
+                salvarLinhaRasgadaTempoReal(index);
+
                 if (campo === 'status' && valor === 'Entregue no Portão') {
                     tocarSomConquistaAnimada();
-                    renderizarTabelaRasgadas();
                 }
+                renderizarTabelaRasgadas();
                 verificarBannerRasgadas();
             }
         }
@@ -1049,7 +1100,11 @@
             renderizarTabelaFaltas();
         }
 
-        function removerLinhaRasgada(index) {
+        async function removerLinhaRasgada(index) {
+            const item = rasgadasPortoes[portaoAtual][index];
+            if (item && item.id && supabaseClient) {
+                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+            }
             rasgadasPortoes[portaoAtual].splice(index, 1);
             persistirDadosLocal();
             renderizarTabelas();
