@@ -454,6 +454,9 @@
             await carregarDadosNuvemELocais();
             gerarAbasPortoes();
             popularSelectPortoesModal();
+            
+            // INICIA O CICLO DE ATUALIZAÇÃO AUTOMÁTICA EM SEGUNDO PLANO A CADA 5 SEGUNDOS
+            setInterval(atualizarTelaEmSegundoPlano, 5000);
         });
 
         function inicializarDataHoje() {
@@ -529,6 +532,64 @@
             persistirDadosLocal(false);
         }
 
+        // VERIFICA SE O USUÁRIO ESTÁ DIGITANDO ANTES DE ATUALIZAR A TELA AUTOMATICAMENTE
+        async function atualizarTelaEmSegundoPlano() {
+            const elementoAtivo = document.activeElement;
+            const estaEditando = elementoAtivo && (elementoAtivo.tagName === 'INPUT' || elementoAtivo.tagName === 'SELECT');
+            
+            if (estaEditando) return; // Não atualiza se o usuário estiver focado em algum campo
+
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('controle_faltas_portao')
+                        .select('*')
+                        .eq('data_operacao', dataAtual);
+
+                    if (!error && data) {
+                        let novosDadosPortoes = {};
+                        let novasRasgadasPortoes = {};
+                        for (let i = 7; i <= 26; i++) {
+                            novosDadosPortoes[i] = [];
+                            novosRasgadasPortoes[i] = [];
+                        }
+
+                        data.forEach(reg => {
+                            const p = reg.portao;
+                            if (p >= 7 && p <= 26) {
+                                const itemObj = {
+                                    id: reg.id,
+                                    sscc: reg.sscc || '',
+                                    status: reg.status || 'Pendente',
+                                    origem: reg.origem || 'CD',
+                                    ordem: reg.ordem || '',
+                                    noApp: reg.no_app || 'Não',
+                                    observacao: reg.observacao || ''
+                                };
+
+                                if (reg.observacao && reg.observacao.includes('Rasgada')) {
+                                    const tipoMatch = reg.observacao.includes('Lida') ? 'Lida' : 'Nao Lida';
+                                    novasRasgadasPortoes[p].push({ ...itemObj, tipo: tipoMatch });
+                                } else {
+                                    novosDadosPortoes[p].push(itemObj);
+                                }
+                            }
+                        });
+
+                        dadosPortoes = novosDadosPortoes;
+                        rasgadasPortoes = novasRasgadasPortoes;
+                        
+                        atualizarIndicadoresKPI();
+                        if (portaoAtual === 'todos') {
+                            renderizarPanoramaTodosPortoes();
+                        } else {
+                            renderizarTabelas();
+                        }
+                    }
+                } catch (e) {}
+            }
+        }
+
         function persistirDadosLocal(dispararAgendamento = true) {
             if (!dataAtual) inicializarDataHoje();
             const chaveFaltas = `grendene_faltas_${dataAtual}`;
@@ -543,7 +604,6 @@
             }
         }
 
-        // SALVA NA NUVEM E SINCRONIZA APÓS 2 SEGUNDOS DA AÇÃO/ENTER
         function agendarSalvamentoESincronizacao() {
             const badgeSinc = document.getElementById('status-sinc');
             badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 font-bold flex items-center gap-1 border border-amber-500/30";
@@ -559,18 +619,6 @@
 
                 badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold flex items-center gap-1 border border-emerald-500/30";
                 badgeSinc.innerHTML = `<i class="fa-solid fa-circle-check"></i> Sincronizado`;
-
-                const elementoAtivo = document.activeElement;
-                const estaEditando = elementoAtivo && (elementoAtivo.tagName === 'INPUT' || elementoAtivo.tagName === 'SELECT');
-
-                if (!estaEditando) {
-                    await carregarDadosNuvemELocais();
-                    if (portaoAtual === 'todos') {
-                        renderizarPanoramaTodosPortoes();
-                    } else {
-                        renderizarTabelas();
-                    }
-                }
             }, 2000); // 2 segundos de atraso exatos
         }
 
