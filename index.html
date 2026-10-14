@@ -294,7 +294,7 @@
             </div>
 
             <span id="status-sinc" class="text-[11px] px-2.5 py-1 rounded-lg bg-gray-500/10 text-gray-500 font-bold flex items-center gap-1 border border-gray-500/30">
-                <i class="fa-solid fa-circle-check"></i> Modo Local Seguro
+                <i class="fa-solid fa-circle-check"></i> Pronto
             </span>
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
@@ -448,7 +448,7 @@
         
         let html5QrcodeScanner = null;
         let campoAlvoScannerId = null;
-        let temporizadorSalvar = null; // Controla o atraso de 4,6 segundos
+        let temporizadorSalvar = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             inicializarDataHoje();
@@ -539,28 +539,45 @@
             atualizarIndicadoresKPI();
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
             
-            // AGENDA O SALVAMENTO NO BANCO APÓS 4,6 SEGUNDOS DE INATIVIDADE NA DIGITAÇÃO
+            // AGESNDA O SALVAMENTO APÓS 4,6 SEGUNDOS DE INATIVIDADE
             agendarSalvamentoNuvem();
         }
 
         function agendarSalvamentoNuvem() {
             const badgeSinc = document.getElementById('status-sinc');
             badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 font-bold flex items-center gap-1 border border-amber-500/30";
-            badgeSinc.innerHTML = `<i class="fa-solid fa-clock animate-spin"></i> A salvar alterações...`;
+            badgeSinc.innerHTML = `<i class="fa-solid fa-clock animate-spin"></i> A guardar...`;
 
             if (temporizadorSalvar) clearTimeout(temporizadorSalvar);
             
             temporizadorSalvar = setTimeout(async () => {
                 await sincronizarTudoComNuvem();
+                
                 badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold flex items-center gap-1 border border-emerald-500/30";
                 badgeSinc.innerHTML = `<i class="fa-solid fa-circle-check"></i> Salvo na Nuvem`;
-            }, 4600); // 4,6 segundos
+
+                // ESPERA EXATAMENTE 3 SEGUNDOS APÓS O TÉRMINO DO SALVAMENTO PARA ATUALIZAR/SINCRONIZAR COM A NUVEM SEM CAUSAR CONFLITO
+                setTimeout(async () => {
+                    const elementoAtivo = document.activeElement;
+                    const estaEditando = elementoAtivo && (elementoAtivo.tagName === 'INPUT' || elementoAtivo.tagName === 'SELECT');
+                    
+                    // Só atualiza os dados da nuvem se você não estiver a interagir/digitar no momento
+                    if (!estaEditando) {
+                        await carregarDadosNuvemELocais();
+                        if (portaoAtual === 'todos') {
+                            renderizarPanoramaTodosPortoes();
+                        } else {
+                            renderizarTabelas();
+                        }
+                    }
+                }, 3000); // 3 segundos exatos após salvar
+
+            }, 4600); // 4,6 segundos de espera após parar de mexer
         }
 
         async function sincronizarTudoComNuvem() {
             if (!supabaseClient) return;
             try {
-                // Sincroniza apenas as linhas ativas do portão atual para garantir alta velocidade e evitar travamentos
                 const lista = dadosPortoes[portaoAtual] || [];
                 for (let i = 0; i < lista.length; i++) {
                     const item = lista[i];
