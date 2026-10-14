@@ -399,7 +399,7 @@
         <div class="ui-card border p-4 rounded-lg shadow-sm">
             <div class="flex justify-between items-center border-b pb-3 mb-3">
                 <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2 text-blue-500">
-                    <i class="fa-solid fa-layer-group"></i> Panorama Unificado - Todos os Portões
+                    <i class="fa-solid fa-layer-group"></i> Panorama Unificado - Todos los Portões
                 </h2>
                 <span class="text-xs opacity-75 font-mono" id="contador-total-geral">0 itens gerais</span>
             </div>
@@ -530,19 +530,23 @@
             persistirDadosLocal();
         }
 
-        // SINCRONIZAÇÃO EM TEMPO REAL COM O SUPABASE (WEB SOCKETS)
+        // SINCRONIZAÇÃO EM TEMPO REAL SEGURA (SEM PERDER O FOCO DA TABELA)
         function iniciarTempoRealSupabase() {
             if (!supabaseClient) return;
 
             supabaseClient
-                .channel('tabela_controle_faltas')
+                .channel('tabela_controle_faltas_global')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'controle_faltas_portao' }, async (payload) => {
-                    // Atualiza os dados em background silenciosamente quando houver alteração remota de outro aparelho
                     if (payload.new && payload.new.data_operacao === dataAtual) {
+                        // Atualiza os dados em background sem redesenhar bruscamente se o usuário estiver focado em um input
+                        const elementoAtivo = document.activeElement;
+                        const estaDigitando = elementoAtivo && (elementoAtivo.tagName === 'INPUT' || elementoAtivo.tagName === 'SELECT');
+
                         await carregarDadosNuvemELocais();
+                        
                         if (portaoAtual === 'todos') {
                             renderizarPanoramaTodosPortoes();
-                        } else {
+                        } else if (!estaDigitando) {
                             renderizarTabelas();
                         }
                     }
@@ -999,6 +1003,7 @@
             document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
         }
 
+        // ALTERAÇÃO DE STATUS LOCAL CIRÚRGICA (NÃO RECONSTRÓI A TABELA, EVITANDO O BUG DE PULO)
         function atualizarStatusImediatoVisual(index, novoValor) {
             const item = dadosPortoes[portaoAtual][index];
             item.status = novoValor;
@@ -1006,7 +1011,10 @@
             salvarLinhaTempoReal(index);
 
             const selectEl = document.getElementById(`select-status-${index}`);
-            selectEl.className = 'excel-select ' + getClassStatus(novoValor);
+            if (selectEl) {
+                // Remove todas as classes de status antigas preservando a classe base .excel-select
+                selectEl.className = 'excel-select ' + getClassStatus(novoValor);
+            }
 
             if (novoValor === 'Entregue no Portão') {
                 tocarSomConquistaAnimada();
@@ -1020,8 +1028,10 @@
             salvarLinhaTempoReal(index);
 
             const selectEl = document.getElementById(`select-app-${index}`);
-            const novaClasse = novoValor === 'Sim' ? 'app-sim' : 'app-nao';
-            selectEl.className = 'excel-select ' + novaClasse;
+            if (selectEl) {
+                const novaClasse = novoValor === 'Sim' ? 'app-sim' : 'app-nao';
+                selectEl.className = 'excel-select ' + novaClasse;
+            }
         }
 
         function alterarCampoFaltaImediato(index, campo, valor) {
