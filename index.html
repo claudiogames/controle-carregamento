@@ -293,8 +293,8 @@
                 </select>
             </div>
 
-            <span id="status-tempo-real" class="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold flex items-center gap-1 border border-emerald-500/30">
-                <i class="fa-solid fa-bolt animate-pulse"></i> Ao Vivo (Tempo Real)
+            <span id="status-sinc" class="text-[11px] px-2.5 py-1 rounded-lg bg-gray-500/10 text-gray-500 font-bold flex items-center gap-1 border border-gray-500/30">
+                <i class="fa-solid fa-circle-check"></i> Modo Local Seguro
             </span>
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
@@ -445,17 +445,16 @@
         let turnoAtual = 'Turno 1';
         let responsavelAtual = '';
         let dataAtual = '';
-        let idItemSendoEditado = null; // ID da linha que você está a focar/editar no momento
         
         let html5QrcodeScanner = null;
         let campoAlvoScannerId = null;
+        let temporizadorSalvar = null; // Controla o atraso de 4,6 segundos
 
         document.addEventListener('DOMContentLoaded', async () => {
             inicializarDataHoje();
             await carregarDadosNuvemELocais();
             gerarAbasPortoes();
             popularSelectPortoesModal();
-            iniciarTempoRealSupabase();
         });
 
         function inicializarDataHoje() {
@@ -531,29 +530,6 @@
             persistirDadosLocal();
         }
 
-        // SINCRONIZAÇÃO EM TEMPO REAL INTELIGENTE (ATUALIZA OUTROS APARELHOS SEM ATRAPALHAR QUEM ESTÁ A DIGITAR)
-        function iniciarTempoRealSupabase() {
-            if (!supabaseClient) return;
-
-            supabaseClient
-                .channel('tabela_controle_faltas_global')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'controle_faltas_portao' }, async (payload) => {
-                    if (payload.new && payload.new.data_operacao === dataAtual) {
-                        // Se a alteração veio de OUTRO aparelho e você NÃO está editando essa linha específica no momento, atualiza a tela
-                        const alteradoId = payload.new.id;
-                        if (alteradoId !== idItemSendoEditado) {
-                            await carregarDadosNuvemELocais();
-                            if (portaoAtual === 'todos') {
-                                renderizarPanoramaTodosPortoes();
-                            } else {
-                                renderizarTabelas();
-                            }
-                        }
-                    }
-                })
-                .subscribe();
-        }
-
         function persistirDadosLocal() {
             if (!dataAtual) inicializarDataHoje();
             const chaveFaltas = `grendene_faltas_${dataAtual}`;
@@ -562,86 +538,56 @@
             localStorage.setItem(chaveRasgadas, JSON.stringify(rasgadasPortoes));
             atualizarIndicadoresKPI();
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
+            
+            // AGENDA O SALVAMENTO NO BANCO APÓS 4,6 SEGUNDOS DE INATIVIDADE NA DIGITAÇÃO
+            agendarSalvamentoNuvem();
         }
 
-        async function salvarLinhaTempoReal(index) {
-            persistirDadosLocal();
+        function agendarSalvamentoNuvem() {
+            const badgeSinc = document.getElementById('status-sinc');
+            badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 font-bold flex items-center gap-1 border border-amber-500/30";
+            badgeSinc.innerHTML = `<i class="fa-solid fa-clock animate-spin"></i> A salvar alterações...`;
+
+            if (temporizadorSalvar) clearTimeout(temporizadorSalvar);
+            
+            temporizadorSalvar = setTimeout(async () => {
+                await sincronizarTudoComNuvem();
+                badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold flex items-center gap-1 border border-emerald-500/30";
+                badgeSinc.innerHTML = `<i class="fa-solid fa-circle-check"></i> Salvo na Nuvem`;
+            }, 4600); // 4,6 segundos
+        }
+
+        async function sincronizarTudoComNuvem() {
             if (!supabaseClient) return;
-
-            const item = dadosPortoes[portaoAtual][index];
-            if (!item || !item.sscc || item.sscc.trim() === '') return;
-
-            idItemSendoEditado = item.id; // Marca esta linha como em edição para o Realtime não sobrescrever
-
             try {
-                const codigoLimpo = tratarSSCC(item.sscc);
-                let mensagemCruzamento = '';
+                // Sincroniza apenas as linhas ativas do portão atual para garantir alta velocidade e evitar travamentos
+                const lista = dadosPortoes[portaoAtual] || [];
+                for (let i = 0; i < lista.length; i++) {
+                    const item = lista[i];
+                    if (!item.sscc || item.sscc.trim() === '') continue;
 
-                const resRep = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigoLimpo}%`).maybeSingle();
-                
-                if (!resRep.error && resRep.data) {
-                    const categoria = resRep.data.categoria || 'Reposição';
-                    const rastro = resRep.data.rastro ? ` (${resRep.data.rastro})` : '';
-                    mensagemCruzamento = `Caixa localizada em Reposição: ${categoria}${rastro}`;
-                } else {
-                    let achouRasgadaLocal = false;
-                    for (let p = 7; p <= 26; p++) {
-                        const listaRasg = rasgadasPortoes[p] || [];
-                        const matchRasgada = listaRasg.find(r => tratarSSCC(r.sscc) === codigoLimpo);
-                        if (matchRasgada) {
-                            achouRasgadaLocal = true;
-                            mensagemCruzamento = `ALERTA: Caixa localizada em Rasgadas (Portão ${p} - Tipo: ${matchRasgada.tipo})`;
-                            break;
-                        }
+                    const payload = {
+                        data_operacao: dataAtual,
+                        portao: Number(portaoAtual),
+                        sscc: String(item.sscc).trim(),
+                        status: String(item.status || 'Pendente'),
+                        origem: String(item.origem || 'CD'),
+                        ordem: String(item.ordem || ''),
+                        no_app: String(item.noApp || 'Não'),
+                        observacao: String(item.observacao || ''),
+                        turno: String(turnoAtual || 'Turno 1'),
+                        responsavel: String(responsavelAtual || 'Não informado')
+                    };
+
+                    if (item.id) {
+                        await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id);
+                    } else {
+                        const res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
+                        if (res.data && res.data[0]) item.id = res.data[0].id;
                     }
-
-                    if (!achouRasgadaLocal) {
-                        const resRasgDb = await supabaseClient.from('controle_faltas_portao').select('*').ilike('sscc', `%${codigoLimpo}%`).ilike('observacao', '%Rasgada%').maybeSingle();
-                        if (!resRasgDb.error && resRasgDb.data) {
-                            mensagemCruzamento = `ALERTA: Caixa localizada em Rasgadas (Portão ${resRasgDb.data.portao})`;
-                        }
-                    }
-                }
-
-                if (mensagemCruzamento && !item.observacao.includes(mensagemCruzamento)) {
-                    item.observacao = `[${mensagemCruzamento}]`;
-                    const inputObs = document.getElementById(`input-obs-${index}`);
-                    if (inputObs && document.activeElement !== inputObs) {
-                        inputObs.value = item.observacao;
-                    }
-
-                    document.getElementById('texto-alerta-integracao').innerText = mensagemCruzamento;
-                    document.getElementById('modal-alerta-integracao').classList.remove('hidden');
-                }
-
-                const payload = {
-                    data_operacao: dataAtual,
-                    portao: Number(portaoAtual),
-                    sscc: String(item.sscc).trim(),
-                    status: String(item.status || 'Pendente'),
-                    origem: String(item.origem || 'CD'),
-                    ordem: String(item.ordem || ''),
-                    no_app: String(item.noApp || 'Não'),
-                    observacao: String(item.observacao || ''),
-                    turno: String(turnoAtual || 'Turno 1'),
-                    responsavel: String(responsavelAtual || 'Não informado')
-                };
-
-                let res;
-                if (item.id) {
-                    res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
-                } else {
-                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
-                }
-
-                if (res.data && res.data[0] && res.data[0].id) {
-                    item.id = res.data[0].id;
-                    persistirDadosLocal();
                 }
             } catch (err) {
-                console.warn("Erro na gravação tempo real", err);
-            } finally {
-                setTimeout(() => { idItemSendoEditado = null; }, 1000); // Libera a trava após salvar
+                console.warn("Erro ao sincronizar com nuvem", err);
             }
         }
 
@@ -874,10 +820,10 @@
                 tr.innerHTML = `
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
-                        <input type="text" id="input-sscc-${index}" value="${item.sscc || ''}" onfocus="idItemSendoEditado='${item.id || ''}'" onblur="alterarCampoFaltaImediato(${index}, 'sscc', this.value)" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                        <input type="text" id="input-sscc-${index}" value="${item.sscc || ''}" onblur="alterarCampoFaltaImediato(${index}, 'sscc', this.value)" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
                     </td>
                     <td data-label="Status">
-                        <select id="select-status-${index}" onfocus="idItemSendoEditado='${item.id || ''}'" onchange="atualizarStatusImediatoVisual(${index}, this.value)" class="excel-select ${classeStatus}">
+                        <select id="select-status-${index}" onchange="atualizarStatusImediatoVisual(${index}, this.value)" class="excel-select ${classeStatus}">
                             <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
                             <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
                             <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
@@ -886,7 +832,7 @@
                         </select>
                     </td>
                     <td data-label="Origem">
-                        <select onfocus="idItemSendoEditado='${item.id || ''}'" onchange="alterarCampoFaltaImediato(${index}, 'origem', this.value)" class="excel-select border">
+                        <select onchange="alterarCampoFaltaImediato(${index}, 'origem', this.value)" class="excel-select border">
                             <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
                             <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
                             <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
@@ -897,16 +843,16 @@
                         </select>
                     </td>
                     <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" onfocus="idItemSendoEditado='${item.id || ''}'" onblur="alterarCampoFaltaImediato(${index}, 'ordem', this.value)" placeholder="Ordem..." class="excel-input font-bold">
+                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoFaltaImediato(${index}, 'ordem', this.value)" placeholder="Ordem..." class="excel-input font-bold">
                     </td>
                     <td data-label="No App?">
-                        <select id="select-app-${index}" onfocus="idItemSendoEditado='${item.id || ''}'" onchange="atualizarAppImediatoVisual(${index}, this.value)" class="excel-select ${classeApp}">
+                        <select id="select-app-${index}" onchange="atualizarAppImediatoVisual(${index}, this.value)" class="excel-select ${classeApp}">
                             <option value="Não" ${item.noApp === 'Não' ? 'selected' : ''}>Não</option>
                             <option value="Sim" ${item.noApp === 'Sim' ? 'selected' : ''}>Sim</option>
                         </select>
                     </td>
                     <td data-label="Observação">
-                        <input type="text" id="input-obs-${index}" value="${item.observacao || ''}" onfocus="idItemSendoEditado='${item.id || ''}'" onblur="alterarCampoFaltaImediato(${index}, 'observacao', this.value)" placeholder="Obs..." class="excel-input">
+                        <input type="text" id="input-obs-${index}" value="${item.observacao || ''}" onblur="alterarCampoFaltaImediato(${index}, 'observacao', this.value)" placeholder="Obs..." class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
                         <button onclick="removerLinhaFalta(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
@@ -939,18 +885,18 @@
                     <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
                     <td class="td-sscc-container" data-label="SSCC">
                         <div class="flex items-center gap-1 w-full justify-end">
-                            <input type="text" id="${inputId}" value="${item.sscc || ''}" onfocus="idItemSendoEditado='${item.id || ''}'" onblur="alterarCampoRasgadaImediato(${index}, 'sscc', this.value)" class="excel-input excel-input-sscc font-bold">
+                            <input type="text" id="${inputId}" value="${item.sscc || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'sscc', this.value)" class="excel-input excel-input-sscc font-bold">
                             <button type="button" onclick="abrirModalScannerParaCampo('${inputId}')" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
                         </div>
                     </td>
                     <td data-label="Tipo">
-                        <select onfocus="idItemSendoEditado='${item.id || ''}'" onchange="alterarCampoRasgadaImediato(${index}, 'tipo', this.value)" class="excel-select font-bold ${item.tipo === 'Lida' ? 'text-red-600' : 'text-amber-600'}">
+                        <select onchange="alterarCampoRasgadaImediato(${index}, 'tipo', this.value)" class="excel-select font-bold ${item.tipo === 'Lida' ? 'text-red-600' : 'text-amber-600'}">
                             <option value="Lida" ${item.tipo === 'Lida' ? 'selected' : ''}>Rasgada (Lida)</option>
                             <option value="Nao Lida" ${item.tipo === 'Nao Lida' ? 'selected' : ''}>Rasgada (Não Lida)</option>
                         </select>
                     </td>
                     <td data-label="Status">
-                        <select onfocus="idItemSendoEditado='${item.id || ''}'" onchange="alterarCampoRasgadaImediato(${index}, 'status', this.value)" class="excel-select ${classeStatusRasgada}">
+                        <select onchange="alterarCampoRasgadaImediato(${index}, 'status', this.value)" class="excel-select ${classeStatusRasgada}">
                             <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
                             <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
                             <option value="Restaurada" ${item.status === 'Restaurada' ? 'selected' : ''}>Restaurada</option>
@@ -958,7 +904,7 @@
                         </select>
                     </td>
                     <td data-label="Origem">
-                        <select onfocus="idItemSendoEditado='${item.id || ''}'" onchange="alterarCampoRasgadaImediato(${index}, 'origem', this.value)" class="excel-select border">
+                        <select onchange="alterarCampoRasgadaImediato(${index}, 'origem', this.value)" class="excel-select border">
                             <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
                             <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
                             <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
@@ -969,10 +915,10 @@
                         </select>
                     </td>
                     <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" onfocus="idItemSendoEditado='${item.id || ''}'" onblur="alterarCampoRasgadaImediato(${index}, 'ordem', this.value)" class="excel-input font-bold">
+                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'ordem', this.value)" class="excel-input font-bold">
                     </td>
                     <td data-label="Observação">
-                        <input type="text" value="${item.observacao || ''}" onfocus="idItemSendoEditado='${item.id || ''}'" onblur="alterarCampoRasgadaImediato(${index}, 'observacao', this.value)" class="excel-input">
+                        <input type="text" value="${item.observacao || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'observacao', this.value)" class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
                         <button onclick="removerLinhaRasgada(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
@@ -1007,12 +953,10 @@
             document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
         }
 
-        // MUDANÇA DE STATUS VISUAL LOCAL CIRÚRGICA (SEM REDESENHAR A TABELA TODA, ZERO PULO)
         function atualizarStatusImediatoVisual(index, novoValor) {
             const item = dadosPortoes[portaoAtual][index];
             item.status = novoValor;
             persistirDadosLocal();
-            salvarLinhaTempoReal(index);
 
             const selectEl = document.getElementById(`select-status-${index}`);
             if (selectEl) {
@@ -1028,7 +972,6 @@
             const item = dadosPortoes[portaoAtual][index];
             item.noApp = novoValor;
             persistirDadosLocal();
-            salvarLinhaTempoReal(index);
 
             const selectEl = document.getElementById(`select-app-${index}`);
             if (selectEl) {
@@ -1043,7 +986,6 @@
             if (item[campo] !== valor) {
                 item[campo] = valor;
                 persistirDadosLocal();
-                salvarLinhaTempoReal(index);
             }
         }
 
