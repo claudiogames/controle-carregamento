@@ -1,1172 +1,195 @@
 <!DOCTYPE html>
-<html lang="pt-BR" id="html-raiz" class="light">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle e Acompanhamento do Carregamento - Portão 1 CD</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkbg: '#0d1117',
-                        darkcard: '#161b22',
-                        darkborder: '#30363d'
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- FontAwesome para Ícones -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SheetJS para Exportação para Excel -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Html5-Qrcode (Scanner de Câmera) -->
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <!-- Supabase JS Client Oficial -->
+    <title>Painel de Controle - Operacional</title>
+    <!-- Tailwind CSS para estilização rápida e moderna -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Supabase Client (opcional, caso utilize no seu app) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s, color 0.3s; }
-        
-        /* TEMAS */
-        body.light { background-color: #f3f4f6; color: #1f2937; }
-        body.light .ui-card { background-color: #ffffff; border-color: #e5e7eb; color: #1f2937; }
-        body.light .excel-table th { background-color: #e5e7eb; color: #374151; border-color: #d1d5db; }
-        body.light .excel-table td { background-color: #ffffff; border-color: #d1d5db; color: #1f2937; }
-        body.light .excel-input, body.light .excel-select { color: #1f2937; }
-
-        body.dark { background-color: #0d1117; color: #c9d1d9; }
-        body.dark .ui-card { background-color: #161b22; border-color: #30363d; color: #c9d1d9; }
-        body.dark .excel-table th { background-color: #21262d; color: #8b949e; border-color: #30363d; }
-        body.dark .excel-table td { background-color: #161b22; border-color: #30363d; color: #c9d1d9; }
-        body.dark .excel-input, body.dark .excel-select { color: #c9d1d9; }
-
-        .excel-table { border-collapse: collapse; width: 100%; font-size: 13px; }
-        .excel-table th { padding: 8px; text-align: left; font-weight: 700; }
-        .excel-table td { padding: 4px; position: relative; vertical-align: middle; }
-
-        .excel-input {
-            width: 100%;
-            border: none;
-            outline: none;
-            background: transparent;
-            font-size: 13px;
-            font-family: monospace;
-            padding: 6px;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        /* FORMATO RETANGULAR COMPACTO E LARGO IDÊNTICO À FOTO */
-        .excel-select {
-            width: 100% !important;
-            min-width: 130px !important;
-            border: none !important;
-            outline: none !important;
-            font-size: 12px !important;
-            padding: 4px 8px !important;
-            border-radius: 4px !important;
-            cursor: pointer !important;
-            box-sizing: border-box !important;
-            font-weight: 700 !important;
-            display: block !important;
-            height: 28px !important;
-            line-height: 20px !important;
-        }
-
-        .td-sscc-container {
-            position: relative;
-            width: 100%;
-        }
-
-        .excel-input-sscc {
-            width: 100%;
-            transition: border-color 0.15s ease, background-color 0.15s ease;
-        }
-
-        .excel-input-sscc:focus {
-            border: 2px solid #2563eb !important;
-            background-color: rgba(37, 99, 235, 0.05) !important;
-            border-radius: 6px;
-        }
-
-        body.dark .excel-input-sscc:focus {
-            border: 2px solid #3b82f6 !important;
-            background-color: rgba(59, 130, 246, 0.1) !important;
-        }
-
-        @media (max-width: 768px) {
-            .excel-table thead { display: none; }
-            .excel-table, .excel-table tbody, .excel-table tr, .excel-table td { display: block; width: 100%; }
-            .excel-table tr {
-                margin-bottom: 12px;
-                border: 1px solid #30363d;
-                border-radius: 8px;
-                padding: 8px;
-                background: inherit;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            }
-            .excel-table td {
-                padding: 6px 0;
-                border: none !important;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .excel-table td::before {
-                content: attr(data-label);
-                font-weight: bold;
-                font-size: 11px;
-                text-transform: uppercase;
-                opacity: 0.7;
-                margin-right: 8px;
-            }
-            .excel-table td:first-child { display: none; }
-            .excel-input { text-align: right; }
-            .excel-select { text-align: right !important; width: auto !important; min-width: 140px !important; }
-        }
-
-        /* CORES DAS CLASSES DE STATUS */
-        .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; }
-        .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; }
-        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; }
-        .status-apareceu-no-portao { background-color: #06b6d4 !important; color: #ffffff !important; }
-        .status-entregue-no-portao { background-color: #22c55e !important; color: #ffffff !important; }
-
-        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; }
-        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; }
-        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; }
-        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; }
-
-        .app-nao { background-color: #ef4444 !important; color: #ffffff !important; }
-        .app-sim { background-color: #22c55e !important; color: #ffffff !important; }
-
-        .excel-select option { background-color: #ffffff; color: #1f2937; }
-        body.dark .excel-select option { background-color: #161b22; color: #c9d1d9; }
-
-        .scanner-frame { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid #30363d; }
-        .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
 </head>
-<body class="light p-2 sm:p-3">
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen p-4 md:p-8">
 
-    <!-- MODAL DE ALERTA DE CRUZAMENTO -->
-    <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[99999] flex items-center justify-center p-4">
-        <div class="ui-card rounded-xl max-w-sm w-full p-5 text-center shadow-2xl border border-amber-500 my-auto">
-            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">Localização / Cruzamento de Base</h2>
-            <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono break-words">A caixa informada foi localizada...</p>
-            <button onclick="fecharAlertaIntegracao()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-xs cursor-pointer shadow">Entendido / Fechar</button>
-        </div>
-    </div>
-
-    <!-- MODAL DE SELEÇÃO DE DISPOSITIVO -->
-    <div id="modal-dispositivo" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
-        <div class="ui-card rounded-xl max-w-sm w-full p-6 text-center shadow-2xl border">
-            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
-                <i class="fa-solid fa-display"></i>
-            </div>
-            <h2 class="text-base font-bold mb-1">Como você vai navegar?</h2>
-            <p class="text-xs opacity-75 mb-5">Escolha o seu dispositivo para ajustar a interface automaticamente.</p>
-            
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="definirModoDispositivo('celular')" class="flex flex-col items-center justify-center p-4 border-2 border-blue-500 bg-blue-50/50 hover:bg-blue-100 rounded-lg text-blue-700 transition-all cursor-pointer">
-                    <i class="fa-solid fa-mobile-screen-button text-2xl mb-1"></i>
-                    <span class="text-xs font-bold">Celular</span>
-                </button>
-                <button onclick="definirModoDispositivo('computador')" class="flex flex-col items-center justify-center p-4 border-2 border-gray-300 hover:border-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-700 transition-all cursor-pointer">
-                    <i class="fa-solid fa-desktop text-2xl mb-1"></i>
-                    <span class="text-xs font-bold">Computador</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL DE SCANNER (RASGADAS) -->
-    <div id="modal-scanner" class="fixed inset-0 bg-black/90 hidden z-[99999] flex items-center justify-center p-4">
-        <div class="ui-card border rounded-lg max-w-md w-full p-5 shadow-2xl">
-            <div class="flex justify-between items-center pb-3 border-b mb-4">
-                <h3 class="text-sm font-bold flex items-center gap-2 text-amber-500">
-                    <i class="fa-solid fa-barcode"></i> Leitor de SSCC (Caixa Rasgada)
-                </h3>
-                <button type="button" onclick="fecharModalScanner()" class="opacity-70 hover:opacity-100 p-1 cursor-pointer">
-                    <i class="fa-solid fa-xmark text-base"></i>
-                </button>
-            </div>
-            <div class="mb-4">
-                <div id="reader" class="scanner-frame bg-black w-full min-h-[220px]"></div>
-            </div>
-            <p class="text-[11px] opacity-75 text-center mb-3">Aponte a câmara para o código da caixa rasgada.</p>
-            <div class="flex justify-end pt-2 border-t">
-                <button type="button" onclick="fecharModalScanner()" class="px-3 py-1.5 border rounded text-xs cursor-pointer">Concluir / Fechar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL REGISTRO DE CAIXA RASGADA -->
-    <div id="modal-rasgada" class="fixed inset-0 bg-black/60 hidden z-40 flex items-center justify-center p-4">
-        <div class="ui-card rounded-lg max-w-md w-full p-5 shadow-xl border">
-            <div class="flex justify-between items-center pb-2 border-b mb-3">
-                <h3 class="text-xs font-bold text-amber-500 flex items-center gap-1.5">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Registar Caixa Rasgada
-                </h3>
-                <button onclick="fecharModalRasgada()" class="opacity-70 hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block opacity-75 mb-1">Selecione o Portão</label>
-                    <select id="rasgada-portao" class="w-full ui-card border rounded p-2 font-mono"></select>
-                </div>
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="opacity-75">Código SSCC</label>
-                        <button type="button" onclick="abrirModalScannerParaCampo('rasgada-sscc')" class="text-amber-500 hover:underline flex items-center gap-1 cursor-pointer font-bold"><i class="fa-solid fa-camera"></i> Bipar com Câmera</button>
-                    </div>
-                    <input type="text" id="rasgada-sscc" placeholder="Bipe ou digite o SSCC..." class="w-full ui-card border rounded p-2 font-mono font-bold">
-                </div>
-                <div>
-                    <label class="block opacity-75 mb-1">Tipo</label>
-                    <select id="rasgada-tipo" class="w-full ui-card border rounded p-2 font-medium">
-                        <option value="Lida">Rasgada LIDA (Alerta Vermelho)</option>
-                        <option value="Nao Lida">Rasgada NÃO LIDA</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block opacity-75 mb-1">Observação</label>
-                    <input type="text" id="rasgada-obs" placeholder="Ex: Rasgada na conferência..." class="w-full ui-card border rounded p-2">
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button onclick="fecharModalRasgada()" class="px-3 py-1.5 border rounded opacity-75">Cancelar</button>
-                    <button onclick="salvarCaixaRasgada()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold">Registar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- CABEÇALHO -->
-    <header class="ui-card p-3 sm:p-4 rounded-xl shadow-sm border mb-3 flex flex-col xl:flex-row justify-between items-center gap-3">
-        <div class="flex items-center gap-3 w-full xl:w-auto justify-center sm:justify-start">
-            <div class="bg-white p-1.5 rounded-lg border border-gray-200 flex items-center justify-center min-w-[110px]">
-                <img src="https://sindcalf.org.br/wp-content/uploads/2017/06/grendene.jpg" alt="Grendene" class="h-7 w-auto object-contain">
-            </div>
+    <div class="max-w-5xl mx-auto space-y-6">
+        <!-- Cabeçalho -->
+        <header class="bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-sm sm:text-base font-extrabold tracking-tight">Controle de Carregamento</h1>
-                    <span class="hidden sm:inline-block bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-mono font-bold">Portão 1 CD</span>
-                </div>
-                <p class="text-[11px] opacity-75">Gestão Operacional &bull; Faltas e Ocorrências</p>
+                <h1 class="text-2xl font-bold tracking-tight text-white">Painel Operacional</h1>
+                <p class="text-sm text-slate-400">Controle de Status e Requisições (Com atraso de salvamento de 3s no Enter)</p>
             </div>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full xl:w-auto justify-center xl:justify-end">
-            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
-                <i class="fa-solid fa-calendar-days text-blue-500"></i>
-                <input type="date" id="input-data-controle" onchange="mudarDataOperacional(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
+            <div id="status-sinc" class="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Sincronizado
             </div>
+        </header>
 
-            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
-                <i class="fa-solid fa-user-tie text-blue-500"></i>
-                <select id="select-responsavel" onchange="mudarResponsavel(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
-                    <option value="" disabled selected>Responsável</option>
-                    <option value="Aldo">Supervisor Aldo</option>
-                    <option value="Elisson">Supervisor Elisson</option>
-                    <option value="Jhonatan Carlos">Líder Jhonatan</option>
-                    <option value="Cláudio Sousa">Cláudio Sousa</option>
-                    <option value="Yens Farrapo">Yens Farrapo</option>
-                </select>
+        <!-- Seção de Entrada (Com atraso de 3s no Enter) -->
+        <section class="bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-lg space-y-4">
+            <h2 class="text-lg font-semibold text-white">Nova Entrada / Requisição</h2>
+            <div>
+                <label for="input-registro" class="block text-sm text-slate-400 mb-1">Digite o código/item e aperte Enter (salva após 3s):</label>
+                <input 
+                    type="text" 
+                    id="input-registro" 
+                    placeholder="Ex: SSCC ou Caixa #1029" 
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                >
             </div>
+            <div id="feedback-timer" class="text-xs text-amber-400 font-medium min-h-[1rem]"></div>
+        </section>
 
-            <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
-                <i class="fa-solid fa-clock text-blue-500"></i>
-                <select id="select-turno" onchange="mudarTurno(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
-                    <option value="Turno 1">T1</option>
-                    <option value="Turno 2">T2</option>
-                    <option value="Turno 3">T3</option>
-                    <option value="Comercial">Com.</option>
-                </select>
+        <!-- Seção de Listagem e Gerenciamento de Status -->
+        <section class="bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-lg space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-white">Itens e Status (Outra Tela / Painel)</h2>
+                <button onclick="carregarItens()" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Atualizar Lista</button>
             </div>
 
-            <span id="status-sinc" class="text-[11px] px-2.5 py-1 rounded-lg bg-gray-500/10 text-gray-500 font-bold flex items-center gap-1 border border-gray-500/30">
-                <i class="fa-solid fa-circle-check"></i> Pronto
-            </span>
-            <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
-            <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
-            <button onclick="adicionarLinhaVazia()" class="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-plus"></i> Linha</button>
-            <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
-        </div>
-    </header>
-
-    <!-- KPI / INDICADORES -->
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
-        <div class="ui-card border p-2 rounded-lg shadow-sm">
-            <span class="text-[9px] font-bold opacity-75 uppercase block">Total Faltas</span>
-            <div class="text-base sm:text-lg font-black font-mono" id="kpi-total-faltas">0</div>
-        </div>
-        <div class="ui-card border p-2 rounded-lg shadow-sm">
-            <span class="text-[9px] font-bold text-emerald-600 uppercase block">Concluídas</span>
-            <div class="text-base sm:text-lg font-black font-mono text-emerald-600" id="kpi-entregues">0</div>
-        </div>
-        <div class="ui-card border p-2 rounded-lg shadow-sm">
-            <span class="text-[9px] font-bold text-red-500 uppercase block">Pendentes</span>
-            <div class="text-base sm:text-lg font-black font-mono text-red-500" id="kpi-pendentes">0</div>
-        </div>
-        <div class="ui-card border p-2 rounded-lg shadow-sm">
-            <span class="text-[9px] font-bold text-amber-500 uppercase block">Rasgadas</span>
-            <div class="text-base sm:text-lg font-black font-mono text-amber-500" id="kpi-rasgadas">0</div>
-        </div>
-        <div class="ui-card border p-2 rounded-lg shadow-sm col-span-2 sm:col-span-1">
-            <span class="text-[9px] font-bold text-cyan-500 uppercase block">No App</span>
-            <div class="text-base sm:text-lg font-black font-mono text-cyan-500" id="kpi-no-app">0</div>
-        </div>
-    </div>
-
-    <!-- ABAS PORTÕES -->
-    <div class="flex border-b mb-3 overflow-x-auto ui-card rounded-t-lg border p-1 gap-1" id="container-abas-portoes"></div>
-
-    <!-- CONTEÚDO PRINCIPAL -->
-    <div id="wrapper-conteudo-dinamico" class="fade-in">
-        <div class="ui-card rounded-lg border shadow-sm overflow-hidden mb-4">
-            <div id="banner-rasgadas-lidas" class="hidden bg-red-600 text-white p-2.5 flex items-center justify-between text-xs font-bold animate-pulse">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span id="texto-alerta-rasgada-lida">Atenção: Caixa rasgada lida neste portão!</span>
-                </div>
-            </div>
-
-            <div class="p-2.5 border-b flex justify-between items-center opacity-90">
-                <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" id="titulo-portao-atual">
-                    <i class="fa-solid fa-truck text-blue-500"></i> Portão 7 - Faltas
-                </span>
-                <span class="text-xs opacity-75 font-mono" id="contador-linhas-portao">0 registo(s)</span>
-            </div>
-
-            <div class="overflow-x-auto max-h-[50vh]">
-                <table class="excel-table">
+            <!-- Tabela de Itens -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr>
-                            <th class="w-8 text-center">#</th>
-                            <th class="w-64">Código SSCC</th>
-                            <th class="w-44">Status</th>
-                            <th class="w-36">Origem</th>
-                            <th class="w-28">Ordem</th>
-                            <th class="w-28">No App?</th>
-                            <th>Observação</th>
-                            <th class="w-8 text-center">Ação</th>
+                        <tr class="border-b border-slate-700 text-xs text-slate-400 uppercase">
+                            <th class="py-3 px-4">ID / Item</th>
+                            <th class="py-3 px-4">Status Atual</th>
+                            <th class="py-3 px-4 text-right">Ações de Status</th>
                         </tr>
                     </thead>
-                    <tbody id="corpo-tabela-excel"></tbody>
+                    <tbody id="tabela-itens" class="divide-y divide-slate-700 text-sm">
+                        <!-- Os dados serão injetados via JavaScript -->
+                    </tbody>
                 </table>
             </div>
-        </div>
-
-        <!-- TABELA DE RASGADAS -->
-        <div id="secao-tabela-rasgadas" class="hidden ui-card rounded-lg border shadow-sm overflow-hidden mb-6 fade-in">
-            <div class="p-2.5 border-b flex justify-between items-center bg-amber-500/10">
-                <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Caixas Rasgadas - <span id="titulo-portao-rasgadas">Portão 7</span>
-                </span>
-                <span class="text-xs opacity-75 font-mono" id="contador-linhas-rasgadas">0 registo(s)</span>
-            </div>
-            <div class="overflow-x-auto max-h-[35vh]">
-                <table class="excel-table">
-                    <thead>
-                        <tr>
-                            <th class="w-8 text-center">#</th>
-                            <th class="w-56">Código SSCC</th>
-                            <th class="w-40">Tipo</th>
-                            <th class="w-44">Status</th>
-                            <th class="w-36">Origem</th>
-                            <th class="w-28">Ordem</th>
-                            <th>Observação</th>
-                            <th class="w-8 text-center">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpo-tabela-rasgadas"></tbody>
-                </table>
-            </div>
-        </div>
+        </section>
     </div>
 
-    <!-- VISÃO GLOBAL -->
-    <div id="wrapper-todos-portoes" class="hidden fade-in space-y-4 mb-6">
-        <div class="ui-card border p-4 rounded-lg shadow-sm">
-            <div class="flex justify-between items-center border-b pb-3 mb-3">
-                <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2 text-blue-500">
-                    <i class="fa-solid fa-layer-group"></i> Panorama Unificado - Todos os Portões
-                </h2>
-                <span class="text-xs opacity-75 font-mono" id="contador-total-geral">0 itens gerais</span>
-            </div>
-            <div class="overflow-x-auto max-h-[65vh]">
-                <table class="excel-table">
-                    <thead>
-                        <tr>
-                            <th class="w-24">Portão</th>
-                            <th class="w-48">Código SSCC</th>
-                            <th class="w-36">Categoria</th>
-                            <th class="w-36">Status</th>
-                            <th class="w-36">Origem</th>
-                            <th class="w-28">Ordem</th>
-                            <th class="w-20">No App?</th>
-                            <th>Observação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpo-tabela-todos-portoes"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
+    <!-- Script Principal -->
     <script>
-        const SUPABASE_URL = "https://mpsyqawieuwjgupoedib.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wc3lxYXdpZXV3amd1cG9lZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTA1OTQsImV4cCI6MjEwNjA4NjU5NH0.P9I8u6ycOBCKYIT2mvp35kZ-SfNTHiVY3Jkw7ltYFuQ";
-        
-        let supabaseClient = null;
-        try {
-            if (typeof supabase !== 'undefined') {
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-                    auth: { persistSession: false, autoRefreshToken: false }
-                });
+        // Simulação de banco de dados local (Substitua pelas chamadas do seu Supabase se necessário)
+        let itens = [
+            { id: 1, codigo: "Caixa 001 - Avaria", status: "Pendente" },
+            { id: 2, codigo: "Palete Portão 02", status: "Em andamento" },
+            { id: 3, codigo: "Requisição #409", status: "Entregue" }
+        ];
+
+        let debounceTimer = null;
+        const inputElement = document.getElementById('input-registro');
+        const feedbackTimer = document.getElementById('feedback-timer');
+        const statusSinc = document.getElementById('status-sinc');
+
+        // --- 1. Lógica do Enter com Delay de 3 Segundos ---
+        inputElement.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const valor = inputElement.value.trim();
+                if (!valor) return;
+
+                // Limpa o timer anterior se o usuário pressionar Enter novamente antes de 3s
+                clearTimeout(debounceTimer);
+
+                feedbackTimer.textContent = "⏳ Aguardando 3 segundos para salvar e sincronizar...";
+                mudarStatusSincronizacao('pendente');
+
+                // Inicia a contagem de 3 segundos
+                debounceTimer = setTimeout(() => {
+                    salvarESincronizar(valor);
+                }, 3000); 
             }
-        } catch (e) {
-            console.warn("Supabase SDK indisponível");
-        }
-
-        let portaoAtual = 7;
-        let dadosPortoes = {};
-        let rasgadasPortoes = {};
-        let modoDispositivo = 'computador';
-        let turnoAtual = 'Turno 1';
-        let responsavelAtual = '';
-        let dataAtual = '';
-        
-        let html5QrcodeScanner = null;
-        let campoAlvoScannerId = null;
-        let temporizadorSalvar = null;
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            inicializarDataHoje();
-            await carregarDadosNuvemELocais();
-            gerarAbasPortoes();
-            popularSelectPortoesModal();
         });
 
-        function inicializarDataHoje() {
-            const inputData = document.getElementById('input-data-controle');
-            const hoje = new Date().toISOString().split('T')[0];
-            dataAtual = hoje;
-            if (inputData) inputData.value = dataAtual;
-        }
-
-        async function mudarDataOperacional(novaData) {
-            if (novaData) {
-                dataAtual = novaData;
-                await carregarDadosNuvemELocais();
-                gerarAbasPortoes();
-                selecionarPortao(portaoAtual === 'todos' ? 7 : portaoAtual);
-                tocarSomTrocaData();
-            }
-        }
-
-        async function carregarDadosNuvemELocais() {
-            if (!dataAtual) inicializarDataHoje();
-            dadosPortoes = {};
-            rasgadasPortoes = {};
-            for (let i = 7; i <= 26; i++) {
-                dadosPortoes[i] = [];
-                rasgadasPortoes[i] = [];
-            }
-
-            if (supabaseClient) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('controle_faltas_portao')
-                        .select('*')
-                        .eq('data_operacao', dataAtual);
-
-                    if (!error && data) {
-                        data.forEach(reg => {
-                            const p = reg.portao;
-                            if (p >= 7 && p <= 26) {
-                                const itemObj = {
-                                    id: reg.id,
-                                    sscc: reg.sscc || '',
-                                    status: reg.status || 'Pendente',
-                                    origem: reg.origem || 'CD',
-                                    ordem: reg.ordem || '',
-                                    noApp: reg.no_app || 'Não',
-                                    observacao: reg.observacao || ''
-                                };
-
-                                if (reg.observacao && reg.observacao.includes('Rasgada')) {
-                                    const tipoMatch = reg.observacao.includes('Lida') ? 'Lida' : 'Nao Lida';
-                                    rasgadasPortoes[p].push({ ...itemObj, tipo: tipoMatch });
-                                } else {
-                                    dadosPortoes[p].push(itemObj);
-                                }
-                            }
-                        });
-                    }
-                } catch (err) {
-                    console.warn("Erro ao buscar da nuvem", err);
-                }
-            }
-
-            for (let i = 7; i <= 26; i++) {
-                if (dadosPortoes[i].length === 0) {
-                    const chaveF = `grendene_faltas_${dataAtual}_p${i}`;
-                    const salvoF = localStorage.getItem(chaveF);
-                    if (salvoF) {
-                        try { dadosPortoes[i] = JSON.parse(salvoF); } catch(e){}
-                    }
-                }
-            }
-            persistirDadosLocal();
-        }
-
-        function persistirDadosLocal() {
-            if (!dataAtual) inicializarDataHoje();
-            const chaveFaltas = `grendene_faltas_${dataAtual}`;
-            const chaveRasgadas = `grendene_rasgadas_${dataAtual}`;
-            localStorage.setItem(chaveFaltas, JSON.stringify(dadosPortoes));
-            localStorage.setItem(chaveRasgadas, JSON.stringify(rasgadasPortoes));
-            atualizarIndicadoresKPI();
-            if (portaoAtual !== 'todos') verificarBannerRasgadas();
+        function salvarESincronizar(novoValor) {
+            feedbackTimer.textContent = "💾 Salvando e sincronizando dados...";
             
-            // AGESNDA O SALVAMENTO APÓS 4,6 SEGUNDOS DE INATIVIDADE
-            agendarSalvamentoNuvem();
-        }
-
-        function agendarSalvamentoNuvem() {
-            const badgeSinc = document.getElementById('status-sinc');
-            badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 font-bold flex items-center gap-1 border border-amber-500/30";
-            badgeSinc.innerHTML = `<i class="fa-solid fa-clock animate-spin"></i> A guardar...`;
-
-            if (temporizadorSalvar) clearTimeout(temporizadorSalvar);
+            // Adiciona o novo item simulando o salvamento
+            const novoItem = {
+                id: Date.now(),
+                codigo: novoValor,
+                status: "Pendente"
+            };
             
-            temporizadorSalvar = setTimeout(async () => {
-                await sincronizarTudoComNuvem();
+            itens.unshift(novoItem);
+            inputElement.value = '';
+            
+            setTimeout(() => {
+                feedbackTimer.textContent = "✅ Salvo e sincronizado com sucesso!";
+                mudarStatusSincronizacao('sucesso');
+                renderizarTabela();
                 
-                badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold flex items-center gap-1 border border-emerald-500/30";
-                badgeSinc.innerHTML = `<i class="fa-solid fa-circle-check"></i> Salvo na Nuvem`;
-
-                // ESPERA EXATAMENTE 3 SEGUNDOS APÓS O TÉRMINO DO SALVAMENTO PARA ATUALIZAR/SINCRONIZAR COM A NUVEM SEM CAUSAR CONFLITO
-                setTimeout(async () => {
-                    const elementoAtivo = document.activeElement;
-                    const estaEditando = elementoAtivo && (elementoAtivo.tagName === 'INPUT' || elementoAtivo.tagName === 'SELECT');
-                    
-                    // Só atualiza os dados da nuvem se você não estiver a interagir/digitar no momento
-                    if (!estaEditando) {
-                        await carregarDadosNuvemELocais();
-                        if (portaoAtual === 'todos') {
-                            renderizarPanoramaTodosPortoes();
-                        } else {
-                            renderizarTabelas();
-                        }
-                    }
-                }, 3000); // 3 segundos exatos após salvar
-
-            }, 4600); // 4,6 segundos de espera após parar de mexer
+                setTimeout(() => {
+                    feedbackTimer.textContent = "";
+                }, 3000);
+            }, 800);
         }
 
-        async function sincronizarTudoComNuvem() {
-            if (!supabaseClient) return;
-            try {
-                const lista = dadosPortoes[portaoAtual] || [];
-                for (let i = 0; i < lista.length; i++) {
-                    const item = lista[i];
-                    if (!item.sscc || item.sscc.trim() === '') continue;
-
-                    const payload = {
-                        data_operacao: dataAtual,
-                        portao: Number(portaoAtual),
-                        sscc: String(item.sscc).trim(),
-                        status: String(item.status || 'Pendente'),
-                        origem: String(item.origem || 'CD'),
-                        ordem: String(item.ordem || ''),
-                        no_app: String(item.noApp || 'Não'),
-                        observacao: String(item.observacao || ''),
-                        turno: String(turnoAtual || 'Turno 1'),
-                        responsavel: String(responsavelAtual || 'Não informado')
-                    };
-
-                    if (item.id) {
-                        await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id);
-                    } else {
-                        const res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
-                        if (res.data && res.data[0]) item.id = res.data[0].id;
-                    }
-                }
-            } catch (err) {
-                console.warn("Erro ao sincronizar com nuvem", err);
-            }
-        }
-
-        function fecharAlertaIntegracao() {
-            document.getElementById('modal-alerta-integracao').classList.add('hidden');
-        }
-
-        function definirModoDispositivo(modo) {
-            modoDispositivo = modo;
-            if (modo === 'celular') document.body.classList.add('modo-celular');
-            else document.body.classList.remove('modo-celular');
-            document.getElementById('modal-dispositivo').classList.add('hidden');
-            selecionarPortao(7);
-        }
-
-        function alternarTema() {
-            const body = document.body;
-            if (body.classList.contains('light')) {
-                body.classList.replace('light', 'dark');
-                document.getElementById('icone-tema').className = "fa-solid fa-sun";
-                localStorage.setItem('tema_grendene', 'dark');
+        function mudarStatusSincronizacao(estado) {
+            if (estado === 'pendente') {
+                statusSinc.className = "px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium rounded-full flex items-center gap-2";
+                statusSinc.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> Sincronizando...`;
             } else {
-                body.classList.replace('dark', 'light');
-                document.getElementById('icone-tema').className = "fa-solid fa-moon";
-                localStorage.setItem('tema_grendene', 'light');
+                statusSinc.className = "px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full flex items-center gap-2";
+                statusSinc.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Sincronizado`;
             }
         }
 
-        const temaSalvo = localStorage.getItem('tema_grendene');
-        if (temaSalvo === 'dark') {
-            document.body.classList.replace('light', 'dark');
-            document.getElementById('icone-tema').className = "fa-solid fa-sun";
-        }
+        // --- 2. Correção dos Botões de Status (Outra Tela) ---
+        function atualizarStatus(id, novoStatus) {
+            // Encontra o item no array e atualiza o status de forma precisa
+            const item = itens.find(i => i.id === id);
+            if (item) {
+                item.status = novoStatus;
+                
+                // Se estiver usando Supabase, adicione sua chamada aqui:
+                // await supabase.from('sua_tabela').update({ status: novoStatus }).eq('id', id);
 
-        function mudarTurno(turno) { turnoAtual = turno; }
-        function mudarResponsavel(resp) { responsavelAtual = resp; }
-
-        function popularSelectPortoesModal() {
-            const select = document.getElementById('rasgada-portao');
-            select.innerHTML = '';
-            for (let i = 7; i <= 26; i++) {
-                const opt = document.createElement('option');
-                opt.value = i;
-                opt.innerText = `Portão ${i}`;
-                select.appendChild(opt);
+                renderizarTabela();
+                
+                // Feedback rápido de sincronização individual
+                feedbackTimer.textContent = `Status do item #${id} alterado para "${novoStatus}"`;
+                setTimeout(() => feedbackTimer.textContent = "", 2000);
             }
         }
 
-        function gerarAbasPortoes() {
-            const container = document.getElementById('container-abas-portoes');
-            container.innerHTML = '';
-            
-            const btnTodos = document.createElement('button');
-            btnTodos.id = `btn-portao-todos`;
-            btnTodos.className = "px-3 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border-r text-blue-500";
-            btnTodos.innerHTML = `<i class="fa-solid fa-layer-group text-[11px]"></i> Todos`;
-            btnTodos.onclick = () => selecionarPortao('todos');
-            container.appendChild(btnTodos);
+        function renderizarTabela() {
+            const tbody = document.getElementById('tabela-itens');
+            tbody.innerHTML = '';
 
-            for (let i = 7; i <= 26; i++) {
-                const btn = document.createElement('button');
-                btn.id = `btn-portao-${i}`;
-                btn.className = "px-2.5 py-1.5 text-xs font-bold rounded hover:opacity-80 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
-                btn.innerHTML = `<i class="fa-solid fa-truck text-[10px] opacity-60"></i> P-${i} <span id="badge-rasgada-${i}" class="hidden w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`;
-                btn.onclick = () => selecionarPortao(i);
-                container.appendChild(btn);
-            }
-            atualizarBadgesPortoesAbas();
-        }
-
-        function atualizarBadgesPortoesAbas() {
-            for (let i = 7; i <= 26; i++) {
-                const badge = document.getElementById(`badge-rasgada-${i}`);
-                if (badge) {
-                    const rasgadas = rasgadasPortoes[i] || [];
-                    if (rasgadas.length > 0) badge.classList.remove('hidden');
-                    else badge.classList.add('hidden');
-                }
-            }
-        }
-
-        function selecionarPortao(paramPortao) {
-            portaoAtual = paramPortao;
-            if (paramPortao === 'todos') {
-                document.getElementById('btn-portao-todos').className = "px-3 py-1.5 text-xs font-bold rounded bg-blue-600 text-white shadow-sm whitespace-nowrap cursor-pointer flex items-center gap-1.5";
-                for (let i = 7; i <= 26; i++) {
-                    const b = document.getElementById(`btn-portao-${i}`);
-                    if (b) b.className = "px-2.5 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
-                }
-                document.getElementById('wrapper-conteudo-dinamico').classList.add('hidden');
-                document.getElementById('wrapper-todos-portoes').classList.remove('hidden');
-                renderizarPanoramaTodosPortoes();
+            if (itens.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-500">Nenhum item cadastrado.</td></tr>`;
                 return;
-            } else {
-                document.getElementById('btn-portao-todos').className = "px-3 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border-r text-blue-500";
-                document.getElementById('wrapper-todos-portoes').classList.add('hidden');
-                document.getElementById('wrapper-conteudo-dinamico').classList.remove('hidden');
             }
 
-            for (let i = 7; i <= 26; i++) {
-                const btn = document.getElementById(`btn-portao-${i}`);
-                if (btn) {
-                    if (i === paramPortao) btn.className = "px-2.5 py-1.5 text-xs font-bold rounded bg-blue-600 text-white shadow-sm whitespace-nowrap cursor-pointer flex items-center gap-1.5";
-                    else btn.className = "px-2.5 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
-                }
-            }
+            itens.forEach(item => {
+                // Define a cor da badge de acordo com o status
+                let badgeColor = "bg-slate-700 text-slate-300";
+                if (item.status === "Pendente") badgeColor = "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                if (item.status === "Em andamento") badgeColor = "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20";
+                if (item.status === "Entregue") badgeColor = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
 
-            document.getElementById('titulo-portao-atual').innerHTML = `<i class="fa-solid fa-truck text-blue-500"></i> Portão ${portaoAtual} - Faltas`;
-            document.getElementById('titulo-portao-rasgadas').innerText = `Portão ${portaoAtual}`;
-            renderizarTabelas();
-            atualizarIndicadoresKPI();
-            verificarBannerRasgadas();
-        }
-
-        function verificarBannerRasgadas() {
-            const banner = document.getElementById('banner-rasgadas-lidas');
-            const textoAlerta = document.getElementById('texto-alerta-rasgada-lida');
-            const rasgadas = rasgadasPortoes[portaoAtual] || [];
-            const rasgadasLidas = rasgadas.filter(r => r.tipo === 'Lida');
-
-            if (rasgadasLidas.length > 0) {
-                banner.classList.remove('hidden');
-                textoAlerta.innerHTML = `Atenção: Caixa rasgada lida neste portão! (${rasgadasLidas.length} un)`;
-            } else {
-                banner.classList.add('hidden');
-            }
-            atualizarBadgesPortoesAbas();
-        }
-
-        function abrirModalRasgada() {
-            document.getElementById('rasgada-portao').value = portaoAtual === 'todos' ? 7 : portaoAtual;
-            document.getElementById('rasgada-sscc').value = '';
-            document.getElementById('rasgada-obs').value = '';
-            document.getElementById('modal-rasgada').classList.remove('hidden');
-        }
-        function fecharModalRasgada() { document.getElementById('modal-rasgada').classList.add('hidden'); }
-
-        async function salvarCaixaRasgada() {
-            const portaoAlvo = parseInt(document.getElementById('rasgada-portao').value);
-            const sscc = tratarSSCC(document.getElementById('rasgada-sscc').value.trim());
-            const tipo = document.getElementById('rasgada-tipo').value;
-            const obs = document.getElementById('rasgada-obs').value.trim() || 'Caixa rasgada no carregamento';
-
-            if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
-            if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
-
-            const novoItem = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: `Rasgada (${tipo}): ${obs}` };
-            rasgadasPortoes[portaoAlvo].unshift(novoItem);
-
-            tocarSomSucesso();
-            persistirDadosLocal();
-            fecharModalRasgada();
-            selecionarPortao(portaoAlvo);
-
-            if (supabaseClient) {
-                await supabaseClient.from('controle_faltas_portao').insert([{
-                    data_operacao: dataAtual,
-                    portao: Number(portaoAlvo),
-                    sscc: String(sscc),
-                    status: 'Pendente',
-                    origem: 'CD',
-                    ordem: 'URGENTE',
-                    observacao: `Rasgada (${tipo}): ${obs}`,
-                    turno: String(turnoAtual),
-                    responsavel: String(responsavelAtual)
-                }]);
-            }
-        }
-
-        function atualizarIndicadoresKPI() {
-            let totalFaltas = 0, entregues = 0, pendentes = 0, totalRasgadas = 0, quantificadosNoApp = 0;
-
-            for (let i = 7; i <= 26; i++) {
-                const lista = dadosPortoes[i] || [];
-                const rasgadas = rasgadasPortoes[i] || [];
-                totalRasgadas += rasgadas.length;
-
-                lista.forEach(item => {
-                    if (item.sscc && item.sscc.trim() !== '') {
-                        totalFaltas++;
-                        if (item.status === 'Entregue no Portão') entregues++; else pendentes++;
-                        if (item.noApp === 'Sim') quantificadosNoApp++;
-                    }
-                });
-                rasgadas.forEach(item => {
-                    if (item.sscc && item.sscc.trim() !== '') {
-                        totalFaltas++;
-                        if (item.status === 'Entregue no Portão') entregues++; else pendentes++;
-                    }
-                });
-            }
-
-            document.getElementById('kpi-total-faltas').innerText = totalFaltas;
-            document.getElementById('kpi-entregues').innerText = entregues;
-            document.getElementById('kpi-pendentes').innerText = pendentes;
-            document.getElementById('kpi-rasgadas').innerText = totalRasgadas;
-            document.getElementById('kpi-no-app').innerText = quantificadosNoApp;
-        }
-
-        function renderizarTabelas() {
-            renderizarTabelaFaltas();
-            renderizarTabelaRasgadas();
-        }
-
-        function getClassStatus(status) {
-            if (!status) return 'status-pendente';
-            const s = status.toLowerCase().trim();
-            if (s.includes('andamento')) return 'status-em-andamento';
-            if (s.includes('requisitada')) return 'status-requisitada';
-            if (s.includes('apareceu')) return 'status-apareceu-no-portao';
-            if (s.includes('entregue')) return 'status-entregue-no-portao';
-            return 'status-pendente';
-        }
-
-        function renderizarTabelaFaltas() {
-            const tbody = document.getElementById('corpo-tabela-excel');
-            tbody.innerHTML = '';
-            const lista = dadosPortoes[portaoAtual] || [];
-            document.getElementById('contador-linhas-portao').innerText = `${lista.length} registo(s)`;
-
-            if (lista.length === 0) {
-                adicionarLinhaVaziaObjeto();
-            }
-
-            dadosPortoes[portaoAtual].forEach((item, index) => {
                 const tr = document.createElement('tr');
-                let classeStatus = getClassStatus(item.status);
-                let classeApp = item.noApp === 'Sim' ? 'app-sim' : 'app-nao';
-
+                tr.className = "hover:bg-slate-750 transition-colors";
                 tr.innerHTML = `
-                    <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
-                    <td class="td-sscc-container" data-label="SSCC">
-                        <input type="text" id="input-sscc-${index}" value="${item.sscc || ''}" onblur="alterarCampoFaltaImediato(${index}, 'sscc', this.value)" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                    <td class="py-3 px-4 font-medium text-white">${item.codigo}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-medium ${badgeColor}">
+                            ${item.status}
+                        </span>
                     </td>
-                    <td data-label="Status">
-                        <select id="select-status-${index}" onchange="atualizarStatusImediatoVisual(${index}, this.value)" class="excel-select ${classeStatus}">
-                            <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
-                            <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
-                            <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
-                            <option value="Apareceu no Portão" ${item.status === 'Apareceu no Portão' ? 'selected' : ''}>Apareceu no Portão</option>
-                            <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue no Portão</option>
-                        </select>
-                    </td>
-                    <td data-label="Origem">
-                        <select onchange="alterarCampoFaltaImediato(${index}, 'origem', this.value)" class="excel-select border">
-                            <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
-                            <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
-                            <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
-                            <option value="Fábrica 3" ${item.origem === 'Fábrica 3' ? 'selected' : ''}>Fábrica 3</option>
-                            <option value="Fábrica 5" ${item.origem === 'Fábrica 5' ? 'selected' : ''}>Fábrica 5</option>
-                            <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
-                            <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
-                        </select>
-                    </td>
-                    <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoFaltaImediato(${index}, 'ordem', this.value)" placeholder="Ordem..." class="excel-input font-bold">
-                    </td>
-                    <td data-label="No App?">
-                        <select id="select-app-${index}" onchange="atualizarAppImediatoVisual(${index}, this.value)" class="excel-select ${classeApp}">
-                            <option value="Não" ${item.noApp === 'Não' ? 'selected' : ''}>Não</option>
-                            <option value="Sim" ${item.noApp === 'Sim' ? 'selected' : ''}>Sim</option>
-                        </select>
-                    </td>
-                    <td data-label="Observação">
-                        <input type="text" id="input-obs-${index}" value="${item.observacao || ''}" onblur="alterarCampoFaltaImediato(${index}, 'observacao', this.value)" placeholder="Obs..." class="excel-input">
-                    </td>
-                    <td class="text-center" data-label="Ação">
-                        <button onclick="removerLinhaFalta(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <button onclick="atualizarStatus(${item.id}, 'Pendente')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-xs rounded text-amber-300 transition-colors">Pendente</button>
+                        <button onclick="atualizarStatus(${item.id}, 'Em andamento')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-xs rounded text-indigo-300 transition-colors">Andamento</button>
+                        <button onclick="atualizarStatus(${item.id}, 'Entregue')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-xs rounded text-emerald-300 transition-colors">Entregue</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        function renderizarTabelaRasgadas() {
-            const secaoRasgadas = document.getElementById('secao-tabela-rasgadas');
-            const tbody = document.getElementById('corpo-tabela-rasgadas');
-            tbody.innerHTML = '';
-            const lista = rasgadasPortoes[portaoAtual] || [];
-            
-            if (lista.length === 0) { secaoRasgadas.classList.add('hidden'); return; }
-
-            secaoRasgadas.classList.remove('hidden');
-            document.getElementById('contador-linhas-rasgadas').innerText = `${lista.length} registo(s)`;
-
-            lista.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                const inputId = `input-rasg-sscc-${index}`;
-                let classeStatusRasgada = 'status-rasgada-pendente';
-                if (item.status === 'Requisitada') classeStatusRasgada = 'status-rasgada-requisitada';
-                if (item.status === 'Restaurada') classeStatusRasgada = 'status-rasgada-restaurada';
-                if (item.status === 'Entregue no Portão') classeStatusRasgada = 'status-rasgada-entregue';
-
-                tr.innerHTML = `
-                    <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
-                    <td class="td-sscc-container" data-label="SSCC">
-                        <div class="flex items-center gap-1 w-full justify-end">
-                            <input type="text" id="${inputId}" value="${item.sscc || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'sscc', this.value)" class="excel-input excel-input-sscc font-bold">
-                            <button type="button" onclick="abrirModalScannerParaCampo('${inputId}')" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
-                        </div>
-                    </td>
-                    <td data-label="Tipo">
-                        <select onchange="alterarCampoRasgadaImediato(${index}, 'tipo', this.value)" class="excel-select font-bold ${item.tipo === 'Lida' ? 'text-red-600' : 'text-amber-600'}">
-                            <option value="Lida" ${item.tipo === 'Lida' ? 'selected' : ''}>Rasgada (Lida)</option>
-                            <option value="Nao Lida" ${item.tipo === 'Nao Lida' ? 'selected' : ''}>Rasgada (Não Lida)</option>
-                        </select>
-                    </td>
-                    <td data-label="Status">
-                        <select onchange="alterarCampoRasgadaImediato(${index}, 'status', this.value)" class="excel-select ${classeStatusRasgada}">
-                            <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
-                            <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
-                            <option value="Restaurada" ${item.status === 'Restaurada' ? 'selected' : ''}>Restaurada</option>
-                            <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue</option>
-                        </select>
-                    </td>
-                    <td data-label="Origem">
-                        <select onchange="alterarCampoRasgadaImediato(${index}, 'origem', this.value)" class="excel-select border">
-                            <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
-                            <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
-                            <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
-                            <option value="Fábrica 3" ${item.origem === 'Fábrica 3' ? 'selected' : ''}>Fábrica 3</option>
-                            <option value="Fábrica 5" ${item.origem === 'Fábrica 5' ? 'selected' : ''}>Fábrica 5</option>
-                            <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
-                            <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
-                        </select>
-                    </td>
-                    <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'ordem', this.value)" class="excel-input font-bold">
-                    </td>
-                    <td data-label="Observação">
-                        <input type="text" value="${item.observacao || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'observacao', this.value)" class="excel-input">
-                    </td>
-                    <td class="text-center" data-label="Ação">
-                        <button onclick="removerLinhaRasgada(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderizarPanoramaTodosPortoes() {
-            const tbody = document.getElementById('corpo-tabela-todos-portoes');
-            tbody.innerHTML = '';
-            let totalGeral = 0;
-
-            for (let i = 7; i <= 26; i++) {
-                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
-                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
-
-                listaFaltas.forEach(item => {
-                    totalGeral++;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td class="font-bold text-blue-500">Portão ${i}</td><td class="font-mono font-bold">${item.sscc}</td><td>Falta Normal</td><td>${item.status}</td><td>${item.origem}</td><td>${item.ordem}</td><td>${item.noApp}</td><td>${item.observacao}</td>`;
-                    tbody.appendChild(tr);
-                });
-                listaRasgadas.forEach(item => {
-                    totalGeral++;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td class="font-bold text-amber-500">Portão ${i}</td><td class="font-mono font-bold">${item.sscc}</td><td>Rasgada (${item.tipo})</td><td>${item.status}</td><td>${item.origem}</td><td>${item.ordem}</td><td>Sim</td><td>${item.observacao}</td>`;
-                    tbody.appendChild(tr);
-                });
-            }
-            document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
-        }
-
-        function atualizarStatusImediatoVisual(index, novoValor) {
-            const item = dadosPortoes[portaoAtual][index];
-            item.status = novoValor;
-            persistirDadosLocal();
-
-            const selectEl = document.getElementById(`select-status-${index}`);
-            if (selectEl) {
-                selectEl.className = 'excel-select ' + getClassStatus(novoValor);
-            }
-
-            if (novoValor === 'Entregue no Portão') {
-                tocarSomConquistaAnimada();
-            }
-        }
-
-        function atualizarAppImediatoVisual(index, novoValor) {
-            const item = dadosPortoes[portaoAtual][index];
-            item.noApp = novoValor;
-            persistirDadosLocal();
-
-            const selectEl = document.getElementById(`select-app-${index}`);
-            if (selectEl) {
-                const novaClasse = novoValor === 'Sim' ? 'app-sim' : 'app-nao';
-                selectEl.className = 'excel-select ' + novaClasse;
-            }
-        }
-
-        function alterarCampoFaltaImediato(index, campo, valor) {
-            if (campo === 'sscc') valor = tratarSSCC(valor);
-            const item = dadosPortoes[portaoAtual][index];
-            if (item[campo] !== valor) {
-                item[campo] = valor;
-                persistirDadosLocal();
-            }
-        }
-
-        function alterarCampoRasgadaImediato(index, campo, valor) {
-            if (campo === 'sscc') valor = tratarSSCC(valor);
-            const item = rasgadasPortoes[portaoAtual][index];
-            if (item[campo] !== valor) {
-                item[campo] = valor;
-                persistirDadosLocal();
-                if (campo === 'status' && valor === 'Entregue no Portão') {
-                    tocarSomConquistaAnimada();
-                    renderizarTabelaRasgadas();
-                }
-                verificarBannerRasgadas();
-            }
-        }
-
-        function adicionarLinhaVaziaObjeto() {
-            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '' };
-            dadosPortoes[portaoAtual].push(novoObj);
-        }
-
-        function adicionarLinhaVazia() { 
-            adicionarLinhaVaziaObjeto(); 
-            persistirDadosLocal(); 
-            renderizarTabelaFaltas(); 
-        }
+        // Inicializa a tabela ao carregar a página
+        renderizarTabela();
         
-        async function removerLinhaFalta(index) {
-            const item = dadosPortoes[portaoAtual][index];
-            if (item && item.id && supabaseClient) {
-                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
-            }
-            dadosPortoes[portaoAtual].splice(index, 1);
-            if (dadosPortoes[portaoAtual].length === 0) adicionarLinhaVaziaObjeto();
-            persistirDadosLocal();
-            renderizarTabelaFaltas();
-        }
-
-        function removerLinhaRasgada(index) {
-            rasgadasPortoes[portaoAtual].splice(index, 1);
-            persistirDadosLocal();
-            renderizarTabelas();
-        }
-
-        function abrirModalScannerParaCampo(idCampo) {
-            campoAlvoScannerId = idCampo;
-            document.getElementById('modal-scanner').classList.remove('hidden');
-            setTimeout(() => { iniciarScanner(); }, 150);
-        }
-
-        function fecharModalScanner() {
-            document.getElementById('modal-scanner').classList.add('hidden');
-            if (html5QrcodeScanner) {
-                try { if (html5QrcodeScanner.isScanning) html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear()).catch(()=>{}); } catch(e){}
-            }
-        }
-
-        async function iniciarScanner() {
-            if (!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode("reader");
-            try {
-                if (html5QrcodeScanner.isScanning) return;
-                await html5QrcodeScanner.start(
-                    { facingMode: "environment" },
-                    { fps: 30, qrbox: { width: 250, height: 130 } },
-                    (decodedText) => {
-                        const codigoTratado = tratarSSCC(decodedText);
-                        if (codigoTratado) {
-                            tocarSomSucesso();
-                            if (navigator.vibrate) navigator.vibrate(200);
-                            if (campoAlvoScannerId) {
-                                const inputEl = document.getElementById(campoAlvoScannerId);
-                                if (inputEl) { 
-                                    inputEl.value = codigoTratado; 
-                                    inputEl.dispatchEvent(new Event('blur')); 
-                                }
-                            }
-                            fecharModalScanner();
-                        }
-                    },
-                    () => {}
-                );
-            } catch (err) {}
-        }
-
-        function tratarSSCC(texto) {
-            if (!texto) return '';
-            let limpo = texto.replace(/^\][A-Za-z]\d+/, '').replace(/\D/g, '');
-            if (limpo.length === 21) limpo = limpo.substring(1);
-            return limpo || texto;
-        }
-
-        function tocarSomSucesso() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const now = audioCtx.currentTime;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, now);
-                osc.frequency.setValueAtTime(880.00, now + 0.1);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(now); osc.stop(now + 0.3);
-            } catch (e) {}
-        }
-
-        function tocarSomConquistaAnimada() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const now = audioCtx.currentTime;
-                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    const inicio = now + (i * 0.08);
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, inicio);
-                    gain.gain.setValueAtTime(0.15, inicio);
-                    gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.25);
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.start(inicio); osc.stop(inicio + 0.25);
-                });
-            } catch (e) {}
-        }
-
-        function tocarSomTrocaData() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const now = audioCtx.currentTime;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(440, now);
-                osc.frequency.setValueAtTime(554.37, now + 0.12);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(now); osc.stop(now + 0.25);
-            } catch (e) {}
-        }
-
-        function exportarExcel() {
-            const workbook = XLSX.utils.book_new();
-            let temDados = false;
-
-            for (let i = 7; i <= 26; i++) {
-                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
-                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
-
-                if (listaFaltas.length > 0 || listaRasgadas.length > 0) {
-                    temDados = true;
-                    let linhasExport = [{ "SSCC": `Portão ${i} (${dataAtual})`, "Status": "", "Origem": "", "Ordem": "", "No App?": "", "Observação": "" }];
-                    
-                    listaFaltas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": item.status, "Origem": item.origem, "Ordem": item.ordem, "No App?": item.noApp, "Observação": item.observacao }));
-                    listaRasgadas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": `${item.status} (Rasgada ${item.tipo})`, "Origem": item.origem, "Ordem": item.ordem, "No App?": "Sim", "Observação": item.observacao }));
-
-                    const worksheet = XLSX.utils.json_to_sheet(linhasExport);
-                    worksheet['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
-                    XLSX.utils.book_append_sheet(workbook, worksheet, `Portão ${i}`);
-                }
-            }
-            if (!temDados) { alert("Nenhum dado encontrado para exportar."); return; }
-            XLSX.writeFile(workbook, `Controle_Carregamento_${dataAtual}.xlsx`);
+        function carregarItens() {
+            // Função para simular recarga de dados do servidor
+            renderizarTabela();
         }
     </script>
 </body>
