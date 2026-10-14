@@ -467,7 +467,7 @@
         const SUPABASE_URL = "https://mpsyqawieuwjgupoedib.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wc3lxYXdpZXV3amd1cG9lZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTA1OTQsImV4cCI6MjEwNjA4NjU5NH0.P9I8u6ycOBCKYIT2mvp35kZ-SfNTHiVY3Jkw7ltYFuQ";
         
-        // SEGUNDO SUPABASE (CAIXAS SEM EXTERNAS)
+        // SUPABASE COMPARTILHADO (SEM EXTERNAS E OCORRÊNCIAS)
         const SUPABASE_URL_SEC = "Https://dylwhnsxjbeiukdmcupq.supabase.co";
         const SUPABASE_KEY_SEC = "sb_publishable_uZL-3Z0_a-X-ZjMhwRXC9w_RP8c754J";
 
@@ -583,6 +583,7 @@
                 }
             }
             persistirDadosLocal();
+            sincronizarOcorrenciasTurno();
         }
 
         function persistirDadosLocal() {
@@ -593,6 +594,62 @@
             localStorage.setItem(chaveRasgadas, JSON.stringify(rasgadasPortoes));
             atualizarIndicadoresKPI();
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
+            sincronizarOcorrenciasTurno();
+        }
+
+        // SINCRONIZAÇÃO AUTOMÁTICA COM O CONTROLE DE OCORRÊNCIAS
+        async function sincronizarOcorrenciasTurno() {
+            if (!supabaseClientSecundario || !dataAtual) return;
+
+            let totalFaltasCarregamento = 0;
+            let totalRasgadasCarregamento = 0;
+
+            for (let i = 7; i <= 26; i++) {
+                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+                totalFaltasCarregamento += listaFaltas.length;
+
+                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+                totalRasgadasCarregamento += listaRasgadas.length;
+            }
+
+            try {
+                // Verifica se já existe registro na tabela ocorrencias_turno1 para esta data
+                const { data: existente, error: errBusca } = await supabaseClientSecundario
+                    .from('ocorrencias_turno1')
+                    .select('*')
+                    .eq('data', dataAtual)
+                    .maybeSingle();
+
+                if (errBusca) throw errBusca;
+
+                if (existente) {
+                    // Atualiza apenas os campos de carregamento, mantendo o Sorter intacto
+                    await supabaseClientSecundario
+                        .from('ocorrencias_turno1')
+                        .update({
+                            carregamento: totalRasgadasCarregamento,
+                            faltas: totalFaltasCarregamento
+                        })
+                        .eq('id', existente.id);
+                } else {
+                    // Insere um novo registro para o dia
+                    await supabaseClientSecundario
+                        .from('ocorrencias_turno1')
+                        .insert([{
+                            data: dataAtual,
+                            sorter: 0,
+                            carregamento: totalRasgadasCarregamento,
+                            faltas: totalFaltasCarregamento,
+                            pend_sorter: 0,
+                            pend_carregamento: 0,
+                            pend_faltas: 0,
+                            observacoes: 'Gerado automaticamente pelo Controle de Carregamento',
+                            responsavel: responsavelAtual || 'Yens Farrapo'
+                        }]);
+                }
+            } catch (err) {
+                console.warn("Erro ao sincronizar ocorrências:", err);
+            }
         }
 
         async function salvarLinhaTempoReal(index) {
@@ -739,7 +796,7 @@
             containerRes.innerHTML = '<p class="text-center opacity-75 py-4"><i class="fa-solid fa-spinner fa-spin"></i> Pesquisando no banco de dados...</p>';
 
             if (!supabaseClientSecundario) {
-                containerRes.innerHTML = '<p class="text-center text-red-500 py-4">Erro: Conexão com o segundo Supabase indisponível.</p>';
+                containerRes.innerHTML = '<p class="text-center text-red-500 py-4">Erro: Conexão com o Supabase indisponível.</p>';
                 return;
             }
 
@@ -756,9 +813,7 @@
 
                 const { data, error } = await query.limit(50);
 
-                if (error) {
-                    throw error;
-                }
+                if (error) throw error;
 
                 if (!data || data.length === 0) {
                     containerRes.innerHTML = '<p class="text-center text-amber-500 py-4 font-bold">Nenhum registro encontrado para este produto/cor.</p>';
@@ -817,7 +872,7 @@
         }
 
         function mudarTurno(turno) { turnoAtual = turno; }
-        function mudarResponsavel(resp) { responsavelAtual = resp; }
+        function mudarResponsavel(resp) { responsavelAtual = resp; sincronizarOcorrenciasTurno(); }
 
         function popularSelectPortoesModal() {
             const select = document.getElementById('rasgada-portao');
