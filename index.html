@@ -590,7 +590,7 @@
             }
         }
 
-        function persistirDadosLocal(dispararAgendamento = true, ehRasgada = false) {
+        function persistirDadosLocal(dispararAgendamento = true) {
             if (!dataAtual) inicializarDataHoje();
             const chaveFaltas = `grendene_faltas_${dataAtual}`;
             const chaveRasgadas = `grendene_rasgadas_${dataAtual}`;
@@ -600,20 +600,17 @@
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
 
             if (dispararAgendamento) {
-                agendarSalvamentoESincronizacao(ehRasgada);
+                agendarSalvamentoESincronizacao();
             }
         }
 
-        function agendarSalvamentoESincronizacao(ehRasgada = false) {
+        function agendarSalvamentoESincronizacao() {
             const badgeSinc = document.getElementById('status-sinc');
             badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 font-bold flex items-center gap-1 border border-amber-500/30";
             badgeSinc.innerHTML = `<i class="fa-solid fa-clock animate-spin"></i> A aguardar sincronização...`;
 
             if (temporizadorSalvar) clearTimeout(temporizadorSalvar);
             
-            // RASGADA GANHA 1 SEGUNDO A MAIS EXCLUSIVO (3 SEG TOTAL) PARA PREVENIR CONFLITO
-            const tempoAtraso = ehRasgada ? 3000 : 2000;
-
             temporizadorSalvar = setTimeout(async () => {
                 badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-500 font-bold flex items-center gap-1 border border-blue-500/30";
                 badgeSinc.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> A sincronizar...`;
@@ -622,13 +619,12 @@
 
                 badgeSinc.className = "text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold flex items-center gap-1 border border-emerald-500/30";
                 badgeSinc.innerHTML = `<i class="fa-solid fa-circle-check"></i> Sincronizado`;
-            }, tempoAtraso);
+            }, 2000); // 2 segundos de atraso exatos
         }
 
         async function sincronizarTudoComNuvem() {
             if (!supabaseClient) return;
             try {
-                // Sincroniza faltas normais
                 const lista = dadosPortoes[portaoAtual] || [];
                 for (let i = 0; i < lista.length; i++) {
                     const item = lista[i];
@@ -651,33 +647,6 @@
                         await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id);
                     } else {
                         const res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
-                        if (res.data && res.data[0]) item.id = res.data[0].id;
-                    }
-                }
-
-                // Sincroniza caixas rasgadas com isolamento
-                const listaRasgadas = rasgadasPortoes[portaoAtual] || [];
-                for (let i = 0; i < listaRasgadas.length; i++) {
-                    const item = listaRasgadas[i];
-                    if (!item.sscc || item.sscc.trim() === '') continue;
-
-                    const payloadR = {
-                        data_operacao: dataAtual,
-                        portao: Number(portaoAtual),
-                        sscc: String(item.sscc).trim(),
-                        status: String(item.status || 'Pendente'),
-                        origem: String(item.origem || 'CD'),
-                        ordem: String(item.ordem || 'URGENTE'),
-                        no_app: 'Sim',
-                        observacao: String(item.observacao || ''),
-                        turno: String(turnoAtual || 'Turno 1'),
-                        responsavel: String(responsavelAtual || 'Não informado')
-                    };
-
-                    if (item.id) {
-                        await supabaseClient.from('controle_faltas_portao').update(payloadR).eq('id', item.id);
-                    } else {
-                        const res = await supabaseClient.from('controle_faltas_portao').insert([payloadR]).select();
                         if (res.data && res.data[0]) item.id = res.data[0].id;
                     }
                 }
@@ -833,9 +802,23 @@
             rasgadasPortoes[portaoAlvo].unshift(novoItem);
 
             tocarSomSucesso();
-            persistirDadosLocal(true, true); // INDICA QUE É RASGADA
+            persistirDadosLocal();
             fecharModalRasgada();
             selecionarPortao(portaoAlvo);
+
+            if (supabaseClient) {
+                await supabaseClient.from('controle_faltas_portao').insert([{
+                    data_operacao: dataAtual,
+                    portao: Number(portaoAlvo),
+                    sscc: String(sscc),
+                    status: 'Pendente',
+                    origem: 'CD',
+                    ordem: 'URGENTE',
+                    observacao: `Rasgada (${tipo}): ${obs}`,
+                    turno: String(turnoAtual),
+                    responsavel: String(responsavelAtual)
+                }]);
+            }
         }
 
         function atualizarIndicadoresKPI() {
@@ -1045,7 +1028,7 @@
         function atualizarStatusImediatoVisual(index, novoValor) {
             const item = dadosPortoes[portaoAtual][index];
             item.status = novoValor;
-            persistirDadosLocal(true, false);
+            persistirDadosLocal(true);
 
             const selectEl = document.getElementById(`select-status-${index}`);
             if (selectEl) {
@@ -1060,7 +1043,7 @@
         function atualizarAppImediatoVisual(index, novoValor) {
             const item = dadosPortoes[portaoAtual][index];
             item.noApp = novoValor;
-            persistirDadosLocal(true, false);
+            persistirDadosLocal(true);
 
             const selectEl = document.getElementById(`select-app-${index}`);
             if (selectEl) {
@@ -1074,7 +1057,7 @@
             const item = dadosPortoes[portaoAtual][index];
             if (item[campo] !== valor) {
                 item[campo] = valor;
-                persistirDadosLocal(true, false);
+                persistirDadosLocal(true);
             }
         }
 
@@ -1083,7 +1066,7 @@
             const item = rasgadasPortoes[portaoAtual][index];
             if (item[campo] !== valor) {
                 item[campo] = valor;
-                persistirDadosLocal(true, true); // INDICA QUE É RASGADA
+                persistirDadosLocal(true);
                 if (campo === 'status' && valor === 'Entregue no Portão') {
                     tocarSomConquistaAnimada();
                     renderizarTabelaRasgadas();
@@ -1110,17 +1093,13 @@
             }
             dadosPortoes[portaoAtual].splice(index, 1);
             if (dadosPortoes[portaoAtual].length === 0) adicionarLinhaVaziaObjeto();
-            persistirDadosLocal(true, false);
+            persistirDadosLocal(true);
             renderizarTabelaFaltas();
         }
 
         function removerLinhaRasgada(index) {
-            const item = rasgadasPortoes[portaoAtual][index];
-            if (item && item.id && supabaseClient) {
-                supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
-            }
             rasgadasPortoes[portaoAtual].splice(index, 1);
-            persistirDadosLocal(true, true);
+            persistirDadosLocal(true);
             renderizarTabelas();
         }
 
