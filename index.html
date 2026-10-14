@@ -56,21 +56,22 @@
             background: transparent;
             font-size: 13px;
             font-family: monospace;
-            padding: 6px;
+            padding: 8px;
             border-radius: 4px;
             box-sizing: border-box;
         }
 
         .excel-select {
-            width: 100%;
+            width: 100% !important;
             border: none;
             outline: none;
-            font-size: 13px;
-            padding: 6px 10px;
-            border-radius: 6px;
+            font-size: 14px;
+            padding: 10px 14px !important;
+            border-radius: 8px !important;
             cursor: pointer;
             box-sizing: border-box;
             font-weight: 700;
+            display: block;
         }
 
         .td-sscc-container {
@@ -122,22 +123,23 @@
             }
             .excel-table td:first-child { display: none; }
             .excel-input { text-align: right; }
-            .excel-select { text-align: right; width: auto; min-width: 140px; }
+            .excel-select { text-align: left; width: 100% !important; min-width: 160px; }
         }
 
-        .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
-        .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
-        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
-        .status-apareceu-no-portao { background-color: #06b6d4 !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
-        .status-entregue-no-portao { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        /* BOTÕES LARGOS E COM DESTAQUE CONFORME A FOTO DE REFERÊNCIA */
+        .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
+        .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
+        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
+        .status-apareceu-no-portao { background-color: #06b6d4 !important; color: #ffffff !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
+        .status-entregue-no-portao { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
 
-        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
-        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
-        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
-        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
+        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
+        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
+        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
 
-        .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
-        .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
+        .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 8px !important; padding: 10px 14px !important; width: 100%; }
 
         .excel-select option { background-color: #ffffff; color: #1f2937; }
         body.dark .excel-select option { background-color: #161b22; color: #c9d1d9; }
@@ -347,10 +349,10 @@
                         <tr>
                             <th class="w-8 text-center">#</th>
                             <th class="w-64">Código SSCC</th>
-                            <th class="w-40">Status</th>
+                            <th class="w-48">Status</th>
                             <th class="w-36">Origem</th>
                             <th class="w-28">Ordem</th>
-                            <th class="w-24">No App?</th>
+                            <th class="w-32">No App?</th>
                             <th>Observação</th>
                             <th class="w-8 text-center">Ação</th>
                         </tr>
@@ -375,7 +377,7 @@
                             <th class="w-8 text-center">#</th>
                             <th class="w-56">Código SSCC</th>
                             <th class="w-40">Tipo</th>
-                            <th class="w-40">Status</th>
+                            <th class="w-48">Status</th>
                             <th class="w-36">Origem</th>
                             <th class="w-28">Ordem</th>
                             <th>Observação</th>
@@ -467,7 +469,6 @@
             }
         }
 
-        // CARREGA DIRETAMENTE DO SUPABASE PARA O DIA SELECIONADO
         async function carregarDadosNuvemELocais() {
             if (!dataAtual) inicializarDataHoje();
             dadosPortoes = {};
@@ -498,7 +499,6 @@
                                     observacao: reg.observacao || ''
                                 };
 
-                                // Se for observação de rasgada, organiza na aba de rasgadas, senão em faltas
                                 if (reg.observacao && reg.observacao.includes('Rasgada')) {
                                     const tipoMatch = reg.observacao.includes('Lida') ? 'Lida' : 'Nao Lida';
                                     rasgadasPortoes[p].push({ ...itemObj, tipo: tipoMatch });
@@ -513,7 +513,6 @@
                 }
             }
 
-            // Fallback ou suplemento local
             for (let i = 7; i <= 26; i++) {
                 if (dadosPortoes[i].length === 0) {
                     const chaveF = `grendene_faltas_${dataAtual}_p${i}`;
@@ -536,7 +535,6 @@
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
         }
 
-        // SALVAMENTO EM TEMPO REAL DIRETO NA NUVEM + CRUZAMENTO DE REPOSIÇÕES E RASGADAS
         async function salvarLinhaTempoReal(index) {
             persistirDadosLocal();
             if (!supabaseClient) return;
@@ -548,7 +546,6 @@
                 const codigoLimpo = tratarSSCC(item.sscc);
                 let mensagemCruzamento = '';
 
-                // 1. Busca flexível na tabela 'registros_sscc' (Reposição)
                 const resRep = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigoLimpo}%`).maybeSingle();
                 
                 if (!resRep.error && resRep.data) {
@@ -556,7 +553,6 @@
                     const rastro = resRep.data.rastro ? ` (${resRep.data.rastro})` : '';
                     mensagemCruzamento = `Caixa localizada em Reposição: ${categoria}${rastro}`;
                 } else {
-                    // 2. Varre rasgadas locais
                     let achouRasgadaLocal = false;
                     for (let p = 7; p <= 26; p++) {
                         const listaRasg = rasgadasPortoes[p] || [];
@@ -568,7 +564,6 @@
                         }
                     }
 
-                    // 3. Varre rasgadas no banco
                     if (!achouRasgadaLocal) {
                         const resRasgDb = await supabaseClient.from('controle_faltas_portao').select('*').ilike('sscc', `%${codigoLimpo}%`).ilike('observacao', '%Rasgada%').maybeSingle();
                         if (!resRasgDb.error && resRasgDb.data) {
@@ -588,7 +583,6 @@
                     document.getElementById('modal-alerta-integracao').classList.remove('hidden');
                 }
 
-                // Payload para gravação na nuvem
                 const payload = {
                     data_operacao: dataAtual,
                     portao: Number(portaoAtual),
