@@ -455,8 +455,8 @@
             gerarAbasPortoes();
             popularSelectPortoesModal();
             
-            // INICIA O CICLO DE ATUALIZAÇÃO AUTOMÁTICA EM SEGUNDO PLANO A CADA 5 SEGUNDOS
-            setInterval(atualizarTelaEmSegundoPlano, 5000);
+            // ATUALIZA A TELA DO OUTRO APARELHO AUTOMATICAMENTE A CADA 4 SEGUNDOS
+            setInterval(puxarAtualizacoesAutomaticas, 4000);
         });
 
         function inicializarDataHoje() {
@@ -532,12 +532,12 @@
             persistirDadosLocal(false);
         }
 
-        // VERIFICA SE O USUÁRIO ESTÁ DIGITANDO ANTES DE ATUALIZAR A TELA AUTOMATICAMENTE
-        async function atualizarTelaEmSegundoPlano() {
+        // FUNÇÃO DE ATUALIZAÇÃO AUTOMÁTICA EM SEGUNDO PLANO
+        async function puxarAtualizacoesAutomaticas() {
             const elementoAtivo = document.activeElement;
             const estaEditando = elementoAtivo && (elementoAtivo.tagName === 'INPUT' || elementoAtivo.tagName === 'SELECT');
             
-            if (estaEditando) return; // Não atualiza se o usuário estiver focado em algum campo
+            if (estaEditando) return; // NUNCA atualiza se o usuário estiver focado digitando ou mexendo em um select
 
             if (supabaseClient) {
                 try {
@@ -547,11 +547,11 @@
                         .eq('data_operacao', dataAtual);
 
                     if (!error && data) {
-                        let novosDadosPortoes = {};
-                        let novasRasgadasPortoes = {};
+                        let tempFaltas = {};
+                        let tempRasgadas = {};
                         for (let i = 7; i <= 26; i++) {
-                            novosDadosPortoes[i] = [];
-                            novosRasgadasPortoes[i] = [];
+                            tempFaltas[i] = [];
+                            tempRasgadas[i] = [];
                         }
 
                         data.forEach(reg => {
@@ -569,16 +569,16 @@
 
                                 if (reg.observacao && reg.observacao.includes('Rasgada')) {
                                     const tipoMatch = reg.observacao.includes('Lida') ? 'Lida' : 'Nao Lida';
-                                    novasRasgadasPortoes[p].push({ ...itemObj, tipo: tipoMatch });
+                                    tempRasgadas[p].push({ ...itemObj, tipo: tipoMatch });
                                 } else {
-                                    novosDadosPortoes[p].push(itemObj);
+                                    tempFaltas[p].push(itemObj);
                                 }
                             }
                         });
 
-                        dadosPortoes = novosDadosPortoes;
-                        rasgadasPortoes = novasRasgadasPortoes;
-                        
+                        dadosPortoes = tempFaltas;
+                        rasgadasPortoes = tempRasgadas;
+
                         atualizarIndicadoresKPI();
                         if (portaoAtual === 'todos') {
                             renderizarPanoramaTodosPortoes();
