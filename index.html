@@ -45,20 +45,32 @@
         body.dark .excel-table td { background-color: #161b22; border-color: #30363d; color: #c9d1d9; }
         body.dark .excel-input, body.dark .excel-select { color: #c9d1d9; }
 
-        .excel-table { border-collapse: collapse; width: 100%; font-size: 12px; }
-        .excel-table th { padding: 6px 8px; text-align: left; font-weight: 700; }
-        .excel-table td { padding: 2px 4px; position: relative; }
+        .excel-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+        .excel-table th { padding: 8px; text-align: left; font-weight: 700; }
+        .excel-table td { padding: 4px; position: relative; vertical-align: middle; }
 
-        .excel-input, .excel-select {
+        .excel-input {
             width: 100%;
             border: none;
             outline: none;
             background: transparent;
-            font-size: 12px;
+            font-size: 13px;
             font-family: monospace;
-            padding: 4px;
+            padding: 6px;
             border-radius: 4px;
             box-sizing: border-box;
+        }
+
+        .excel-select {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-sizing: border-box;
+            font-weight: 700;
         }
 
         .td-sscc-container {
@@ -74,7 +86,7 @@
         .excel-input-sscc:focus {
             border: 2px solid #2563eb !important;
             background-color: rgba(37, 99, 235, 0.05) !important;
-            border-radius: 4px;
+            border-radius: 6px;
         }
 
         body.dark .excel-input-sscc:focus {
@@ -94,7 +106,7 @@
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             .excel-table td {
-                padding: 4px 0;
+                padding: 6px 0;
                 border: none !important;
                 display: flex;
                 justify-content: space-between;
@@ -103,28 +115,29 @@
             .excel-table td::before {
                 content: attr(data-label);
                 font-weight: bold;
-                font-size: 10px;
+                font-size: 11px;
                 text-transform: uppercase;
                 opacity: 0.7;
                 margin-right: 8px;
             }
             .excel-table td:first-child { display: none; }
-            .excel-input, .excel-select { text-align: right; }
+            .excel-input { text-align: right; }
+            .excel-select { text-align: right; width: auto; min-width: 140px; }
         }
 
-        .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; font-weight: bold; border-radius: 4px; }
-        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-apareceu-no-portao { background-color: #06b6d4 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-entregue-no-portao { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        .status-apareceu-no-portao { background-color: #06b6d4 !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        .status-entregue-no-portao { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
 
-        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
 
-        .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
-        .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 4px; }
+        .app-nao { background-color: #ef4444 !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
+        .app-sim { background-color: #22c55e !important; color: #ffffff !important; font-weight: bold; border-radius: 6px; padding: 6px 10px; }
 
         .excel-select option { background-color: #ffffff; color: #1f2937; }
         body.dark .excel-select option { background-color: #161b22; color: #c9d1d9; }
@@ -275,7 +288,7 @@
             </div>
 
             <span id="status-tempo-real" class="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold flex items-center gap-1 border border-emerald-500/30">
-                <i class="fa-solid fa-bolt"></i> Tempo Real Ativo
+                <i class="fa-solid fa-bolt"></i> Sincronizado Nuvem
             </span>
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
@@ -334,10 +347,10 @@
                         <tr>
                             <th class="w-8 text-center">#</th>
                             <th class="w-64">Código SSCC</th>
-                            <th class="w-36">Status</th>
+                            <th class="w-40">Status</th>
                             <th class="w-36">Origem</th>
                             <th class="w-28">Ordem</th>
-                            <th class="w-20">No App?</th>
+                            <th class="w-24">No App?</th>
                             <th>Observação</th>
                             <th class="w-8 text-center">Ação</th>
                         </tr>
@@ -362,7 +375,7 @@
                             <th class="w-8 text-center">#</th>
                             <th class="w-56">Código SSCC</th>
                             <th class="w-40">Tipo</th>
-                            <th class="w-36">Status</th>
+                            <th class="w-40">Status</th>
                             <th class="w-36">Origem</th>
                             <th class="w-28">Ordem</th>
                             <th>Observação</th>
@@ -432,7 +445,7 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             inicializarDataHoje();
-            carregarDadosLocais();
+            await carregarDadosNuvemELocais();
             gerarAbasPortoes();
             popularSelectPortoesModal();
         });
@@ -444,17 +457,18 @@
             if (inputData) inputData.value = dataAtual;
         }
 
-        function mudarDataOperacional(novaData) {
+        async function mudarDataOperacional(novaData) {
             if (novaData) {
                 dataAtual = novaData;
-                carregarDadosLocais();
+                await carregarDadosNuvemELocais();
                 gerarAbasPortoes();
-                selecionarPortao(7);
+                selecionarPortao(portaoAtual === 'todos' ? 7 : portaoAtual);
                 tocarSomTrocaData();
             }
         }
 
-        function carregarDadosLocais() {
+        // CARREGA DIRETAMENTE DO SUPABASE PARA O DIA SELECIONADO
+        async function carregarDadosNuvemELocais() {
             if (!dataAtual) inicializarDataHoje();
             dadosPortoes = {};
             rasgadasPortoes = {};
@@ -463,40 +477,68 @@
                 rasgadasPortoes[i] = [];
             }
 
-            const chaveFaltas = `grendene_faltas_${dataAtual}`;
-            const chaveRasgadas = `grendene_rasgadas_${dataAtual}`;
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('controle_faltas_portao')
+                        .select('*')
+                        .eq('data_operacao', dataAtual);
 
-            const salvoFaltas = localStorage.getItem(chaveFaltas);
-            const salvoRasgadas = localStorage.getItem(chaveRasgadas);
+                    if (!error && data) {
+                        data.forEach(reg => {
+                            const p = reg.portao;
+                            if (p >= 7 && p <= 26) {
+                                const itemObj = {
+                                    id: reg.id,
+                                    sscc: reg.sscc || '',
+                                    status: reg.status || 'Pendente',
+                                    origem: reg.origem || 'CD',
+                                    ordem: reg.ordem || '',
+                                    noApp: reg.no_app || 'Não',
+                                    observacao: reg.observacao || ''
+                                };
 
-            if (salvoFaltas) {
-                try { dadosPortoes = JSON.parse(salvoFaltas); } catch(e){}
+                                // Se for observação de rasgada, organiza na aba de rasgadas, senão em faltas
+                                if (reg.observacao && reg.observacao.includes('Rasgada')) {
+                                    const tipoMatch = reg.observacao.includes('Lida') ? 'Lida' : 'Nao Lida';
+                                    rasgadasPortoes[p].push({ ...itemObj, tipo: tipoMatch });
+                                } else {
+                                    dadosPortoes[p].push(itemObj);
+                                }
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.warn("Erro ao buscar da nuvem, carregando local", err);
+                }
             }
-            if (salvoRasgadas) {
-                try { rasgadasPortoes = JSON.parse(salvoRasgadas); } catch(e){}
-            }
 
+            // Fallback ou suplemento local
             for (let i = 7; i <= 26; i++) {
-                if (!dadosPortoes[i]) dadosPortoes[i] = [];
-                if (!rasgadasPortoes[i]) rasgadasPortoes[i] = [];
+                if (dadosPortoes[i].length === 0) {
+                    const chaveF = `grendene_faltas_${dataAtual}_p${i}`;
+                    const salvoF = localStorage.getItem(chaveF);
+                    if (salvoF) {
+                        try { dadosPortoes[i] = JSON.parse(salvoF); } catch(e){}
+                    }
+                }
             }
+            persistirDadosLocal();
         }
 
-        function persistirDados() {
+        function persistirDadosLocal() {
             if (!dataAtual) inicializarDataHoje();
             const chaveFaltas = `grendene_faltas_${dataAtual}`;
             const chaveRasgadas = `grendene_rasgadas_${dataAtual}`;
-
             localStorage.setItem(chaveFaltas, JSON.stringify(dadosPortoes));
             localStorage.setItem(chaveRasgadas, JSON.stringify(rasgadasPortoes));
-
             atualizarIndicadoresKPI();
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
         }
 
-        // TEMPO REAL POR CAMPO (ONBLUR) + CRUZAMENTO ROBUSTO EM REPOSIÇÕES E RASGADAS
+        // SALVAMENTO EM TEMPO REAL DIRETO NA NUVEM + CRUZAMENTO DE REPOSIÇÕES E RASGADAS
         async function salvarLinhaTempoReal(index) {
-            persistirDados();
+            persistirDadosLocal();
             if (!supabaseClient) return;
 
             const item = dadosPortoes[portaoAtual][index];
@@ -514,7 +556,7 @@
                     const rastro = resRep.data.rastro ? ` (${resRep.data.rastro})` : '';
                     mensagemCruzamento = `Caixa localizada em Reposição: ${categoria}${rastro}`;
                 } else {
-                    // 2. Varre todas as rasgadas locais de todos os portões
+                    // 2. Varre rasgadas locais
                     let achouRasgadaLocal = false;
                     for (let p = 7; p <= 26; p++) {
                         const listaRasg = rasgadasPortoes[p] || [];
@@ -526,7 +568,7 @@
                         }
                     }
 
-                    // 3. Se não achou localmente, varre no banco de dados de rasgadas
+                    // 3. Varre rasgadas no banco
                     if (!achouRasgadaLocal) {
                         const resRasgDb = await supabaseClient.from('controle_faltas_portao').select('*').ilike('sscc', `%${codigoLimpo}%`).ilike('observacao', '%Rasgada%').maybeSingle();
                         if (!resRasgDb.error && resRasgDb.data) {
@@ -535,7 +577,7 @@
                     }
                 }
 
-                if (mensagemCruzamento) {
+                if (mensagemCruzamento && !item.observacao.includes(mensagemCruzamento)) {
                     item.observacao = `[${mensagemCruzamento}]`;
                     const inputObs = document.getElementById(`input-obs-${index}`);
                     if (inputObs && document.activeElement !== inputObs) {
@@ -546,7 +588,7 @@
                     document.getElementById('modal-alerta-integracao').classList.remove('hidden');
                 }
 
-                // Sincronização em segundo plano no Supabase
+                // Payload para gravação na nuvem
                 const payload = {
                     data_operacao: dataAtual,
                     portao: Number(portaoAtual),
@@ -569,10 +611,10 @@
 
                 if (res.data && res.data[0] && res.data[0].id) {
                     item.id = res.data[0].id;
-                    persistirDados();
+                    persistirDadosLocal();
                 }
             } catch (err) {
-                console.warn("Erro na sincronização em tempo real", err);
+                console.warn("Erro na gravação tempo real", err);
             }
         }
 
@@ -719,11 +761,11 @@
             if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
             if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
 
-            const novoItem = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: obs };
+            const novoItem = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: `Rasgada (${tipo}): ${obs}` };
             rasgadasPortoes[portaoAlvo].unshift(novoItem);
 
             tocarSomSucesso();
-            persistirDados();
+            persistirDadosLocal();
             fecharModalRasgada();
             selecionarPortao(portaoAlvo);
 
@@ -817,7 +859,7 @@
                         </select>
                     </td>
                     <td data-label="Origem">
-                        <select onchange="alterarCampoFaltaImediato(${index}, 'origem', this.value)" class="excel-select">
+                        <select onchange="alterarCampoFaltaImediato(${index}, 'origem', this.value)" class="excel-select border">
                             <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
                             <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
                             <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
@@ -889,7 +931,7 @@
                         </select>
                     </td>
                     <td data-label="Origem">
-                        <select onchange="alterarCampoRasgadaImediato(${index}, 'origem', this.value)" class="excel-select">
+                        <select onchange="alterarCampoRasgadaImediato(${index}, 'origem', this.value)" class="excel-select border">
                             <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
                             <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
                             <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
@@ -941,7 +983,7 @@
         function atualizarStatusImediatoVisual(index, novoValor) {
             const item = dadosPortoes[portaoAtual][index];
             item.status = novoValor;
-            persistirDados();
+            persistirDadosLocal();
             salvarLinhaTempoReal(index);
 
             const selectEl = document.getElementById(`select-status-${index}`);
@@ -962,7 +1004,7 @@
         function atualizarAppImediatoVisual(index, novoValor) {
             const item = dadosPortoes[portaoAtual][index];
             item.noApp = novoValor;
-            persistirDados();
+            persistirDadosLocal();
             salvarLinhaTempoReal(index);
 
             const selectEl = document.getElementById(`select-app-${index}`);
@@ -981,10 +1023,8 @@
             const item = dadosPortoes[portaoAtual][index];
             if (item[campo] !== valor) {
                 item[campo] = valor;
-                persistirDados();
-                if (campo === 'sscc') {
-                    salvarLinhaTempoReal(index);
-                }
+                persistirDadosLocal();
+                salvarLinhaTempoReal(index);
             }
         }
 
@@ -993,7 +1033,7 @@
             const item = rasgadasPortoes[portaoAtual][index];
             if (item[campo] !== valor) {
                 item[campo] = valor;
-                persistirDados();
+                persistirDadosLocal();
                 if (campo === 'status' && valor === 'Entregue no Portão') {
                     tocarSomConquistaAnimada();
                     renderizarTabelaRasgadas();
@@ -1009,7 +1049,7 @@
 
         function adicionarLinhaVazia() { 
             adicionarLinhaVaziaObjeto(); 
-            persistirDados(); 
+            persistirDadosLocal(); 
             renderizarTabelaFaltas(); 
         }
         
@@ -1020,13 +1060,13 @@
             }
             dadosPortoes[portaoAtual].splice(index, 1);
             if (dadosPortoes[portaoAtual].length === 0) adicionarLinhaVaziaObjeto();
-            persistirDados();
+            persistirDadosLocal();
             renderizarTabelaFaltas();
         }
 
         function removerLinhaRasgada(index) {
             rasgadasPortoes[portaoAtual].splice(index, 1);
-            persistirDados();
+            persistirDadosLocal();
             renderizarTabelas();
         }
 
