@@ -494,7 +494,7 @@
             if (portaoAtual !== 'todos') verificarBannerRasgadas();
         }
 
-        // TEMPO REAL POR CAMPO (ONBLUR) + CRUZAMENTO INTELIGENTE DE REPOSIÇÕES E RASGADAS
+        // TEMPO REAL POR CAMPO (ONBLUR) + CRUZAMENTO ROBUSTO EM REPOSIÇÕES E RASGADAS
         async function salvarLinhaTempoReal(index) {
             persistirDados();
             if (!supabaseClient) return;
@@ -504,39 +504,46 @@
 
             try {
                 const codigoLimpo = tratarSSCC(item.sscc);
+                let mensagemCruzamento = '';
 
-                // 1. Cruza com a base de reposições / registros_sscc
-                const resRep = await supabaseClient.from('registros_sscc').select('*').eq('sscc', codigoLimpo).maybeSingle();
+                // 1. Busca flexível na tabela 'registros_sscc' (Reposição)
+                const resRep = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigoLimpo}%`).maybeSingle();
+                
                 if (!resRep.error && resRep.data) {
                     const categoria = resRep.data.categoria || 'Reposição';
                     const rastro = resRep.data.rastro ? ` (${resRep.data.rastro})` : '';
-                    item.observacao = `[Mapeado Reposição: ${categoria}${rastro}]`;
-                    
+                    mensagemCruzamento = `Caixa localizada em Reposição: ${categoria}${rastro}`;
+                } else {
+                    // 2. Varre todas as rasgadas locais de todos os portões
+                    let achouRasgadaLocal = false;
+                    for (let p = 7; p <= 26; p++) {
+                        const listaRasg = rasgadasPortoes[p] || [];
+                        const matchRasgada = listaRasg.find(r => tratarSSCC(r.sscc) === codigoLimpo);
+                        if (matchRasgada) {
+                            achouRasgadaLocal = true;
+                            mensagemCruzamento = `ALERTA: Caixa localizada em Rasgadas (Portão ${p} - Tipo: ${matchRasgada.tipo})`;
+                            break;
+                        }
+                    }
+
+                    // 3. Se não achou localmente, varre no banco de dados de rasgadas
+                    if (!achouRasgadaLocal) {
+                        const resRasgDb = await supabaseClient.from('controle_faltas_portao').select('*').ilike('sscc', `%${codigoLimpo}%`).ilike('observacao', '%Rasgada%').maybeSingle();
+                        if (!resRasgDb.error && resRasgDb.data) {
+                            mensagemCruzamento = `ALERTA: Caixa localizada em Rasgadas (Portão ${resRasgDb.data.portao})`;
+                        }
+                    }
+                }
+
+                if (mensagemCruzamento) {
+                    item.observacao = `[${mensagemCruzamento}]`;
                     const inputObs = document.getElementById(`input-obs-${index}`);
                     if (inputObs && document.activeElement !== inputObs) {
                         inputObs.value = item.observacao;
                     }
 
-                    document.getElementById('texto-alerta-integracao').innerText = `Encontrado em Reposições: ${categoria}${rastro}`;
+                    document.getElementById('texto-alerta-integracao').innerText = mensagemCruzamento;
                     document.getElementById('modal-alerta-integracao').classList.remove('hidden');
-                } else {
-                    // 2. Se não achou em reposições, verifica se consta na tabela/memória de rasgadas
-                    let achouRasgada = false;
-                    for (let p = 7; p <= 26; p++) {
-                        const listaRasg = rasgadasPortoes[p] || [];
-                        const matchRasgada = listaRasg.find(r => tratarSSCC(r.sscc) === codigoLimpo);
-                        if (matchRasgada) {
-                            achouRasgada = true;
-                            item.observacao = `[ALERTA: Consta como Caixa Rasgada - Portão ${p}]`;
-                            const inputObs = document.getElementById(`input-obs-${index}`);
-                            if (inputObs && document.activeElement !== inputObs) {
-                                inputObs.value = item.observacao;
-                            }
-                            document.getElementById('texto-alerta-integracao').innerText = `Atenção! Este SSCC está registado como Caixa Rasgada no Portão ${p}!`;
-                            document.getElementById('modal-alerta-integracao').classList.remove('hidden');
-                            break;
-                        }
-                    }
                 }
 
                 // Sincronização em segundo plano no Supabase
