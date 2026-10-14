@@ -45,9 +45,9 @@
         body.dark .excel-table td { background-color: #161b22; border-color: #30363d; color: #c9d1d9; }
         body.dark .excel-input, body.dark .excel-select { color: #c9d1d9; }
 
-        .excel-table { border-collapse: collapse; width: 100%; font-size: 13px; }
-        .excel-table th { padding: 8px; text-align: left; font-weight: 700; }
-        .excel-table td { padding: 4px; position: relative; vertical-align: middle; }
+        .excel-table { border-collapse: collapse; width: 100%; font-size: 13px; table-layout: auto; }
+        .excel-table th { padding: 6px 4px; text-align: left; font-weight: 700; white-space: nowrap; }
+        .excel-table td { padding: 3px 2px; position: relative; vertical-align: middle; }
 
         .excel-input {
             width: 100%;
@@ -56,19 +56,19 @@
             background: transparent;
             font-size: 13px;
             font-family: monospace;
-            padding: 6px;
+            padding: 4px;
             border-radius: 4px;
             box-sizing: border-box;
         }
 
-        /* FORMATO RETANGULAR COMPACTO E LARGO IDÊNTICO À FOTO */
+        /* FORMATO RETANGULAR COMPACTO E OTIMIZADO */
         .excel-select {
             width: 100% !important;
-            min-width: 130px !important;
+            min-width: 105px !important;
             border: none !important;
             outline: none !important;
             font-size: 12px !important;
-            padding: 4px 8px !important;
+            padding: 3px 6px !important;
             border-radius: 4px !important;
             cursor: pointer !important;
             box-sizing: border-box !important;
@@ -80,7 +80,8 @@
 
         .td-sscc-container {
             position: relative;
-            width: 100%;
+            width: 160px;
+            max-width: 180px;
         }
 
         .excel-input-sscc {
@@ -128,6 +129,7 @@
             .excel-table td:first-child { display: none; }
             .excel-input { text-align: right; }
             .excel-select { text-align: right !important; width: auto !important; min-width: 140px !important; }
+            .td-sscc-container { width: 100%; max-width: 100%; }
         }
 
         /* CORES DAS CLASSES DE STATUS */
@@ -164,6 +166,43 @@
             <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">LOCALIZAÇÃO</h2>
             <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono break-words">A caixa informada foi localizada...</p>
             <button onclick="fecharAlertaIntegracao()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-xs cursor-pointer shadow">Entendido / Fechar</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE BUSCA "SEM EXTERNA" -->
+    <div id="modal-sem-externa" class="fixed inset-0 bg-black/70 hidden z-[99999] flex items-center justify-center p-4">
+        <div class="ui-card rounded-xl max-w-lg w-full p-5 shadow-2xl border border-blue-500 my-auto">
+            <div class="flex justify-between items-center pb-2 border-b mb-4">
+                <h3 class="text-sm font-bold text-blue-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-box-archive"></i> Consulta de Caixas Sem Externa
+                </h3>
+                <button onclick="fecharModalSemExterna()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block opacity-75 mb-1 font-bold">Produto</label>
+                        <input type="text" id="busca-produto" placeholder="Ex: 23496..." class="w-full ui-card border rounded p-2 font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="block opacity-75 mb-1 font-bold">Cor</label>
+                        <input type="text" id="busca-cor" placeholder="Ex: Cp443..." class="w-full ui-card border rounded p-2 font-mono font-bold">
+                    </div>
+                </div>
+                <button onclick="executarBuscaSemExterna()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs cursor-pointer shadow flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-magnifying-glass"></i> Buscar no Banco
+                </button>
+
+                <div class="mt-4 border-t pt-3">
+                    <span class="text-[11px] font-bold uppercase tracking-wider opacity-75 block mb-2">Resultados da Consulta</span>
+                    <div id="resultado-busca-sem-externa" class="max-h-[220px] overflow-y-auto space-y-2 font-mono text-[11px]">
+                        <p class="text-center opacity-50 py-4">Insira o produto ou cor e clique em buscar.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end pt-3 border-t mt-3">
+                <button onclick="fecharModalSemExterna()" class="px-3 py-1.5 border rounded text-xs cursor-pointer">Fechar</button>
+            </div>
         </div>
     </div>
 
@@ -298,6 +337,7 @@
             </span>
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
+            <button onclick="abrirModalSemExterna()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-box-archive"></i> Sem Externa</button>
             <button onclick="adicionarLinhaVazia()" class="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-plus"></i> Linha</button>
             <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
         </div>
@@ -351,12 +391,12 @@
                 <table class="excel-table">
                     <thead>
                         <tr>
-                            <th class="w-8 text-center">#</th>
-                            <th class="w-64">Código SSCC</th>
-                            <th class="w-44">Status</th>
-                            <th class="w-36">Origem</th>
-                            <th class="w-28">Ordem</th>
-                            <th class="w-28">No App?</th>
+                            <th class="w-6 text-center">#</th>
+                            <th style="width: 155px;">Código SSCC</th>
+                            <th style="width: 135px;">Status</th>
+                            <th style="width: 110px;">Origem</th>
+                            <th style="width: 75px;">Ordem</th>
+                            <th style="width: 80px;">No App?</th>
                             <th>Observação</th>
                             <th class="w-8 text-center">Ação</th>
                         </tr>
@@ -378,12 +418,12 @@
                 <table class="excel-table">
                     <thead>
                         <tr>
-                            <th class="w-8 text-center">#</th>
-                            <th class="w-56">Código SSCC</th>
-                            <th class="w-40">Tipo</th>
-                            <th class="w-44">Status</th>
-                            <th class="w-36">Origem</th>
-                            <th class="w-28">Ordem</th>
+                            <th class="w-6 text-center">#</th>
+                            <th style="width: 155px;">Código SSCC</th>
+                            <th style="width: 130px;">Tipo</th>
+                            <th style="width: 135px;">Status</th>
+                            <th style="width: 110px;">Origem</th>
+                            <th style="width: 75px;">Ordem</th>
                             <th>Observação</th>
                             <th class="w-8 text-center">Ação</th>
                         </tr>
@@ -427,15 +467,24 @@
         const SUPABASE_URL = "https://mpsyqawieuwjgupoedib.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wc3lxYXdpZXV3amd1cG9lZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTA1OTQsImV4cCI6MjEwNjA4NjU5NH0.P9I8u6ycOBCKYIT2mvp35kZ-SfNTHiVY3Jkw7ltYFuQ";
         
+        // SEGUNDO SUPABASE (CAIXAS SEM EXTERNAS)
+        const SUPABASE_URL_SEC = "Https://dylwhnsxjbeiukdmcupq.supabase.co";
+        const SUPABASE_KEY_SEC = "sb_publishable_uZL-3Z0_a-X-ZjMhwRXC9w_RP8c754J";
+
         let supabaseClient = null;
+        let supabaseClientSecundario = null;
+
         try {
             if (typeof supabase !== 'undefined') {
                 supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
                     auth: { persistSession: false, autoRefreshToken: false }
                 });
+                supabaseClientSecundario = supabase.createClient(SUPABASE_URL_SEC, SUPABASE_KEY_SEC, {
+                    auth: { persistSession: false, autoRefreshToken: false }
+                });
             }
         } catch (e) {
-            console.warn("Supabase SDK indisponível");
+            console.warn("Supabase SDK indisponível", e);
         }
 
         let portaoAtual = 7;
@@ -488,7 +537,7 @@
                         .from('controle_faltas_portao')
                         .select('*')
                         .eq('data_operacao', dataAtual)
-                        .order('created_at', { ascending: true }) // Garante ordem cronológica fixa da nuvem
+                        .order('created_at', { ascending: true })
                         .order('id', { ascending: true });
 
                     if (!error && data) {
@@ -663,6 +712,81 @@
 
         function fecharAlertaIntegracao() {
             document.getElementById('modal-alerta-integracao').classList.add('hidden');
+        }
+
+        // FUNÇÕES MODAL SEM EXTERNA
+        function abrirModalSemExterna() {
+            document.getElementById('busca-produto').value = '';
+            document.getElementById('busca-cor').value = '';
+            document.getElementById('resultado-busca-sem-externa').innerHTML = '<p class="text-center opacity-50 py-4">Insira o produto ou cor e clique em buscar.</p>';
+            document.getElementById('modal-sem-externa').classList.remove('hidden');
+        }
+
+        function fecharModalSemExterna() {
+            document.getElementById('modal-sem-externa').classList.add('hidden');
+        }
+
+        async function executarBuscaSemExterna() {
+            const prod = document.getElementById('busca-produto').value.trim();
+            const cor = document.getElementById('busca-cor').value.trim();
+            const containerRes = document.getElementById('resultado-busca-sem-externa');
+
+            if (!prod && !cor) {
+                alert("Informe pelo menos o Produto ou a Cor para realizar a busca.");
+                return;
+            }
+
+            containerRes.innerHTML = '<p class="text-center opacity-75 py-4"><i class="fa-solid fa-spinner fa-spin"></i> Pesquisando no banco de dados...</p>';
+
+            if (!supabaseClientSecundario) {
+                containerRes.innerHTML = '<p class="text-center text-red-500 py-4">Erro: Conexão com o segundo Supabase indisponível.</p>';
+                return;
+            }
+
+            try {
+                let query = supabaseClientSecundario.from('caixas_cd8').select('*');
+
+                if (prod && cor) {
+                    query = query.ilike('produto', `%${prod}%`).ilike('cor', `%${cor}%`);
+                } else if (prod) {
+                    query = query.ilike('produto', `%${prod}%`);
+                } else if (cor) {
+                    query = query.ilike('cor', `%${cor}%`);
+                }
+
+                const { data, error } = await query.limit(50);
+
+                if (error) {
+                    throw error;
+                }
+
+                if (!data || data.length === 0) {
+                    containerRes.innerHTML = '<p class="text-center text-amber-500 py-4 font-bold">Nenhum registro encontrado para este produto/cor.</p>';
+                    return;
+                }
+
+                let html = '';
+                data.forEach((item, idx) => {
+                    const dataFormatada = item.created_at ? new Date(item.created_at).toLocaleString('pt-BR') : 'Data não informada';
+                    html += `
+                        <div class="ui-card border p-2.5 rounded shadow-sm flex flex-col gap-1">
+                            <div class="flex justify-between items-center font-bold text-blue-500">
+                                <span>#${idx + 1} - Produto: ${item.produto || 'N/A'}</span>
+                                <span class="text-[10px] opacity-75">${dataFormatada}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1 text-[11px] opacity-90">
+                                <div><strong class="opacity-70">Cor:</strong> ${item.cor || 'N/A'}</div>
+                                <div><strong class="opacity-70">Localização:</strong> <span class="text-emerald-600 font-bold">${item.localizacao || 'N/A'}</span></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                containerRes.innerHTML = html;
+
+            } catch (err) {
+                console.error("Erro ao buscar caixas sem externa:", err);
+                containerRes.innerHTML = `<p class="text-center text-red-500 py-4 font-bold">Erro ao consultar o banco: ${err.message || err}</p>`;
+            }
         }
 
         function definirModoDispositivo(modo) {
@@ -919,7 +1043,7 @@
                         </select>
                     </td>
                     <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoFaltaImediato(${index}, 'ordem', this.value)" placeholder="Ordem..." class="excel-input font-bold">
+                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoFaltaImediato(${index}, 'ordem', this.value)" placeholder="Ordem" class="excel-input font-bold">
                     </td>
                     <td data-label="No App?">
                         <select id="select-app-${index}" onchange="atualizarAppImediatoVisual(${index}, this.value)" class="excel-select ${classeApp}">
@@ -928,7 +1052,7 @@
                         </select>
                     </td>
                     <td data-label="Observação">
-                        <input type="text" id="input-obs-${index}" value="${item.observacao || ''}" onblur="alterarCampoFaltaImediato(${index}, 'observacao', this.value)" placeholder="Obs..." class="excel-input">
+                        <input type="text" id="input-obs-${index}" value="${item.observacao || ''}" onblur="alterarCampoFaltaImediato(${index}, 'observacao', this.value)" placeholder="Observação..." class="excel-input">
                     </td>
                     <td class="text-center" data-label="Ação">
                         <button onclick="removerLinhaFalta(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
