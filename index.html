@@ -441,7 +441,7 @@
         }
 
         let portaoAtual = 7;
-        let registrosPortoes = {}; // Armazena por ID único do BD ou UID local temporário
+        let registrosPortoes = {};
         let rasgadasPortoes = {};
         let modoDispositivo = 'computador';
         let turnoAtual = 'Turno 1';
@@ -460,15 +460,13 @@
             ativarEscutaRealtimeSupabase();
         });
 
-        // ESTRUTURA BASEADA EM LISTA DE REGISTROS INDEPENDENTES
         function inicializarEstruturaVazia() {
             for (let i = 7; i <= 26; i++) {
                 registrosPortoes[i] = [];
                 rasgadasPortoes[i] = [];
-                // Cria 5 linhas em branco iniciais com IDs temporários únicos
                 for (let r = 0; r < 5; r++) {
                     registrosPortoes[i].push({
-                        uid: 'temp_' + Math.random().toString(36.2),
+                        uid: 'slot_' + r,
                         id: null,
                         sscc: '',
                         status: 'Pendente',
@@ -494,14 +492,14 @@
             if (!supabaseClient) return;
             try {
                 supabaseClient
-                    .channel('tabela-mudancas-global-v23')
+                    .channel('tabela-mudancas-global-v24')
                     .on(
                         'postgres_changes',
                         { event: '*', schema: 'public', table: 'controle_faltas_portao' },
                         async (payload) => {
                             const activeEl = document.activeElement;
                             if (activeEl && activeEl.tagName === 'INPUT' && activeEl.classList.contains('excel-input')) {
-                                return; // Nunca interrompe a digitação do usuário
+                                return;
                             }
                             const alterado = payload.new || payload.old;
                             if (alterado && alterado.data_operacao === dataAtual) {
@@ -513,45 +511,7 @@
             } catch (e) {}
         }
 
-        async function verificarCruzamentoAposSalvar(uidRegistro) {
-            if (!supabaseClient) return;
-            const lista = registrosPortoes[portaoAtual];
-            const item = lista.find(x => x.uid === uidRegistro);
-            if (!item || !item.sscc) return;
-
-            const codigoLimpo = tratarSSCC(String(item.sscc));
-            if (!codigoLimpo || codigoLimpo.length < 5) return;
-
-            try {
-                const { data, error } = await supabaseClient
-                    .from('registros_sscc')
-                    .select('*');
-
-                if (!error && data && data.length > 0) {
-                    const encontrado = data.find(r => tratarSSCC(String(r.sscc || '')) === codigoLimpo);
-
-                    if (encontrado) {
-                        const categoria = encontrado.categoria || 'Reposição';
-                        const rastro = encontrado.rastro ? ` (${encontrado.rastro})` : '';
-                        const mensagem = `A caixa informada se encontra em "${categoria}"${rastro}.`;
-                        
-                        document.getElementById('texto-alerta-integracao').innerText = mensagem;
-                        document.getElementById('modal-alerta-integracao').classList.remove('hidden');
-
-                        item.observacao = `[Mapeado: ${categoria}]`;
-                        const inputObs = document.getElementById(`input-obs-${item.uid}`);
-                        if (inputObs) inputObs.value = item.observacao;
-                        
-                        await salvarOuAtualizarRegistro(portaoAtual, item.uid, 'falta', false);
-                    }
-                }
-            } catch (err) {}
-        }
-
-        function fecharAlertaIntegracao() {
-            document.getElementById('modal-alerta-integracao').classList.add('hidden');
-        }
-
+        // CARREGAMENTO COM ORDENAÇÃO POR ID OBRIGATÓRIA NO SUPABASE
         async function carregarDadosSupabaseQuiet() {
             for (let i = 7; i <= 26; i++) {
                 registrosPortoes[i] = [];
@@ -563,7 +523,8 @@
                     const { data, error } = await supabaseClient
                         .from('controle_faltas_portao')
                         .select('*')
-                        .eq('data_operacao', dataAtual);
+                        .eq('data_operacao', dataAtual)
+                        .order('id', { ascending: true }); // CORREÇÃO CRÍTICA: Força o banco a nunca embaralhar as linhas
 
                     if (!error && data) {
                         data.forEach(row => {
@@ -594,11 +555,12 @@
                 } catch (err) {}
             }
 
-            // Garante pelo menos 5 linhas vazias disponíveis em cada portão se estiverem vazios
+            // Preserva as 5 posições de slot fixos para cada portão
             for (let i = 7; i <= 26; i++) {
                 while (registrosPortoes[i].length < 5) {
+                    const nextIndex = registrosPortoes[i].length;
                     registrosPortoes[i].push({
-                        uid: 'temp_' + Math.random().toString(36).substr(2, 9),
+                        uid: 'slot_' + nextIndex,
                         id: null,
                         sscc: '',
                         status: 'Pendente',
@@ -640,7 +602,6 @@
             }
         }
 
-        // SALVAMENTO INDEPENDENTE POR UID DE REGISTRO (NÃO MEXE NAS OUTRAS LINHAS)
         async function salvarOuAtualizarRegistro(portaoNum, uidRegistro, tipoTabela = 'falta', dispararVerificacao = true) {
             if (!supabaseClient) return;
             const lista = tipoTabela === 'rasgada' ? rasgadasPortoes[portaoNum] : registrosPortoes[portaoNum];
@@ -692,6 +653,45 @@
                 item.verificadoCruzamento = true;
                 await verificarCruzamentoAposSalvar(uidRegistro);
             }
+        }
+
+        async function verificarCruzamentoAposSalvar(uidRegistro) {
+            if (!supabaseClient) return;
+            const lista = registrosPortoes[portaoAtual];
+            const item = lista.find(x => x.uid === uidRegistro);
+            if (!item || !item.sscc) return;
+
+            const codigoLimpo = tratarSSCC(String(item.sscc));
+            if (!codigoLimpo || codigoLimpo.length < 5) return;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('registros_sscc')
+                    .select('*');
+
+                if (!error && data && data.length > 0) {
+                    const encontrado = data.find(r => tratarSSCC(String(r.sscc || '')) === codigoLimpo);
+
+                    if (encontrado) {
+                        const categoria = encontrado.categoria || 'Reposição';
+                        const rastro = encontrado.rastro ? ` (${encontrado.rastro})` : '';
+                        const mensagem = `A caixa informada se encontra em "${categoria}"${rastro}.`;
+                        
+                        document.getElementById('texto-alerta-integracao').innerText = mensagem;
+                        document.getElementById('modal-alerta-integracao').classList.remove('hidden');
+
+                        item.observacao = `[Mapeado: ${categoria}]`;
+                        const inputObs = document.getElementById(`input-obs-${item.uid}`);
+                        if (inputObs) inputObs.value = item.observacao;
+                        
+                        await salvarOuAtualizarRegistro(portaoAtual, item.uid, 'falta', false);
+                    }
+                }
+            } catch (err) {}
+        }
+
+        function fecharAlertaIntegracao() {
+            document.getElementById('modal-alerta-integracao').classList.add('hidden');
         }
 
         function definirModoDispositivo(modo) {
@@ -1114,8 +1114,9 @@
 
         function adicionarLinhaVazia() {
             if (!registrosPortoes[portaoAtual]) registrosPortoes[portaoAtual] = [];
+            const nextIndex = registrosPortoes[portaoAtual].length;
             registrosPortoes[portaoAtual].push({
-                uid: 'temp_' + Math.random().toString(36).substr(2, 9),
+                uid: 'slot_' + nextIndex + '_' + Math.random().toString(36).substr(2, 5),
                 id: null,
                 sscc: '',
                 status: 'Pendente',
@@ -1142,10 +1143,9 @@
 
             lista.splice(index, 1);
 
-            // Se for faltas e ficar abaixo de 5 linhas, garante reposição de uma em branco
             if (tipoTabela === 'falta' && lista.length < 5) {
                 lista.push({
-                    uid: 'temp_' + Math.random().toString(36).substr(2, 9),
+                    uid: 'slot_' + lista.length + '_' + Math.random().toString(36).substr(2, 5),
                     id: null,
                     sscc: '',
                     status: 'Pendente',
