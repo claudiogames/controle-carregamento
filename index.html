@@ -157,10 +157,10 @@
         /* ANIMAÇÃO DA CAIXA QUICANDO NO CHÃO */
         @keyframes caixaQuicando {
             0% { transform: translateY(-120px) scale(0.9); opacity: 0; }
-            40% { transform: translateY(0px) scale(1, 0.85); opacity: 1; } /* Impacto no chão (achata levemente) */
-            55% { transform: translateY(-35px) scale(1, 1); } /* Primeiro pequeno salto */
-            70% { transform: translateY(0px) scale(1, 0.92); } /* Segundo toque leve */
-            85% { transform: translateY(-12px) scale(1, 1); } /* Último mini salto */
+            40% { transform: translateY(0px) scale(1, 0.85); opacity: 1; }
+            55% { transform: translateY(-35px) scale(1, 1); }
+            70% { transform: translateY(0px) scale(1, 0.92); }
+            85% { transform: translateY(-12px) scale(1, 1); }
             100% { transform: translateY(0px) scale(1, 1); opacity: 1; }
         }
 
@@ -182,7 +182,7 @@
         }
     </style>
 </head>
-<body class="light p-2 sm:p-3">
+<body class="light p-2 sm:p-3 pb-16">
 
     <!-- ANIMAÇÃO CURTA INICIAL (CAIXA QUICANDO) -->
     <div id="splash-screen" class="fixed inset-0 bg-[#0d1117] z-[999999] flex flex-col items-center justify-center transition-opacity duration-500">
@@ -194,7 +194,7 @@
             <!-- Sombra no Chão -->
             <div class="w-16 h-2 bg-blue-500/50 rounded-full blur-[2px] mt-4 animar-sombra"></div>
 
-            <!-- Título Portão 1 CD (Aparece após o quique) -->
+            <!-- Título Portão 1 CD -->
             <h1 class="text-white text-base font-extrabold tracking-wider uppercase mt-5 flex items-center gap-2 opacity-0 animate-[fadeIn_0.3s_ease_0.6s_forwards]">
                 <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span> Portão 1 CD
             </h1>
@@ -209,7 +209,7 @@
                     splash.style.opacity = '0';
                     setTimeout(() => splash.remove(), 500);
                 }
-            }, 1400); // Duração total da animação de abertura
+            }, 1400);
         });
     </script>
 
@@ -396,9 +396,6 @@
                 </select>
             </div>
 
-            <span id="status-tempo-real" class="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold flex items-center gap-1 border border-emerald-500/30">
-                <i class="fa-solid fa-bolt"></i> Sincronizado Nuvem
-            </span>
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
             <button onclick="abrirModalSemExterna()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-box-archive"></i> Sem Externa</button>
@@ -519,6 +516,15 @@
                 </table>
             </div>
         </div>
+    </div>
+
+    <!-- BOTÃO FLUTUANTE DE SAÍDA (VOLTAR AO PAINEL DE SISTEMAS) NO RODAPÉ -->
+    <div class="fixed bottom-4 right-4 z-50">
+        <a href="https://oppo1-lac.vercel.app/" target="_blank" rel="noopener noreferrer" 
+           class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-wider transition-all transform hover:scale-105 border border-blue-400/40 cursor-pointer">
+            <i class="fa-solid fa-arrow-right-from-bracket text-base"></i>
+            <span>Voltar ao Painel</span>
+        </a>
     </div>
 
     <script>
