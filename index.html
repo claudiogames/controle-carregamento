@@ -153,9 +153,65 @@
         .scanner-frame { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid #30363d; }
         .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ANIMAÇÃO DA CAIXA QUICANDO NO CHÃO */
+        @keyframes caixaQuicando {
+            0% { transform: translateY(-120px) scale(0.9); opacity: 0; }
+            40% { transform: translateY(0px) scale(1, 0.85); opacity: 1; } /* Impacto no chão (achata levemente) */
+            55% { transform: translateY(-35px) scale(1, 1); } /* Primeiro pequeno salto */
+            70% { transform: translateY(0px) scale(1, 0.92); } /* Segundo toque leve */
+            85% { transform: translateY(-12px) scale(1, 1); } /* Último mini salto */
+            100% { transform: translateY(0px) scale(1, 1); opacity: 1; }
+        }
+
+        @keyframes sombraQuique {
+            0% { transform: scale(0.3); opacity: 0; }
+            40% { transform: scale(1.2); opacity: 0.6; }
+            55% { transform: scale(0.7); opacity: 0.2; }
+            70% { transform: scale(1); opacity: 0.4; }
+            85% { transform: scale(0.85); opacity: 0.3; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+
+        .animar-quique {
+            animation: caixaQuicando 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        .animar-sombra {
+            animation: sombraQuique 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
     </style>
 </head>
 <body class="light p-2 sm:p-3">
+
+    <!-- ANIMAÇÃO CURTA INICIAL (CAIXA QUICANDO) -->
+    <div id="splash-screen" class="fixed inset-0 bg-[#0d1117] z-[999999] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="relative flex flex-col items-center">
+            <!-- Caixa Quicando -->
+            <div class="w-24 h-24 rounded-2xl bg-blue-600/15 border border-blue-500/40 flex items-center justify-center p-3 shadow-2xl animar-quique">
+                <img src="https://pub-f46b0cda8b8d434aabcf14ccac85f3af.r2.dev/1791682069820.png" alt="Caixa Grendene" class="w-full h-full object-contain drop-shadow-[0_8px_10px_rgba(0,0,0,0.6)]">
+            </div>
+            <!-- Sombra no Chão -->
+            <div class="w-16 h-2 bg-blue-500/50 rounded-full blur-[2px] mt-4 animar-sombra"></div>
+
+            <!-- Título Portão 1 CD (Aparece após o quique) -->
+            <h1 class="text-white text-base font-extrabold tracking-wider uppercase mt-5 flex items-center gap-2 opacity-0 animate-[fadeIn_0.3s_ease_0.6s_forwards]">
+                <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span> Portão 1 CD
+            </h1>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if (splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => splash.remove(), 500);
+                }
+            }, 1400); // Duração total da animação de abertura
+        });
+    </script>
 
     <!-- MODAL DE ALERTA DE LOCALIZAÇÃO -->
     <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
@@ -166,6 +222,36 @@
             <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">LOCALIZAÇÃO</h2>
             <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono break-words">A caixa informada foi localizada...</p>
             <button onclick="fecharAlertaIntegracao()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-xs cursor-pointer shadow">Entendido / Fechar</button>
+        </div>
+    </div>
+
+    <!-- MODAL PARA ADICIONAR NOVA ORDEM (COM SELEÇÃO DE COR) -->
+    <div id="modal-nova-ordem" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4">
+        <div class="ui-card rounded-xl max-w-sm w-full p-5 shadow-2xl border my-auto">
+            <div class="flex justify-between items-center pb-2 border-b mb-4">
+                <h3 class="text-xs font-bold text-blue-500 flex items-center gap-1.5 uppercase">
+                    <i class="fa-solid fa-layer-group"></i> Adicionar Nova Ordem
+                </h3>
+                <button onclick="fecharModalNovaOrdem()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block opacity-75 mb-1 font-bold">Número da Ordem</label>
+                    <input type="text" id="input-modal-num-ordem" placeholder="Ex: 12345..." class="w-full ui-card border rounded p-2 font-mono font-bold">
+                </div>
+                <div>
+                    <label class="block opacity-75 mb-1 font-bold">Cor da Ordem</label>
+                    <select id="select-modal-cor-ordem" class="w-full ui-card border rounded p-2 font-bold cursor-pointer text-sm">
+                        <option value="azul">🔵 Azul</option>
+                        <option value="amarelo">🟡 Amarelo</option>
+                        <option value="vermelho">🔴 Vermelho</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t mt-3">
+                    <button onclick="fecharModalNovaOrdem()" class="px-3 py-1.5 border rounded cursor-pointer opacity-75">Cancelar</button>
+                    <button onclick="confirmarAdicionarNovaOrdem()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded cursor-pointer shadow">Criar Ordem</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -202,28 +288,6 @@
             </div>
             <div class="flex justify-end pt-3 border-t mt-3">
                 <button onclick="fecharModalSemExterna()" class="px-3 py-1.5 border rounded text-xs cursor-pointer">Fechar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL DE SELEÇÃO DE DISPOSITIVO -->
-    <div id="modal-dispositivo" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
-        <div class="ui-card rounded-xl max-w-sm w-full p-6 text-center shadow-2xl border">
-            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
-                <i class="fa-solid fa-display"></i>
-            </div>
-            <h2 class="text-base font-bold mb-1">Como você vai navegar?</h2>
-            <p class="text-xs opacity-75 mb-5">Escolha o seu dispositivo para ajustar a interface automaticamente.</p>
-            
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="definirModoDispositivo('celular')" class="flex flex-col items-center justify-center p-4 border-2 border-blue-500 bg-blue-50/50 hover:bg-blue-100 rounded-lg text-blue-700 transition-all cursor-pointer">
-                    <i class="fa-solid fa-mobile-screen-button text-2xl mb-1"></i>
-                    <span class="text-xs font-bold">Celular</span>
-                </button>
-                <button onclick="definirModoDispositivo('computador')" class="flex flex-col items-center justify-center p-4 border-2 border-gray-300 hover:border-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-700 transition-all cursor-pointer">
-                    <i class="fa-solid fa-desktop text-2xl mb-1"></i>
-                    <span class="text-xs font-bold">Computador</span>
-                </button>
             </div>
         </div>
     </div>
@@ -338,7 +402,7 @@
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
             <button onclick="abrirModalSemExterna()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-box-archive"></i> Sem Externa</button>
-            <button onclick="adicionarLinhaVazia()" class="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-plus"></i> Linha</button>
+            <button onclick="abrirModalNovaOrdem()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-layer-group"></i> + Nova Ordem</button>
             <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
         </div>
     </header>
@@ -380,30 +444,24 @@
                 </div>
             </div>
 
-            <div class="p-2.5 border-b flex justify-between items-center opacity-90">
+            <!-- BARRA DE TÍTULO E FILTRO DE ORDEM -->
+            <div class="p-2.5 border-b flex flex-wrap justify-between items-center gap-2 opacity-90 bg-slate-100 dark:bg-zinc-900">
                 <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" id="titulo-portao-atual">
                     <i class="fa-solid fa-truck text-blue-500"></i> Portão 7 - Faltas
                 </span>
-                <span class="text-xs opacity-75 font-mono" id="contador-linhas-portao">0 registo(s)</span>
+                
+                <!-- FILTRO RÁPIDO POR ORDEM -->
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[11px] font-bold opacity-75"><i class="fa-solid fa-filter text-blue-500"></i> Filtrar Ordem:</span>
+                    <select id="select-filtro-ordem" onchange="renderizarBlocosOrdensFaltas()" class="ui-card border rounded px-2 py-1 text-xs font-mono font-bold cursor-pointer">
+                        <option value="TODAS">Todas as Ordens</option>
+                    </select>
+                    <span class="text-xs opacity-75 font-mono ml-2" id="contador-linhas-portao">0 registo(s)</span>
+                </div>
             </div>
 
-            <div class="overflow-x-auto max-h-[50vh]">
-                <table class="excel-table">
-                    <thead>
-                        <tr>
-                            <th class="w-6 text-center">#</th>
-                            <th style="width: 155px;">Código SSCC</th>
-                            <th style="width: 135px;">Status</th>
-                            <th style="width: 110px;">Origem</th>
-                            <th style="width: 75px;">Ordem</th>
-                            <th style="width: 80px;">No App?</th>
-                            <th>Observação</th>
-                            <th class="w-8 text-center">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpo-tabela-excel"></tbody>
-                </table>
-            </div>
+            <!-- CONTAINER DINÂMICO DE BLOCOS DE ORDEM -->
+            <div id="blocos-ordens-container" class="p-3 space-y-4"></div>
         </div>
 
         <!-- TABELA DE RASGADAS -->
@@ -490,7 +548,6 @@
         let portaoAtual = 7;
         let dadosPortoes = {};
         let rasgadasPortoes = {};
-        let modoDispositivo = 'computador';
         let turnoAtual = 'Turno 1';
         let responsavelAtual = '';
         let dataAtual = '';
@@ -503,6 +560,7 @@
             await carregarDadosNuvemELocais();
             gerarAbasPortoes();
             popularSelectPortoesModal();
+            selecionarPortao(7);
         });
 
         function inicializarDataHoje() {
@@ -550,6 +608,7 @@
                                     status: reg.status || 'Pendente',
                                     origem: reg.origem || 'CD',
                                     ordem: reg.ordem || '',
+                                    prioridadeCor: reg.prioridade_cor || 'azul',
                                     noApp: reg.no_app || 'Não',
                                     observacao: reg.observacao || ''
                                 };
@@ -577,7 +636,7 @@
                     const salvoF = localStorage.getItem(chaveF);
                     if (salvoF) {
                         try { 
-                            dadosPortoes[i] = JSON.parse(salvoF).map(item => ({ ...item, sscc: tratarSSCC(item.sscc) })); 
+                            dadosPortoes[i] = JSON.parse(salvoF).map(item => ({ ...item, sscc: tratarSSCC(item.sscc), prioridadeCor: item.prioridadeCor || 'azul' })); 
                         } catch(e){}
                     }
                 }
@@ -613,7 +672,6 @@
             }
 
             try {
-                // Verifica se já existe registro na tabela ocorrencias_turno1 para esta data
                 const { data: existente, error: errBusca } = await supabaseClientSecundario
                     .from('ocorrencias_turno1')
                     .select('*')
@@ -623,7 +681,6 @@
                 if (errBusca) throw errBusca;
 
                 if (existente) {
-                    // Atualiza apenas os campos de carregamento, mantendo o Sorter intacto
                     await supabaseClientSecundario
                         .from('ocorrencias_turno1')
                         .update({
@@ -632,7 +689,6 @@
                         })
                         .eq('id', existente.id);
                 } else {
-                    // Insere um novo registro para o dia
                     await supabaseClientSecundario
                         .from('ocorrencias_turno1')
                         .insert([{
@@ -707,6 +763,7 @@
                     status: String(item.status || 'Pendente'),
                     origem: String(item.origem || 'CD'),
                     ordem: String(item.ordem || ''),
+                    prioridade_cor: String(item.prioridadeCor || 'azul'),
                     no_app: String(item.noApp || 'Não'),
                     observacao: String(item.observacao || ''),
                     turno: String(turnoAtual || 'Turno 1'),
@@ -745,6 +802,7 @@
                     status: String(item.status || 'Pendente'),
                     origem: String(item.origem || 'CD'),
                     ordem: String(item.ordem || 'URGENTE'),
+                    prioridade_cor: 'vermelho',
                     no_app: 'Sim',
                     observacao: String(item.observacao || `Rasgada (${item.tipo})`),
                     turno: String(turnoAtual || 'Turno 1'),
@@ -771,7 +829,6 @@
             document.getElementById('modal-alerta-integracao').classList.add('hidden');
         }
 
-        // FUNÇÕES MODAL SEM EXTERNA
         function abrirModalSemExterna() {
             document.getElementById('busca-produto').value = '';
             document.getElementById('busca-cor').value = '';
@@ -812,7 +869,6 @@
                 }
 
                 const { data, error } = await query.limit(50);
-
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
@@ -837,19 +893,10 @@
                     `;
                 });
                 containerRes.innerHTML = html;
-
             } catch (err) {
                 console.error("Erro ao buscar caixas sem externa:", err);
                 containerRes.innerHTML = `<p class="text-center text-red-500 py-4 font-bold">Erro ao consultar o banco: ${err.message || err}</p>`;
             }
-        }
-
-        function definirModoDispositivo(modo) {
-            modoDispositivo = modo;
-            if (modo === 'celular') document.body.classList.add('modo-celular');
-            else document.body.classList.remove('modo-celular');
-            document.getElementById('modal-dispositivo').classList.add('hidden');
-            selecionarPortao(7);
         }
 
         function alternarTema() {
@@ -946,6 +993,7 @@
 
             document.getElementById('titulo-portao-atual').innerHTML = `<i class="fa-solid fa-truck text-blue-500"></i> Portão ${portaoAtual} - Faltas`;
             document.getElementById('titulo-portao-rasgadas').innerText = `Portão ${portaoAtual}`;
+            atualizarOpcoesFiltroOrdem();
             renderizarTabelas();
             atualizarIndicadoresKPI();
             verificarBannerRasgadas();
@@ -983,7 +1031,7 @@
             if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
             if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
 
-            const novoItem = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', observacao: `Rasgada (${tipo}): ${obs}` };
+            const novoItem = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', prioridadeCor: 'vermelho', observacao: `Rasgada (${tipo}): ${obs}` };
             rasgadasPortoes[portaoAlvo].push(novoItem);
 
             tocarSomSucesso();
@@ -999,6 +1047,7 @@
                     status: 'Pendente',
                     origem: 'CD',
                     ordem: 'URGENTE',
+                    prioridade_cor: 'vermelho',
                     no_app: 'Sim',
                     observacao: `Rasgada (${tipo}): ${obs}`,
                     turno: String(turnoAtual),
@@ -1043,7 +1092,7 @@
         }
 
         function renderizarTabelas() {
-            renderizarTabelaFaltas();
+            renderizarBlocosOrdensFaltas();
             renderizarTabelaRasgadas();
         }
 
@@ -1057,9 +1106,41 @@
             return 'status-pendente';
         }
 
-        function renderizarTabelaFaltas() {
-            const tbody = document.getElementById('corpo-tabela-excel');
-            tbody.innerHTML = '';
+        function getClassCorBadge(cor) {
+            if (cor === 'vermelho') return 'bg-red-600 text-white';
+            if (cor === 'amarelo') return 'bg-amber-500 text-black';
+            return 'bg-blue-600 text-white'; // Azul (padrão)
+        }
+
+        function atualizarOpcoesFiltroOrdem() {
+            const selectFiltro = document.getElementById('select-filtro-ordem');
+            if (!selectFiltro) return;
+            const valorAtual = selectFiltro.value;
+            
+            const lista = dadosPortoes[portaoAtual] || [];
+            const ordensSet = new Set();
+            lista.forEach(item => {
+                const ord = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
+                ordensSet.add(ord);
+            });
+
+            let html = `<option value="TODAS">Todas as Ordens</option>`;
+            ordensSet.forEach(ord => {
+                html += `<option value="${ord}">${ord}</option>`;
+            });
+            selectFiltro.innerHTML = html;
+            
+            if (ordensSet.has(valorAtual) || valorAtual === 'TODAS') {
+                selectFiltro.value = valorAtual;
+            } else {
+                selectFiltro.value = 'TODAS';
+            }
+        }
+
+        // RENDERIZAR BLOCOS ORDENADOS POR PRIORIDADE (VERMELHO > AMARELO > AZUL)
+        function renderizarBlocosOrdensFaltas() {
+            const container = document.getElementById('blocos-ordens-container');
+            container.innerHTML = '';
             const lista = dadosPortoes[portaoAtual] || [];
             document.getElementById('contador-linhas-portao').innerText = `${lista.length} registo(s)`;
 
@@ -1067,54 +1148,213 @@
                 adicionarLinhaVaziaObjeto();
             }
 
-            dadosPortoes[portaoAtual].forEach((item, index) => {
-                const tr = document.createElement('tr');
-                let classeStatus = getClassStatus(item.status);
-                let classeApp = item.noApp === 'Sim' ? 'app-sim' : 'app-nao';
+            const filtroOrdemEl = document.getElementById('select-filtro-ordem');
+            const ordemFiltroAtiva = filtroOrdemEl ? filtroOrdemEl.value : 'TODAS';
 
-                tr.innerHTML = `
-                    <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
-                    <td class="td-sscc-container" data-label="SSCC">
-                        <input type="text" id="input-sscc-${index}" value="${item.sscc || ''}" onblur="alterarCampoFaltaImediato(${index}, 'sscc', this.value)" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
-                    </td>
-                    <td data-label="Status">
-                        <select id="select-status-${index}" onchange="atualizarStatusImediatoVisual(${index}, this.value)" class="excel-select ${classeStatus}">
-                            <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
-                            <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
-                            <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
-                            <option value="Apareceu no Portão" ${item.status === 'Apareceu no Portão' ? 'selected' : ''}>Apareceu no Portão</option>
-                            <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue no Portão</option>
-                        </select>
-                    </td>
-                    <td data-label="Origem">
-                        <select onchange="alterarCampoFaltaImediato(${index}, 'origem', this.value)" class="excel-select border">
-                            <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
-                            <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
-                            <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
-                            <option value="Fábrica 3" ${item.origem === 'Fábrica 3' ? 'selected' : ''}>Fábrica 3</option>
-                            <option value="Fábrica 5" ${item.origem === 'Fábrica 5' ? 'selected' : ''}>Fábrica 5</option>
-                            <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
-                            <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
-                        </select>
-                    </td>
-                    <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoFaltaImediato(${index}, 'ordem', this.value)" placeholder="Ordem" class="excel-input font-bold">
-                    </td>
-                    <td data-label="No App?">
-                        <select id="select-app-${index}" onchange="atualizarAppImediatoVisual(${index}, this.value)" class="excel-select ${classeApp}">
-                            <option value="Não" ${item.noApp === 'Não' ? 'selected' : ''}>Não</option>
-                            <option value="Sim" ${item.noApp === 'Sim' ? 'selected' : ''}>Sim</option>
-                        </select>
-                    </td>
-                    <td data-label="Observação">
-                        <input type="text" id="input-obs-${index}" value="${item.observacao || ''}" onblur="alterarCampoFaltaImediato(${index}, 'observacao', this.value)" placeholder="Observação..." class="excel-input">
-                    </td>
-                    <td class="text-center" data-label="Ação">
-                        <button onclick="removerLinhaFalta(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+            // Agrupar itens por Ordem
+            const gruposOrdens = {};
+            dadosPortoes[portaoAtual].forEach((item, index) => {
+                const ord = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
+                if (!gruposOrdens[ord]) gruposOrdens[ord] = [];
+                gruposOrdens[ord].push({ item, index });
             });
+
+            const pesoCor = { 'vermelho': 1, 'amarelo': 2, 'azul': 3 };
+            
+            const ordensOrdenadas = Object.keys(gruposOrdens).sort((a, b) => {
+                const corA = gruposOrdens[a][0]?.item.prioridadeCor || 'azul';
+                const corB = gruposOrdens[b][0]?.item.prioridadeCor || 'azul';
+                const pesoA = pesoCor[corA] || 3;
+                const pesoB = pesoCor[corB] || 3;
+                return pesoA - pesoB;
+            });
+
+            let blocosRenderizados = 0;
+
+            ordensOrdenadas.forEach((ordemKey, blocoIdx) => {
+                if (ordemFiltroAtiva !== 'TODAS' && ordemKey !== ordemFiltroAtiva) {
+                    return;
+                }
+
+                blocosRenderizados++;
+                const itensDoBloco = gruposOrdens[ordemKey];
+                const corAtual = itensDoBloco[0]?.item.prioridadeCor || 'azul';
+                const classeCorBadge = getClassCorBadge(corAtual);
+
+                const blocoDiv = document.createElement('div');
+                blocoDiv.className = "ui-card border rounded-lg overflow-hidden shadow-sm";
+
+                let htmlBlocoCabecalho = `
+                    <div class="bg-blue-50/50 dark:bg-zinc-900/80 p-2.5 border-b flex flex-wrap justify-between items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="${classeCorBadge} text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-sm transition-colors uppercase tracking-wide" id="badge-cor-${blocoIdx}">Ordem #${blocoIdx + 1}</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs font-bold opacity-75">Nº Ordem:</span>
+                                <input type="text" value="${ordemKey === 'SEM ORDEM DEFINIDA' ? '' : ordemKey}" onblur="atualizarOrdemDoBloco('${ordemKey}', this.value)" placeholder="Digite a ordem..." class="ui-card border rounded px-2 py-0.5 font-mono text-xs font-bold w-36">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] opacity-75 font-mono">${itensDoBloco.length} item(ns)</span>
+                            <button onclick="adicionarLinhaEmOrdem('${ordemKey}')" class="bg-gray-700 hover:bg-gray-800 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1"><i class="fa-solid fa-plus"></i> Linha</button>
+                            <button onclick="removerBlocoOrdem('${ordemKey}')" class="bg-red-600/80 hover:bg-red-600 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer" title="Remover Bloco"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="excel-table">
+                            <thead>
+                                <tr>
+                                    <th class="w-6 text-center">#</th>
+                                    <th style="width: 155px;">Código SSCC</th>
+                                    <th style="width: 135px;">Status</th>
+                                    <th style="width: 110px;">Origem</th>
+                                    <th style="width: 80px;">No App?</th>
+                                    <th>Observação</th>
+                                    <th class="w-8 text-center">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                itensDoBloco.forEach(({ item, index }, subIdx) => {
+                    let classeStatus = getClassStatus(item.status);
+                    let classeApp = item.noApp === 'Sim' ? 'app-sim' : 'app-nao';
+
+                    htmlBlocoCabecalho += `
+                        <tr>
+                            <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${subIdx + 1}</td>
+                            <td class="td-sscc-container" data-label="SSCC">
+                                <input type="text" id="input-sscc-${index}" value="${item.sscc || ''}" onblur="alterarCampoFaltaImediato(${index}, 'sscc', this.value)" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                            </td>
+                            <td data-label="Status">
+                                <select id="select-status-${index}" onchange="atualizarStatusImediatoVisual(${index}, this.value)" class="excel-select ${classeStatus}">
+                                    <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                                    <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
+                                    <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
+                                    <option value="Apareceu no Portão" ${item.status === 'Apareceu no Portão' ? 'selected' : ''}>Apareceu no Portão</option>
+                                    <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue no Portão</option>
+                                </select>
+                            </td>
+                            <td data-label="Origem">
+                                <select onchange="alterarCampoFaltaImediato(${index}, 'origem', this.value)" class="excel-select border">
+                                    <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
+                                    <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
+                                    <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
+                                    <option value="Fábrica 3" ${item.origem === 'Fábrica 3' ? 'selected' : ''}>Fábrica 3</option>
+                                    <option value="Fábrica 5" ${item.origem === 'Fábrica 5' ? 'selected' : ''}>Fábrica 5</option>
+                                    <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
+                                    <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
+                                </select>
+                            </td>
+                            <td data-label="No App?">
+                                <select id="select-app-${index}" onchange="atualizarAppImediatoVisual(${index}, this.value)" class="excel-select ${classeApp}">
+                                    <option value="Não" ${item.noApp === 'Não' ? 'selected' : ''}>Não</option>
+                                    <option value="Sim" ${item.noApp === 'Sim' ? 'selected' : ''}>Sim</option>
+                                </select>
+                            </td>
+                            <td data-label="Observação">
+                                <input type="text" id="input-obs-${index}" value="${item.observacao || ''}" onblur="alterarCampoFaltaImediato(${index}, 'observacao', this.value)" placeholder="Observação..." class="excel-input">
+                            </td>
+                            <td class="text-center" data-label="Ação">
+                                <button onclick="removerLinhaFalta(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                htmlBlocoCabecalho += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                blocoDiv.innerHTML = htmlBlocoCabecalho;
+                container.appendChild(blocoDiv);
+            });
+
+            if (blocosRenderizados === 0) {
+                container.innerHTML = `<p class="text-center opacity-50 py-6 text-xs">Nenhum registro encontrado para a ordem selecionada.</p>`;
+            }
+        }
+
+        function abrirModalNovaOrdem() {
+            document.getElementById('input-modal-num-ordem').value = '';
+            document.getElementById('select-modal-cor-ordem').value = 'azul';
+            document.getElementById('modal-nova-ordem').classList.remove('hidden');
+        }
+
+        function fecharModalNovaOrdem() {
+            document.getElementById('modal-nova-ordem').classList.add('hidden');
+        }
+
+        function confirmarAdicionarNovaOrdem() {
+            const novaOrdemNum = document.getElementById('input-modal-num-ordem').value.trim();
+            if (!novaOrdemNum) {
+                alert("Por favor, digite o número da Ordem.");
+                return;
+            }
+            const corEscolhida = document.getElementById('select-modal-cor-ordem').value;
+
+            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: novaOrdemNum, prioridadeCor: corEscolhida, noApp: 'Não', observacao: '' };
+            dadosPortoes[portaoAtual].push(novoObj);
+            persistirDadosLocal();
+            atualizarOpcoesFiltroOrdem();
+            renderizarBlocosOrdensFaltas();
+            fecharModalNovaOrdem();
+        }
+
+        function adicionarLinhaEmOrdem(ordemKey) {
+            const ordemVal = ordemKey === 'SEM ORDEM DEFINIDA' ? '' : ordemKey;
+            let corHerdada = 'azul';
+            const itensExistentes = (dadosPortoes[portaoAtual] || []).filter(item => {
+                const k = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
+                return k === ordemKey;
+            });
+            if (itensExistentes.length > 0 && itensExistentes[0].prioridadeCor) {
+                corHerdada = itensExistentes[0].prioridadeCor;
+            }
+
+            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: ordemVal, prioridadeCor: corHerdada, noApp: 'Não', observacao: '' };
+            dadosPortoes[portaoAtual].push(novoObj);
+            persistirDadosLocal();
+            atualizarOpcoesFiltroOrdem();
+            renderizarBlocosOrdensFaltas();
+        }
+
+        function atualizarOrdemDoBloco(ordemAntiga, novaOrdemValor) {
+            const valLimpo = novaOrdemValor.trim();
+            dadosPortoes[portaoAtual].forEach((item, index) => {
+                const itemOrdemKey = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
+                if (itemOrdemKey === ordemAntiga) {
+                    item.ordem = valLimpo;
+                    salvarLinhaTempoReal(index);
+                }
+            });
+            persistirDadosLocal();
+            atualizarOpcoesFiltroOrdem();
+            renderizarBlocosOrdensFaltas();
+        }
+
+        async function removerBlocoOrdem(ordemKey) {
+            if (!confirm(`Deseja remover todos os registros da ordem "${ordemKey}" deste portão?`)) return;
+            let indicesParaRemover = [];
+            dadosPortoes[portaoAtual].forEach((item, index) => {
+                const itemOrdemKey = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
+                if (itemOrdemKey === ordemKey) indicesParaRemover.push(index);
+            });
+
+            for (let i = indicesParaRemover.length - 1; i >= 0; i--) {
+                const idx = indicesParaRemover[i];
+                const item = dadosPortoes[portaoAtual][idx];
+                if (item && item.id && supabaseClient) {
+                    await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+                }
+                dadosPortoes[portaoAtual].splice(idx, 1);
+            }
+
+            if (dadosPortoes[portaoAtual].length === 0) adicionarLinhaVaziaObjeto();
+            persistirDadosLocal();
+            atualizarOpcoesFiltroOrdem();
+            renderizarBlocosOrdensFaltas();
         }
 
         function renderizarTabelaRasgadas() {
@@ -1244,6 +1484,10 @@
                 item[campo] = valor;
                 persistirDadosLocal();
                 salvarLinhaTempoReal(index);
+                if (campo === 'ordem') {
+                    atualizarOpcoesFiltroOrdem();
+                    renderizarBlocosOrdensFaltas();
+                }
             }
         }
 
@@ -1271,14 +1515,8 @@
         }
 
         function adicionarLinhaVaziaObjeto() {
-            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: '', noApp: 'Não', observacao: '' };
+            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: '', prioridadeCor: 'azul', noApp: 'Não', observacao: '' };
             dadosPortoes[portaoAtual].push(novoObj);
-        }
-
-        function adicionarLinhaVazia() { 
-            adicionarLinhaVaziaObjeto(); 
-            persistirDadosLocal(); 
-            renderizarTabelaFaltas(); 
         }
         
         async function removerLinhaFalta(index) {
@@ -1289,7 +1527,8 @@
             dadosPortoes[portaoAtual].splice(index, 1);
             if (dadosPortoes[portaoAtual].length === 0) adicionarLinhaVaziaObjeto();
             persistirDadosLocal();
-            renderizarTabelaFaltas();
+            atualizarOpcoesFiltroOrdem();
+            renderizarBlocosOrdensFaltas();
         }
 
         async function removerLinhaRasgada(index) {
@@ -1411,13 +1650,13 @@
 
                 if (listaFaltas.length > 0 || listaRasgadas.length > 0) {
                     temDados = true;
-                    let linhasExport = [{ "SSCC": `Portão ${i} (${dataAtual})`, "Status": "", "Origem": "", "Ordem": "", "No App?": "", "Observação": "" }];
+                    let linhasExport = [{ "SSCC": `Portão ${i} (${dataAtual})`, "Status": "", "Origem": "", "Ordem": "", "Prioridade": "", "No App?": "", "Observação": "" }];
                     
-                    listaFaltas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": item.status, "Origem": item.origem, "Ordem": item.ordem, "No App?": item.noApp, "Observação": item.observacao }));
-                    listaRasgadas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": `${item.status} (Rasgada ${item.tipo})`, "Origem": item.origem, "Ordem": item.ordem, "No App?": "Sim", "Observação": item.observacao }));
+                    listaFaltas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": item.status, "Origem": item.origem, "Ordem": item.ordem, "Prioridade": item.prioridadeCor || 'azul', "No App?": item.noApp, "Observação": item.observacao }));
+                    listaRasgadas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": `${item.status} (Rasgada ${item.tipo})`, "Origem": item.origem, "Ordem": item.ordem, "Prioridade": "vermelho", "No App?": "Sim", "Observação": item.observacao }));
 
                     const worksheet = XLSX.utils.json_to_sheet(linhasExport);
-                    worksheet['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
+                    worksheet['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
                     XLSX.utils.book_append_sheet(workbook, worksheet, `Portão ${i}`);
                 }
             }
