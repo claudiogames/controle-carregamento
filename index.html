@@ -4,35 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle e Acompanhamento do Carregamento - Portão 1 CD</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkbg: '#0d1117',
-                        darkcard: '#161b22',
-                        darkborder: '#30363d'
-                    }
-                }
-            }
+            theme: { extend: { colors: { darkbg: '#0d1117', darkcard: '#161b22', darkborder: '#30363d' } } }
         }
     </script>
-    <!-- FontAwesome para Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SheetJS para Exportação para Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Html5-Qrcode (Scanner de Câmera) -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <!-- Supabase JS Client Oficial -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s, color 0.3s; }
-        
-        /* TEMAS */
+
         body.light { background-color: #f3f4f6; color: #1f2937; }
         body.light .ui-card { background-color: #ffffff; border-color: #e5e7eb; color: #1f2937; }
         body.light .excel-table th { background-color: #e5e7eb; color: #374151; border-color: #d1d5db; }
@@ -50,89 +36,34 @@
         .excel-table td { padding: 3px 2px; position: relative; vertical-align: middle; }
 
         .excel-input {
-            width: 100%;
-            border: none;
-            outline: none;
-            background: transparent;
-            font-size: 13px;
-            font-family: monospace;
-            padding: 4px;
-            border-radius: 4px;
-            box-sizing: border-box;
+            width: 100%; border: none; outline: none; background: transparent;
+            font-size: 13px; font-family: monospace; padding: 4px; border-radius: 4px; box-sizing: border-box;
         }
 
-        /* FORMATO RETANGULAR COMPACTO E OTIMIZADO */
         .excel-select {
-            width: 100% !important;
-            min-width: 105px !important;
-            border: none !important;
-            outline: none !important;
-            font-size: 12px !important;
-            padding: 3px 6px !important;
-            border-radius: 4px !important;
-            cursor: pointer !important;
-            box-sizing: border-box !important;
-            font-weight: 700 !important;
-            display: block !important;
-            height: 28px !important;
-            line-height: 20px !important;
+            width: 100% !important; min-width: 105px !important; border: none !important; outline: none !important;
+            font-size: 12px !important; padding: 3px 6px !important; border-radius: 4px !important; cursor: pointer !important;
+            box-sizing: border-box !important; font-weight: 700 !important; display: block !important;
+            height: 28px !important; line-height: 20px !important;
         }
 
-        .td-sscc-container {
-            position: relative;
-            width: 160px;
-            max-width: 180px;
-        }
-
-        .excel-input-sscc {
-            width: 100%;
-            transition: border-color 0.15s ease, background-color 0.15s ease;
-        }
-
-        .excel-input-sscc:focus {
-            border: 2px solid #2563eb !important;
-            background-color: rgba(37, 99, 235, 0.05) !important;
-            border-radius: 6px;
-        }
-
-        body.dark .excel-input-sscc:focus {
-            border: 2px solid #3b82f6 !important;
-            background-color: rgba(59, 130, 246, 0.1) !important;
-        }
+        .td-sscc-container { position: relative; width: 160px; max-width: 180px; }
+        .excel-input-sscc { width: 100%; transition: border-color 0.15s ease, background-color 0.15s ease; }
+        .excel-input-sscc:focus { border: 2px solid #2563eb !important; background-color: rgba(37, 99, 235, 0.05) !important; border-radius: 6px; }
+        body.dark .excel-input-sscc:focus { border: 2px solid #3b82f6 !important; background-color: rgba(59, 130, 246, 0.1) !important; }
 
         @media (max-width: 768px) {
             .excel-table thead { display: none; }
             .excel-table, .excel-table tbody, .excel-table tr, .excel-table td { display: block; width: 100%; }
-            .excel-table tr {
-                margin-bottom: 12px;
-                border: 1px solid #30363d;
-                border-radius: 8px;
-                padding: 8px;
-                background: inherit;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            }
-            .excel-table td {
-                padding: 6px 0;
-                border: none !important;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .excel-table td::before {
-                content: attr(data-label);
-                font-weight: bold;
-                font-size: 11px;
-                text-transform: uppercase;
-                opacity: 0.7;
-                margin-right: 8px;
-            }
+            .excel-table tr { margin-bottom: 12px; border: 1px solid #30363d; border-radius: 8px; padding: 8px; background: inherit; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            .excel-table td { padding: 6px 0; border: none !important; display: flex; justify-content: space-between; align-items: center; }
+            .excel-table td::before { content: attr(data-label); font-weight: bold; font-size: 11px; text-transform: uppercase; opacity: 0.7; margin-right: 8px; }
             .excel-table td:first-child { display: none; }
             .excel-input { text-align: right; }
             .excel-select { text-align: right !important; width: auto !important; min-width: 140px !important; }
             .td-sscc-container { width: 100%; max-width: 100%; }
         }
 
-        /* CORES DAS CLASSES DE STATUS */
         .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; }
         .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; }
         .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; }
@@ -154,7 +85,10 @@
         .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ANIMAÇÃO DA CAIXA QUICANDO NO CHÃO */
+        /* Destaque quando OUTRO usuário altera uma linha */
+        @keyframes flashRemoto { 0% { background-color: rgba(250, 204, 21, 0.55); } 100% { background-color: rgba(250, 204, 21, 0); } }
+        tr.flash-remoto td { animation: flashRemoto 1.6s ease-out; }
+
         @keyframes caixaQuicando {
             0% { transform: translateY(-120px) scale(0.9); opacity: 0; }
             40% { transform: translateY(0px) scale(1, 0.85); opacity: 1; }
@@ -163,7 +97,6 @@
             85% { transform: translateY(-12px) scale(1, 1); }
             100% { transform: translateY(0px) scale(1, 1); opacity: 1; }
         }
-
         @keyframes sombraQuique {
             0% { transform: scale(0.3); opacity: 0; }
             40% { transform: scale(1.2); opacity: 0.6; }
@@ -172,48 +105,34 @@
             85% { transform: scale(0.85); opacity: 0.3; }
             100% { transform: scale(1); opacity: 0.5; }
         }
-
-        .animar-quique {
-            animation: caixaQuicando 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-        }
-
-        .animar-sombra {
-            animation: sombraQuique 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-        }
+        .animar-quique { animation: caixaQuicando 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        .animar-sombra { animation: sombraQuique 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
     </style>
 </head>
 <body class="light p-2 sm:p-3 pb-16">
 
-    <!-- ANIMAÇÃO CURTA INICIAL (CAIXA QUICANDO) -->
+    <!-- SPLASH -->
     <div id="splash-screen" class="fixed inset-0 bg-[#0d1117] z-[999999] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="relative flex flex-col items-center">
-            <!-- Caixa Quicando -->
             <div class="w-24 h-24 rounded-2xl bg-blue-600/15 border border-blue-500/40 flex items-center justify-center p-3 shadow-2xl animar-quique">
                 <img src="https://pub-f46b0cda8b8d434aabcf14ccac85f3af.r2.dev/1791682069820.png" alt="Caixa Grendene" class="w-full h-full object-contain drop-shadow-[0_8px_10px_rgba(0,0,0,0.6)]">
             </div>
-            <!-- Sombra no Chão -->
             <div class="w-16 h-2 bg-blue-500/50 rounded-full blur-[2px] mt-4 animar-sombra"></div>
-
-            <!-- Título Portão 1 CD -->
             <h1 class="text-white text-base font-extrabold tracking-wider uppercase mt-5 flex items-center gap-2 opacity-0 animate-[fadeIn_0.3s_ease_0.6s_forwards]">
                 <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span> Portão 1 CD
             </h1>
         </div>
     </div>
-
     <script>
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
-                if (splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => splash.remove(), 500);
-                }
+                if (splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
             }, 1400);
         });
     </script>
 
-    <!-- MODAL DE ALERTA DE LOCALIZAÇÃO -->
+    <!-- MODAL ALERTA DE LOCALIZAÇÃO -->
     <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-sm w-full p-5 text-center shadow-2xl border border-amber-500 my-auto">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
@@ -225,13 +144,11 @@
         </div>
     </div>
 
-    <!-- MODAL PARA ADICIONAR NOVA ORDEM (COM SELEÇÃO DE COR) -->
+    <!-- MODAL NOVA ORDEM -->
     <div id="modal-nova-ordem" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-sm w-full p-5 shadow-2xl border my-auto">
             <div class="flex justify-between items-center pb-2 border-b mb-4">
-                <h3 class="text-xs font-bold text-blue-500 flex items-center gap-1.5 uppercase">
-                    <i class="fa-solid fa-layer-group"></i> Adicionar Nova Ordem
-                </h3>
+                <h3 class="text-xs font-bold text-blue-500 flex items-center gap-1.5 uppercase"><i class="fa-solid fa-layer-group"></i> Adicionar Nova Ordem</h3>
                 <button onclick="fecharModalNovaOrdem()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
             <div class="space-y-3 text-xs">
@@ -255,13 +172,11 @@
         </div>
     </div>
 
-    <!-- MODAL DE BUSCA "SEM EXTERNA" -->
+    <!-- MODAL SEM EXTERNA -->
     <div id="modal-sem-externa" class="fixed inset-0 bg-black/70 hidden z-[99999] flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-lg w-full p-5 shadow-2xl border border-blue-500 my-auto">
             <div class="flex justify-between items-center pb-2 border-b mb-4">
-                <h3 class="text-sm font-bold text-blue-500 flex items-center gap-1.5">
-                    <i class="fa-solid fa-box-archive"></i> Consulta de Caixas Sem Externa
-                </h3>
+                <h3 class="text-sm font-bold text-blue-500 flex items-center gap-1.5"><i class="fa-solid fa-box-archive"></i> Consulta de Caixas Sem Externa</h3>
                 <button onclick="fecharModalSemExterna()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
             <div class="space-y-3 text-xs">
@@ -278,7 +193,6 @@
                 <button onclick="executarBuscaSemExterna()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs cursor-pointer shadow flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-magnifying-glass"></i> Buscar no Banco
                 </button>
-
                 <div class="mt-4 border-t pt-3">
                     <span class="text-[11px] font-bold uppercase tracking-wider opacity-75 block mb-2">Resultados da Consulta</span>
                     <div id="resultado-busca-sem-externa" class="max-h-[220px] overflow-y-auto space-y-2 font-mono text-[11px]">
@@ -292,20 +206,14 @@
         </div>
     </div>
 
-    <!-- MODAL DE SCANNER (RASGADAS) -->
+    <!-- MODAL SCANNER -->
     <div id="modal-scanner" class="fixed inset-0 bg-black/90 hidden z-[99999] flex items-center justify-center p-4">
         <div class="ui-card border rounded-lg max-w-md w-full p-5 shadow-2xl">
             <div class="flex justify-between items-center pb-3 border-b mb-4">
-                <h3 class="text-sm font-bold flex items-center gap-2 text-amber-500">
-                    <i class="fa-solid fa-barcode"></i> Leitor de SSCC (Caixa Rasgada)
-                </h3>
-                <button type="button" onclick="fecharModalScanner()" class="opacity-70 hover:opacity-100 p-1 cursor-pointer">
-                    <i class="fa-solid fa-xmark text-base"></i>
-                </button>
+                <h3 class="text-sm font-bold flex items-center gap-2 text-amber-500"><i class="fa-solid fa-barcode"></i> Leitor de SSCC (Caixa Rasgada)</h3>
+                <button type="button" onclick="fecharModalScanner()" class="opacity-70 hover:opacity-100 p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <div class="mb-4">
-                <div id="reader" class="scanner-frame bg-black w-full min-h-[220px]"></div>
-            </div>
+            <div class="mb-4"><div id="reader" class="scanner-frame bg-black w-full min-h-[220px]"></div></div>
             <p class="text-[11px] opacity-75 text-center mb-3">Aponte a câmara para o código da caixa rasgada.</p>
             <div class="flex justify-end pt-2 border-t">
                 <button type="button" onclick="fecharModalScanner()" class="px-3 py-1.5 border rounded text-xs cursor-pointer">Concluir / Fechar</button>
@@ -313,13 +221,11 @@
         </div>
     </div>
 
-    <!-- MODAL REGISTRO DE CAIXA RASGADA -->
+    <!-- MODAL REGISTRO RASGADA -->
     <div id="modal-rasgada" class="fixed inset-0 bg-black/60 hidden z-40 flex items-center justify-center p-4">
         <div class="ui-card rounded-lg max-w-md w-full p-5 shadow-xl border">
             <div class="flex justify-between items-center pb-2 border-b mb-3">
-                <h3 class="text-xs font-bold text-amber-500 flex items-center gap-1.5">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Registar Caixa Rasgada
-                </h3>
+                <h3 class="text-xs font-bold text-amber-500 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Registar Caixa Rasgada</h3>
                 <button onclick="fecharModalRasgada()" class="opacity-70 hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="space-y-3 text-xs">
@@ -364,7 +270,11 @@
                     <h1 class="text-sm sm:text-base font-extrabold tracking-tight">Controle de Carregamento</h1>
                     <span class="hidden sm:inline-block bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-mono font-bold">Portão 1 CD</span>
                 </div>
-                <p class="text-[11px] opacity-75">Gestão Operacional &bull; Faltas e Ocorrências</p>
+                <p class="text-[11px] opacity-75 flex items-center gap-2">
+                    <span>Gestão Operacional &bull; Faltas e Ocorrências</span>
+                    <span id="status-conexao" class="inline-flex items-center gap-1 font-bold text-amber-500"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span> Conectando…</span>
+                    <span id="status-pendentes" class="hidden font-mono text-amber-500"></span>
+                </p>
             </div>
         </div>
 
@@ -373,7 +283,6 @@
                 <i class="fa-solid fa-calendar-days text-blue-500"></i>
                 <input type="date" id="input-data-controle" onchange="mudarDataOperacional(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
             </div>
-
             <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
                 <i class="fa-solid fa-user-tie text-blue-500"></i>
                 <select id="select-responsavel" onchange="mudarResponsavel(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
@@ -385,7 +294,6 @@
                     <option value="Yens Farrapo">Yens Farrapo</option>
                 </select>
             </div>
-
             <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
                 <i class="fa-solid fa-clock text-blue-500"></i>
                 <select id="select-turno" onchange="mudarTurno(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
@@ -395,7 +303,6 @@
                     <option value="Comercial">Com.</option>
                 </select>
             </div>
-
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
             <button onclick="abrirModalSemExterna()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-box-archive"></i> Sem Externa</button>
@@ -404,7 +311,10 @@
         </div>
     </header>
 
-    <!-- KPI / INDICADORES -->
+    <!-- AVISOS DO SISTEMA (erros reais de leitura/gravação/tempo real) -->
+    <div id="aviso-sistema" class="hidden mb-3 p-2.5 rounded-lg text-xs font-bold border"></div>
+
+    <!-- KPIs -->
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
         <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold opacity-75 uppercase block">Total Faltas</span>
@@ -428,7 +338,7 @@
         </div>
     </div>
 
-    <!-- ABAS PORTÕES -->
+    <!-- ABAS -->
     <div class="flex border-b mb-3 overflow-x-auto ui-card rounded-t-lg border p-1 gap-1" id="container-abas-portoes"></div>
 
     <!-- CONTEÚDO PRINCIPAL -->
@@ -441,27 +351,22 @@
                 </div>
             </div>
 
-            <!-- BARRA DE TÍTULO E FILTRO DE ORDEM -->
             <div class="p-2.5 border-b flex flex-wrap justify-between items-center gap-2 opacity-90 bg-slate-100 dark:bg-zinc-900">
                 <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" id="titulo-portao-atual">
                     <i class="fa-solid fa-truck text-blue-500"></i> Portão 7 - Faltas
                 </span>
-                
-                <!-- FILTRO RÁPIDO POR ORDEM -->
                 <div class="flex items-center gap-1.5">
                     <span class="text-[11px] font-bold opacity-75"><i class="fa-solid fa-filter text-blue-500"></i> Filtrar Ordem:</span>
-                    <select id="select-filtro-ordem" onchange="renderizarBlocosOrdensFaltas()" class="ui-card border rounded px-2 py-1 text-xs font-mono font-bold cursor-pointer">
+                    <select id="select-filtro-ordem" onchange="agendarRender()" class="ui-card border rounded px-2 py-1 text-xs font-mono font-bold cursor-pointer">
                         <option value="TODAS">Todas as Ordens</option>
                     </select>
                     <span class="text-xs opacity-75 font-mono ml-2" id="contador-linhas-portao">0 registo(s)</span>
                 </div>
             </div>
 
-            <!-- CONTAINER DINÂMICO DE BLOCOS DE ORDEM -->
             <div id="blocos-ordens-container" class="p-3 space-y-4"></div>
         </div>
 
-        <!-- TABELA DE RASGADAS -->
         <div id="secao-tabela-rasgadas" class="hidden ui-card rounded-lg border shadow-sm overflow-hidden mb-6 fade-in">
             <div class="p-2.5 border-b flex justify-between items-center bg-amber-500/10">
                 <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
@@ -518,9 +423,8 @@
         </div>
     </div>
 
-    <!-- BOTÃO FLUTUANTE DE SAÍDA (VOLTAR AO PAINEL DE SISTEMAS) NO RODAPÉ -->
     <div class="fixed bottom-4 right-4 z-50">
-        <a href="https://oppo1-lac.vercel.app/" target="_blank" rel="noopener noreferrer" 
+        <a href="https://oppo1-lac.vercel.app/" target="_blank" rel="noopener noreferrer"
            class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-wider transition-all transform hover:scale-105 border border-blue-400/40 cursor-pointer">
             <i class="fa-solid fa-arrow-right-from-bracket text-base"></i>
             <span>Voltar ao Painel</span>
@@ -528,1289 +432,1270 @@
     </div>
 
     <script>
-        const SUPABASE_URL = "https://mpsyqawieuwjgupoedib.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wc3lxYXdpZXV3amd1cG9lZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTA1OTQsImV4cCI6MjEwNjA4NjU5NH0.P9I8u6ycOBCKYIT2mvp35kZ-SfNTHiVY3Jkw7ltYFuQ";
-        
-        // SUPABASE COMPARTILHADO (SEM EXTERNAS E OCORRÊNCIAS)
-        const SUPABASE_URL_SEC = "Https://dylwhnsxjbeiukdmcupq.supabase.co";
-        const SUPABASE_KEY_SEC = "sb_publishable_uZL-3Z0_a-X-ZjMhwRXC9w_RP8c754J";
+    /* =====================================================================
+     * ARQUITETURA (resumo)
+     *
+     * 1) Cada linha tem um UID ESTÁVEL gerado no navegador (nunca é índice
+     *    de array). Toda edição, gravação, evento remoto e remoção usa o UID.
+     * 2) A ordem das linhas é imutável: vem do carimbo de criação embutido
+     *    no UID. Editar um campo NUNCA muda a posição da linha.
+     * 3) O DOM é reconciliado por chave (UID): linhas existentes são
+     *    atualizadas no lugar, nunca recriadas. Campo com foco não é tocado.
+     * 4) Gravação por linha, em fila: apenas os campos alterados são enviados
+     *    (PATCH). Alterar uma linha não interfere em outra, nem em outros
+     *    campos da mesma linha editados por outra pessoa.
+     * 5) Supabase Realtime (postgres_changes) + consulta automática a cada
+     *    2,5-6 s (garante a atualização mesmo sem Realtime) + refetch ao
+     *    reconectar/voltar à aba + cópia local do dia (tela nunca fica vazia).
+     * ===================================================================== */
 
-        let supabaseClient = null;
-        let supabaseClientSecundario = null;
+    const SUPABASE_URL = "https://mpsyqawieuwjgupoedib.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wc3lxYXdpZXV3amd1cG9lZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTA1OTQsImV4cCI6MjEwNjA4NjU5NH0.P9I8u6ycOBCKYIT2mvp35kZ-SfNTHiVY3Jkw7ltYFuQ";
+    const SUPABASE_URL_SEC = "https://dylwhnsxjbeiukdmcupq.supabase.co";
+    const SUPABASE_KEY_SEC = "sb_publishable_uZL-3Z0_a-X-ZjMhwRXC9w_RP8c754J";
 
-        // CANAL DE SINCRONIZAÇÃO EM TEMPO REAL ENTRE TODAS AS TELAS
-        let canalRealtimeCarregamento = null;
-        let realtimeConectado = false;
-        let realtimeIniciando = false;
+    const TABELA = 'controle_faltas_portao';
+    const PORTAO_MIN = 7, PORTAO_MAX = 26;
+    const ORIGENS = ['CD', 'Fábrica 1', 'Fábrica 2', 'Fábrica 3', 'Fábrica 5', 'Fábrica 6', 'Fábrica 7'];
+    const STATUS_FALTA = ['Pendente', 'Em andamento', 'Requisitada', 'Apareceu no Portão', 'Entregue no Portão'];
+    const CAMPOS = ['sscc', 'status', 'origem', 'ordem', 'cor', 'noApp', 'obs'];
+    const COLUNA = { sscc: 'sscc', status: 'status', origem: 'origem', ordem: 'ordem', cor: 'prioridade_cor', noApp: 'no_app', obs: 'observacao' };
+    const SEM_ORDEM = 'SEM ORDEM DEFINIDA';
+    const clientId = Math.random().toString(36).slice(2, 8);
 
-        function atualizarIndicadorRealtime(status, mensagem) {
-            let el = document.getElementById('indicador-realtime');
-            if (!el) {
-                el = document.createElement('div');
-                el.id = 'indicador-realtime';
-                el.className = 'fixed bottom-4 left-4 z-[60] flex items-center gap-2 px-3 py-2 rounded-full shadow-lg text-[10px] font-bold uppercase tracking-wider border bg-slate-900 text-white';
-                document.body.appendChild(el);
-            }
-
-            const estados = {
-                conectado: { icone: 'fa-wifi', texto: 'Tempo real conectado', classe: 'text-emerald-300 border-emerald-500/40' },
-                conectando: { icone: 'fa-spinner fa-spin', texto: 'Conectando tempo real...', classe: 'text-amber-300 border-amber-500/40' },
-                desconectado: { icone: 'fa-wifi-slash', texto: 'Tempo real desconectado', classe: 'text-red-300 border-red-500/40' },
-                erro: { icone: 'fa-triangle-exclamation', texto: 'Falha no tempo real', classe: 'text-red-300 border-red-500/40' }
-            };
-            const cfg = estados[status] || estados.desconectado;
-            el.className = `fixed bottom-4 left-4 z-[60] flex items-center gap-2 px-3 py-2 rounded-full shadow-lg text-[10px] font-bold uppercase tracking-wider border bg-slate-900 ${cfg.classe}`;
-            el.innerHTML = `<i class="fa-solid ${cfg.icone}"></i><span>${cfg.texto}</span>`;
-            el.title = mensagem || cfg.texto;
+    let supabaseClient = null, supabaseClientSecundario = null;
+    try {
+        if (typeof supabase !== 'undefined') {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth: { persistSession: false, autoRefreshToken: false },
+                realtime: { params: { eventsPerSecond: 20 } }
+            });
+            supabaseClientSecundario = supabase.createClient(SUPABASE_URL_SEC, SUPABASE_KEY_SEC, {
+                auth: { persistSession: false, autoRefreshToken: false }
+            });
         }
+    } catch (e) { console.warn('Supabase SDK indisponível', e); }
 
-        function removerCanalRealtime() {
-            if (canalRealtimeCarregamento && supabaseClient) {
-                try { supabaseClient.removeChannel(canalRealtimeCarregamento); } catch (e) {}
-            }
-            canalRealtimeCarregamento = null;
-            realtimeConectado = false;
+    /* ------------------------------ ESTADO ------------------------------ */
+    const recs = new Map();        // uid -> registro (faltas E rasgadas)
+    const idIndex = new Map();     // id do banco -> uid
+    const tombstones = new Set();  // uids/ids removidos localmente (evita "ressuscitar")
+    const flashSet = new Set();    // uids a destacar após alteração remota
+
+    let portaoAtual = 7;
+    let turnoAtual = 'Turno 1';
+    let responsavelAtual = '';
+    let dataAtual = '';
+    let loadToken = 0;
+    let diaCarregado = false;
+    let canal = null;
+    let focoUid = null;
+    let html5QrcodeScanner = null;
+    let campoAlvoScanner = null;
+
+    let semUid = false;            // banco sem a coluna "uid" -> modo compatível
+    let uidChecado = false;
+    let rtOk = false;              // websocket do Realtime inscrito com sucesso
+    let tentouFetch = false;
+    let ultimoFetchOk = false;
+    let buscandoToken = -1;
+    let pollTimer = null, cacheTimer = null, reinscreverTimer = null;
+
+    /* ------------------------------ UTILITÁRIOS ------------------------------ */
+    function novoUid() {
+        return Date.now().toString(36).padStart(9, '0') + '-' + Math.random().toString(36).slice(2, 8);
+    }
+    function sortKeyDoUid(uid) {
+        const n = parseInt(String(uid).slice(0, 9), 36);
+        return isNaN(n) ? 0 : n;
+    }
+    function hojeLocal() {
+        const d = new Date(), p = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+    function tratarSSCC(texto) {
+        if (!texto) return '';
+        let limpo = String(texto).replace(/\][A-Za-z0-9]+/g, '').replace(/\D/g, '');
+        if (limpo.length === 21) limpo = limpo.substring(1);
+        return limpo || String(texto).replace(/\][A-Za-z0-9]+/g, '').trim();
+    }
+    const ehRasgadaObs = obs => /^Rasgada \(/.test(obs || '');
+    const tipoDaObs = obs => (obs || '').startsWith('Rasgada (Lid') ? 'Lida' : 'Nao Lida';
+    const restoDaObs = obs => (obs || '').replace(/^Rasgada \([^)]*\):?\s*/, '');
+    const chaveOrdem = r => (r.ordem && r.ordem.trim() !== '') ? r.ordem.trim() : SEM_ORDEM;
+    const comparaRec = (a, b) => (a.sortKey - b.sortKey) || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0);
+    const $ = id => document.getElementById(id);
+
+    function novaRec(o) {
+        const uid = o.uid || novoUid();
+        return {
+            uid, id: o.id || null, data: o.data || dataAtual,
+            portao: Number(o.portao), kind: o.kind || 'falta',
+            sscc: o.sscc || '', status: o.status || 'Pendente', origem: o.origem || 'CD',
+            ordem: o.ordem || '', cor: o.cor || 'azul', noApp: o.noApp || 'Não', obs: o.obs || '',
+            saved: !!o.saved, dirty: o.dirty || {}, inflight: false, again: false, deleted: false,
+            touched: o.touched || 0,
+            sortKey: (o.sortKey !== undefined && o.sortKey !== null) ? o.sortKey : sortKeyDoUid(uid)
+        };
+    }
+    function addRec(r) {
+        recs.set(r.uid, r);
+        if (r.id) idIndex.set(r.id, r.uid);
+        return r;
+    }
+    function removerLocal(r) {
+        recs.delete(r.uid);
+        if (r.id) idIndex.delete(r.id);
+    }
+
+    /* ------------------------------ GRAVAÇÃO (fila por linha) ------------------------------ */
+    function marcarSujo(rec, campos) {
+        if (!rec.saved) {
+            if (!rec.sscc.trim()) { persistirPendentes(); return; } // linha em branco não vai ao banco
+            CAMPOS.forEach(f => rec.dirty[f] = rec[f]);
+        } else {
+            campos.forEach(f => rec.dirty[f] = rec[f]);
         }
+        persistirPendentes();
+        enviar(rec);
+    }
 
-        function ehRegistroRasgada(reg) {
-            const obs = String(reg?.observacao || '');
-            return obs.includes('Rasgada');
-        }
+    function payloadCompleto(rec) {
+        const p = {
+            data_operacao: rec.data,
+            portao: rec.portao,
+            sscc: rec.sscc,
+            status: rec.status,
+            origem: rec.origem,
+            ordem: rec.ordem,
+            prioridade_cor: rec.cor,
+            no_app: rec.noApp,
+            observacao: rec.obs,
+            turno: String(turnoAtual || 'Turno 1'),
+            responsavel: String(responsavelAtual || 'Não informado')
+        };
+        if (!semUid) p.uid = rec.uid;
+        colunasAusentes.forEach(c => { delete p[c]; });
+        return p;
+    }
 
-        function converterRegistroRealtime(reg) {
-            return {
-                id: reg.id,
-                sscc: tratarSSCC(reg.sscc || ''),
-                status: reg.status || 'Pendente',
-                origem: reg.origem || 'CD',
-                ordem: reg.ordem || '',
-                prioridadeCor: reg.prioridade_cor || 'azul',
-                noApp: reg.no_app || 'Não',
-                observacao: reg.observacao || ''
-            };
-        }
+    // Nome da coluna que o banco diz não existir (PGRST204 / 42703), ou null.
+    function colunaAusenteDe(err) {
+        const msg = String((err && err.message) || err || '');
+        let m = msg.match(/Could not find the '([^']+)' column/i);
+        if (m) return m[1];
+        m = msg.match(/column \"?(?:[\w]+\.)?([\w]+)\"? .*does not exist/i) || msg.match(/column [\w]+\.([\w]+) does not exist/i);
+        if (m && ((err && err.code === '42703') || /does not exist/i.test(msg))) return m[1];
+        return null;
+    }
+    function erroDeColunaUid(err) { return colunaAusenteDe(err) === 'uid'; }
 
-        function removerRegistroLocalPorId(id) {
-            let removido = false;
-            for (let p = 7; p <= 26; p++) {
-                const antesF = dadosPortoes[p]?.length || 0;
-                const antesR = rasgadasPortoes[p]?.length || 0;
-                dadosPortoes[p] = (dadosPortoes[p] || []).filter(item => item.id !== id);
-                rasgadasPortoes[p] = (rasgadasPortoes[p] || []).filter(item => item.id !== id);
-                if (dadosPortoes[p].length !== antesF || rasgadasPortoes[p].length !== antesR) removido = true;
+    // Colunas que a tabela real não tem: o app para de enviá-las em vez de travar tudo.
+    const colunasAusentes = new Set((() => { try { return JSON.parse(localStorage.getItem('grendene_cols_ausentes') || '[]'); } catch (e) { return []; } })());
+    function lembrarColunasAusentes() { try { localStorage.setItem('grendene_cols_ausentes', JSON.stringify([...colunasAusentes])); } catch (e) {} }
+    function descreverErro(err) {
+        if (!err) return 'erro desconhecido';
+        const partes = [err.message || String(err)];
+        if (err.code) partes.push(`código ${err.code}`);
+        if (err.details) partes.push(err.details);
+        if (err.hint) partes.push(err.hint);
+        return partes.join(' | ');
+    }
+
+    // Grava UMA linha nova com INSERT simples (mesma permissão que o app original usava).
+    // Nunca usa upsert: ele exige permissões extras e foi o que impedia de salvar.
+    async function inserirLinha(rec) {
+        const tabela = supabaseClient.from(TABELA);
+        const res = await tabela.insert([payloadCompleto(rec)]).select('id');
+        if (res.error) {
+            if (res.error.code === '23505' && !semUid) {          // mesmo uid já gravado (reenvio): apenas recupera o id
+                const ja = await supabaseClient.from(TABELA).select('id').eq('uid', rec.uid).limit(1);
+                if (!ja.error && ja.data && ja.data[0]) return ja.data[0].id;
             }
-            return removido;
+            throw res.error;
         }
-
-        function aplicarRegistroRealtime(reg, evento) {
-            if (!reg || !reg.id) return;
-
-            const portao = Number(reg.portao);
-            const dataRegistro = String(reg.data_operacao || '');
-
-            // Registros de outra data não devem alterar a tela atual.
-            if (dataRegistro !== String(dataAtual)) return;
-            if (portao < 7 || portao > 26) return;
-
-            removerRegistroLocalPorId(reg.id);
-
-            if (evento === 'DELETE') {
-                persistirDadosLocal();
-                renderizarTabelas();
-                renderizarPanoramaTodosPortoes();
-                atualizarOpcoesFiltroOrdem();
-                return;
-            }
-
-            const item = converterRegistroRealtime(reg);
-            if (ehRegistroRasgada(reg)) {
-                let tipo = 'Nao Lida';
-                if (String(reg.observacao || '').includes('Rasgada (Lida)')) tipo = 'Lida';
-                rasgadasPortoes[portao].push({ ...item, tipo });
-            } else {
-                dadosPortoes[portao].push(item);
-            }
-
-            persistirDadosLocal();
-            renderizarTabelas();
-            renderizarPanoramaTodosPortoes();
-            atualizarOpcoesFiltroOrdem();
-
-            // Se a alteração ocorreu em outro portão, não muda a seleção do operador.
-            if (portaoAtual !== 'todos' && Number(portaoAtual) === portao) {
-                selecionarPortao(portao);
-            }
+        const row = Array.isArray(res.data) ? res.data[0] : res.data;
+        if (row && row.id) return row.id;
+        // Sem erro, mas sem linha de volta: confirma de verdade antes de dar como salvo.
+        if (!semUid) {
+            const conf = await supabaseClient.from(TABELA).select('id').eq('uid', rec.uid).limit(1);
+            if (!conf.error && conf.data && conf.data[0]) return conf.data[0].id;
         }
+        throw new Error('O banco não confirmou a gravação (verifique as permissões/RLS de INSERT e SELECT da tabela).');
+    }
 
-        function iniciarSincronizacaoRealtime() {
-            if (!supabaseClient) {
-                atualizarIndicadorRealtime('erro', 'Cliente Supabase indisponível');
-                return;
-            }
-            if (!dataAtual) return;
-            if (realtimeIniciando) return;
-
-            realtimeIniciando = true;
-            removerCanalRealtime();
-            atualizarIndicadorRealtime('conectando');
-
-            canalRealtimeCarregamento = supabaseClient
-                .channel(`controle-carregamento-${dataAtual}-${Date.now()}`)
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'controle_faltas_portao' },
-                    payload => {
-                        console.log('[REALTIME] Alteração recebida:', payload.eventType, payload.new || payload.old);
-                        aplicarRegistroRealtime(payload.eventType === 'DELETE' ? payload.old : payload.new, payload.eventType);
-                    }
-                )
-                .subscribe(status => {
-                    console.log('[REALTIME] Status:', status);
-                    if (status === 'SUBSCRIBED') {
-                        realtimeConectado = true;
-                        atualizarIndicadorRealtime('conectado');
-                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-                        realtimeConectado = false;
-                        atualizarIndicadorRealtime(status === 'TIMED_OUT' ? 'desconectado' : 'erro', `Status: ${status}`);
-                    }
-                });
-
-            realtimeIniciando = false;
-        }
-
+    async function enviar(rec) {
+        if (!supabaseClient) return;
+        if (rec.inflight) { rec.again = true; return; }
+        if (rec.deleted) return;
+        rec.inflight = true;
+        atualizarIndicadorSync();
+        let falhou = false, repetirJa = false;
         try {
-            if (typeof supabase !== 'undefined') {
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-                    auth: { persistSession: false, autoRefreshToken: false }
-                });
-                supabaseClientSecundario = supabase.createClient(SUPABASE_URL_SEC, SUPABASE_KEY_SEC, {
-                    auth: { persistSession: false, autoRefreshToken: false }
-                });
+            do {
+                rec.again = false;
+                if (!rec.saved && !rec.sscc.trim()) break;
+                let sent;
+                if (!rec.saved) {
+                    sent = {};
+                    CAMPOS.forEach(f => sent[f] = rec[f]);
+                    const novoId = await inserirLinha(rec);
+                    rec.id = novoId; idIndex.set(novoId, rec.uid);
+                    rec.saved = true;
+                } else {
+                    sent = { ...rec.dirty };
+                    const patch = {};
+                    Object.keys(sent).forEach(f => { if (COLUNA[f] && !colunasAusentes.has(COLUNA[f])) patch[COLUNA[f]] = sent[f]; });
+                    if (!Object.keys(patch).length) { for (const f in sent) { if (rec.dirty[f] === sent[f]) delete rec.dirty[f]; } break; }
+                    if (!rec.id && semUid) throw new Error('linha sem id no modo compatível');
+                    const q = supabaseClient.from(TABELA).update(patch);
+                    const res = await (rec.id ? q.eq('id', rec.id) : q.eq('uid', rec.uid)).select('id');
+                    if (res.error) throw res.error;
+                    const linhas = Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []);
+                    if (linhas.length === 0) {
+                        // Nenhuma linha atualizada: ou foi apagada por outra pessoa, ou o banco bloqueou.
+                        const existe = rec.id
+                            ? await supabaseClient.from(TABELA).select('id').eq('id', rec.id).limit(1)
+                            : await supabaseClient.from(TABELA).select('id').eq('uid', rec.uid).limit(1);
+                        if (existe.error) throw existe.error;
+                        if (existe.data && existe.data.length) throw new Error('O banco recusou a alteração (verifique a permissão de UPDATE da tabela).');
+                        // a linha não existe mais no banco: regrava inteira
+                        if (idIndex.get(rec.id) === rec.uid) idIndex.delete(rec.id);
+                        rec.id = null; rec.saved = false;
+                        CAMPOS.forEach(f => rec.dirty[f] = rec[f]);
+                        rec.again = true;
+                        continue;
+                    }
+                    if (linhas[0] && linhas[0].id) { rec.id = linhas[0].id; idIndex.set(rec.id, rec.uid); }
+                }
+                for (const f in sent) { if (rec.dirty[f] === sent[f]) delete rec.dirty[f]; }
+                rec.touched = Date.now();
+            } while (rec.again);
+            setAviso('escrita', '');
+        } catch (err) {
+            console.warn('Falha ao gravar linha', err);
+            const colFalta = colunaAusenteDe(err);
+            if (colFalta && colFalta !== 'uid' && !colunasAusentes.has(colFalta)) {
+                colunasAusentes.add(colFalta);
+                lembrarColunasAusentes();
+                repetirJa = true;
+                setAviso('colunas', `A tabela do banco não tem a coluna "${colFalta}": esse campo NÃO está sendo salvo. Execute o migracao_tempo_real_v3.sql para criá-la.`, 'aviso');
+            } else if (!semUid && erroDeColunaUid(err)) {
+                semUid = true;
+                uidChecado = true;
+                repetirJa = true;
+                setAviso('modo', 'Banco sem a coluna "uid": funcionando em modo compatível. Execute o migracao_tempo_real_v2.sql para ativar todos os recursos.', 'aviso');
+            } else {
+                falhou = true;
+                setAviso('escrita', `NÃO SALVOU no banco: ${descreverErro(err)}. Nova tentativa automática em 5 s (os dados ficam guardados neste aparelho).`, 'erro');
             }
+        } finally {
+            rec.inflight = false;
+            if (rec.deleted) apagarNoBanco(rec);
+            persistirPendentes();
+            atualizarIndicadorSync();
+            if (repetirJa && !rec.deleted) enviar(rec);
+            else if (falhou && !rec.deleted) setTimeout(() => enviar(rec), 5000);
+        }
+    }
+
+    async function apagarNoBanco(rec, tentativa = 0) {
+        if (!supabaseClient || (!rec.id && !rec.saved)) return;
+        try {
+            const q = supabaseClient.from(TABELA).delete();
+            const { error } = await (rec.id ? q.eq('id', rec.id) : q.eq('uid', rec.uid));
+            if (error) throw error;
         } catch (e) {
-            console.warn("Supabase SDK indisponível", e);
+            if (tentativa < 5) setTimeout(() => apagarNoBanco(rec, tentativa + 1), 3000);
         }
+    }
 
-        let portaoAtual = 7;
-        let dadosPortoes = {};
-        let rasgadasPortoes = {};
-        let turnoAtual = 'Turno 1';
-        let responsavelAtual = '';
-        let dataAtual = '';
-        
-        let html5QrcodeScanner = null;
-        let campoAlvoScannerId = null;
+    function removerRegistro(rec) {
+        tombstones.add(rec.uid);
+        if (rec.id) tombstones.add('id:' + rec.id);
+        removerLocal(rec);
+        rec.deleted = true;
+        if (!rec.inflight) apagarNoBanco(rec);
+        persistirPendentes();
+    }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            inicializarDataHoje();
-            await carregarDadosNuvemELocais();
-            gerarAbasPortoes();
-            popularSelectPortoesModal();
-            selecionarPortao(7);
-            iniciarSincronizacaoRealtime();
+    /* ----------- Persistência local apenas do que ainda não foi confirmado ----------- */
+    const chavePend = () => `grendene_pend_v2_${dataAtual}`;
+    function persistirPendentes() {
+        try {
+            const pend = [];
+            recs.forEach(r => {
+                if (r.data !== dataAtual) return;
+                if ((!r.saved && r.sscc.trim()) || Object.keys(r.dirty).length) {
+                    pend.push({ uid: r.uid, id: r.id, data: r.data, portao: r.portao, kind: r.kind, sscc: r.sscc, status: r.status,
+                        origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, saved: r.saved, dirty: r.dirty, sortKey: r.sortKey });
+                }
+            });
+            if (pend.length) localStorage.setItem(chavePend(), JSON.stringify(pend));
+            else localStorage.removeItem(chavePend());
+        } catch (e) {}
+    }
+    function restaurarPendentes() {
+        try {
+            const bruto = localStorage.getItem(chavePend());
+            if (!bruto) return;
+            JSON.parse(bruto).forEach(p => { if (!recs.has(p.uid)) addRec(novaRec(p)); });
+        } catch (e) {}
+    }
+    function reenviarPendentes() {
+        recs.forEach(r => { if ((!r.saved && r.sscc.trim()) || Object.keys(r.dirty).length) enviar(r); });
+    }
+
+    function atualizarIndicadorSync() {
+        let n = 0;
+        recs.forEach(r => { if (r.inflight || Object.keys(r.dirty).length || (!r.saved && r.sscc.trim())) n++; });
+        const el = $('status-pendentes');
+        if (!el) return;
+        if (n > 0) { el.textContent = `${n} a enviar…`; el.classList.remove('hidden'); }
+        else el.classList.add('hidden');
+    }
+
+    const avisos = {};
+    function setAviso(chave, msg, nivel = 'aviso') {
+        if (msg) avisos[chave] = { msg, nivel }; else delete avisos[chave];
+        const el = $('aviso-sistema');
+        if (!el) return;
+        const lista = Object.values(avisos);
+        if (!lista.length) { el.classList.add('hidden'); el.textContent = ''; return; }
+        const erro = lista.some(a => a.nivel === 'erro');
+        el.className = 'mb-3 p-2.5 rounded-lg text-xs font-bold border ' +
+            (erro ? 'bg-red-600/10 border-red-500 text-red-500' : 'bg-amber-500/10 border-amber-500 text-amber-600');
+        el.textContent = lista.map(a => a.msg).join('   •   ');
+    }
+
+    function setConexao(estado) {
+        const el = $('status-conexao');
+        if (!el) return;
+        const cfg = {
+            ok: ['text-emerald-500', 'bg-emerald-500', 'Ao vivo'],
+            poll: ['text-emerald-500', 'bg-emerald-500', 'Sincronizando (atualiza sozinho)'],
+            conectando: ['text-amber-500', 'bg-amber-500', 'Conectando…'],
+            cache: ['text-red-500', 'bg-red-500', 'Sem conexão com o banco — mostrando cópia salva neste aparelho'],
+            offline: ['text-red-500', 'bg-red-500', 'Offline (Supabase não carregou)']
+        }[estado];
+        el.className = `inline-flex items-center gap-1 font-bold ${cfg[0]}`;
+        el.innerHTML = `<span class="w-2 h-2 rounded-full ${cfg[1]} inline-block"></span> ${cfg[2]}`;
+    }
+    function atualizarStatusConexao() {
+        if (!supabaseClient) return setConexao('offline');
+        if (!tentouFetch) return setConexao('conectando');
+        if (!ultimoFetchOk) return setConexao('cache');
+        setConexao(rtOk ? 'ok' : 'poll');
+    }
+
+    /* ------------------------------ REMOTO → LOCAL ------------------------------ */
+    function estaEditando(uid, f) {
+        const a = document.activeElement;
+        if (!a || !a.dataset || a.dataset.uid !== uid) return false;
+        return a.dataset.f === f || (f === 'obs' && (a.dataset.f === 'obsRest')) || (f === 'obs' && a.dataset.f === 'tipo');
+    }
+
+    function aplicarLinhaRemota(row, fetchStart) {
+        const idKey = 'id:' + row.id;
+        if ((row.uid && tombstones.has(row.uid)) || tombstones.has(idKey)) return null;
+        const uidLocal = (row.uid && recs.has(row.uid)) ? row.uid : idIndex.get(row.id);
+        let rec = uidLocal ? recs.get(uidLocal) : null;
+        const vals = {
+            sscc: row.sscc || '', status: row.status || 'Pendente', origem: row.origem || 'CD',
+            ordem: row.ordem || '', cor: row.prioridade_cor || 'azul', noApp: row.no_app || 'Não', obs: row.observacao || ''
+        };
+        // Modo compatível (sem coluna uid): casa o evento com a linha nossa que está sendo enviada agora
+        if (!rec && (semUid || !row.uid)) {
+            for (const r of recs.values()) {
+                if (!r.id && r.inflight && r.portao === row.portao && r.sscc === vals.sscc && r.data === row.data_operacao) { rec = r; break; }
+            }
+        }
+        if (!rec) {
+            const uid = row.uid || ('L' + row.id);
+            const sk = (row.uid && !row.uid.startsWith('L')) ? sortKeyDoUid(row.uid) : (Date.parse(row.created_at) || 0);
+            rec = addRec(novaRec({
+                uid, id: row.id, data: row.data_operacao, portao: row.portao,
+                kind: ehRasgadaObs(vals.obs) ? 'rasgada' : 'falta', ...vals,
+                saved: true, touched: Date.now(), sortKey: sk
+            }));
+            flashSet.add(rec.uid);
+            return rec;
+        }
+        if (fetchStart && rec.touched > fetchStart) return rec; // evento mais novo já aplicado
+        rec.id = row.id; idIndex.set(row.id, rec.uid);
+        rec.saved = true;
+        rec.touched = Date.now();
+        let mudou = false;
+        for (const f of CAMPOS) {
+            if (rec.dirty[f] !== undefined) continue;     // alteração local pendente vence
+            if (estaEditando(rec.uid, f)) continue;       // usuário digitando neste campo
+            if (rec[f] !== vals[f]) { rec[f] = vals[f]; mudou = true; }
+        }
+        if (mudou) flashSet.add(rec.uid);
+        return rec;
+    }
+
+    function aoEventoRemoto(payload) {
+        const tipo = payload.eventType;
+        if (tipo === 'DELETE') {
+            const id = payload.old && payload.old.id;
+            const uid = idIndex.get(id);
+            const rec = uid ? recs.get(uid) : null;
+            if (rec && !rec.inflight && !Object.keys(rec.dirty).length) { removerLocal(rec); agendarRender(); }
+            return;
+        }
+        const row = payload.new;
+        if (!row || row.data_operacao !== dataAtual) return;
+        aplicarLinhaRemota(row);
+        agendarRender();
+    }
+
+    function avisarColunasAusentes() {
+        if (colunasAusentes.size) setAviso('colunas', `A tabela do banco não tem a(s) coluna(s) ${[...colunasAusentes].map(c => '"' + c + '"').join(', ')}: esse(s) campo(s) NÃO estão sendo salvos. Execute o migracao_tempo_real_v3.sql.`, 'aviso');
+    }
+    async function checarColunaUid() {
+        try {
+            const { error } = await supabaseClient.from(TABELA).select('uid').limit(1);
+            if (!error) { uidChecado = true; semUid = false; setAviso('modo', ''); return; }
+            if (erroDeColunaUid(error)) {
+                uidChecado = true; semUid = true;
+                setAviso('modo', 'Banco sem a coluna "uid": funcionando em modo compatível. Execute o migracao_tempo_real.sql para ativar todos os recursos.', 'aviso');
+            }
+        } catch (e) { /* rede: tenta de novo na próxima busca */ }
+    }
+
+    // Busca o dia inteiro em páginas de 1000 (o Supabase corta em 1000 por consulta).
+    async function buscarDiaCompleto(dia) {
+        const TAM = 1000, todas = [];
+        for (let ini = 0; ini < 100000; ini += TAM) {
+            const { data, error } = await supabaseClient.from(TABELA).select('*')
+                .eq('data_operacao', dia).order('id', { ascending: true }).range(ini, ini + TAM - 1);
+            if (error) throw error;
+            todas.push(...(data || []));
+            if (!data || data.length < TAM) break;
+        }
+        return todas;
+    }
+
+    async function refrescar(token) {
+        if (!supabaseClient) return;
+        const tok = (token === undefined) ? loadToken : token;
+        if (buscandoToken === tok) return;           // já existe uma busca em andamento para este dia
+        buscandoToken = tok;
+        const t0 = Date.now();
+        const dia = dataAtual;
+        try {
+            if (!uidChecado) await checarColunaUid();
+            avisarColunasAusentes();
+            const data = await buscarDiaCompleto(dia);
+            if (tok !== loadToken || dia !== dataAtual) return;
+            const vistos = new Set();
+            data.forEach(row => { const r = aplicarLinhaRemota(row, t0); if (r) { vistos.add(r.uid); r.faltou = 0; } });
+            // Linha só some daqui se o banco confirmar a ausência em 2 buscas seguidas
+            // e a busca trouxe dados (resposta vazia/parcial nunca apaga nada).
+            if (data.length > 0) {
+                Array.from(recs.values()).forEach(r => {
+                    if (r.saved && !vistos.has(r.uid) && !r.inflight && !Object.keys(r.dirty).length && r.touched < t0) {
+                        r.faltou = (r.faltou || 0) + 1;
+                        if (r.faltou >= 2) removerLocal(r);
+                    }
+                });
+            }
+            diaCarregado = true;
+            tentouFetch = true;
+            ultimoFetchOk = true;
+            setAviso('leitura', '');
+            agendarCache();
+            agendarRender();
+        } catch (e) {
+            if (tok !== loadToken) return;
+            tentouFetch = true;
+            ultimoFetchOk = false;
+            console.warn('Falha ao buscar dados', e);
+            setAviso('leitura', `Não foi possível ler o banco: ${(e && e.message) || e}. Os dados continuam salvos; exibindo a última cópia deste aparelho e tentando de novo.`, 'erro');
+        } finally {
+            if (buscandoToken === tok) buscandoToken = -1;
+            if (tok === loadToken) atualizarStatusConexao();
+        }
+    }
+
+    function desinscrever() {
+        const c = canal;
+        canal = null;
+        if (c && supabaseClient) { try { supabaseClient.removeChannel(c); } catch (e) {} }
+    }
+    function inscrever(token) {
+        if (!supabaseClient) return;
+        try {
+            const ch = supabaseClient.channel(`faltas-${dataAtual}-${clientId}`);
+            canal = ch;
+            ch.on('postgres_changes', { event: '*', schema: 'public', table: TABELA, filter: `data_operacao=eq.${dataAtual}` },
+                payload => { if (token === loadToken && canal === ch) aoEventoRemoto(payload); })
+              .subscribe((status, err) => {
+                if (token !== loadToken || canal !== ch) return;
+                if (status === 'SUBSCRIBED') {
+                    rtOk = true;
+                    setAviso('rt', '');
+                    atualizarStatusConexao();
+                    refrescar(token);
+                    reenviarPendentes();
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                    rtOk = false;
+                    setAviso('rt', 'Tempo real instantâneo indisponível' + (err && err.message ? ` (${err.message})` : '') +
+                        ' — a tela segue atualizando sozinha a cada poucos segundos. Para atualização instantânea, execute o migracao_tempo_real.sql (liga o Realtime na tabela).', 'aviso');
+                    atualizarStatusConexao();
+                    clearTimeout(reinscreverTimer);
+                    reinscreverTimer = setTimeout(() => {
+                        if (token === loadToken && !rtOk) { desinscrever(); inscrever(token); }
+                    }, 15000);
+                }
+            });
+        } catch (e) {
+            rtOk = false;
+            console.warn('Falha ao abrir o canal Realtime', e);
+        }
+    }
+
+    /* ---- Cópia local do dia: a tela nunca fica vazia se o banco ficar inacessível ---- */
+    const chaveCache = () => `grendene_cache_v2_${dataAtual}`;
+    function agendarCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(salvarCache, 1500); }
+    function salvarCache() {
+        try {
+            const lista = [];
+            recs.forEach(r => {
+                if (r.saved && r.data === dataAtual) {
+                    lista.push({ uid: r.uid, id: r.id, data: r.data, portao: r.portao, kind: r.kind, sscc: r.sscc, status: r.status,
+                        origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, sortKey: r.sortKey });
+                }
+            });
+            if (lista.length) localStorage.setItem(chaveCache(), JSON.stringify(lista));   // nunca grava "vazio" por cima
+        } catch (e) {}
+    }
+    function restaurarCache() {
+        try {
+            const bruto = localStorage.getItem(chaveCache());
+            if (!bruto) return;
+            JSON.parse(bruto).forEach(p => {
+                if (!recs.has(p.uid)) addRec(novaRec({ ...p, saved: true, dirty: {}, touched: 0 }));
+            });
+        } catch (e) {}
+    }
+
+    async function carregarDia() {
+        const meu = ++loadToken;
+        diaCarregado = false; tentouFetch = false; ultimoFetchOk = false; rtOk = false;
+        clearTimeout(reinscreverTimer);
+        desinscrever();
+        recs.clear(); idIndex.clear(); tombstones.clear(); flashSet.clear();
+        restaurarCache();        // mostra na hora o que já tínhamos deste dia
+        restaurarPendentes();    // e o que ainda não foi enviado
+        agendarRender();
+        atualizarStatusConexao();
+        if (!supabaseClient) return;
+        await refrescar(meu);
+        if (meu !== loadToken) return;
+        inscrever(meu);
+        reenviarPendentes();
+        agendarPoll();
+    }
+
+    // Atualização garantida entre telas: mesmo sem Realtime, consulta o banco sozinha.
+    // (6 s com Realtime ativo como rede de segurança; 2,5 s quando só há consulta.)
+    function agendarPoll() {
+        clearTimeout(pollTimer);
+        pollTimer = setTimeout(async () => {
+            if (!document.hidden) await refrescar(loadToken);
+            agendarPoll();
+        }, rtOk ? 6000 : 2500);
+    }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { refrescar(loadToken); reenviarPendentes(); } });
+    window.addEventListener('online', () => { refrescar(loadToken); reenviarPendentes(); });
+    window.addEventListener('offline', () => { ultimoFetchOk = false; atualizarStatusConexao(); });
+
+    /* ------------------------------ SINCRONIA COM OCORRÊNCIAS ------------------------------ */
+    let ocTimer = null, ocUltimo = '';
+    function agendarSyncOcorrencias() {
+        if (!diaCarregado) return;
+        clearTimeout(ocTimer);
+        ocTimer = setTimeout(sincronizarOcorrenciasTurno, 2500);
+    }
+    async function sincronizarOcorrenciasTurno() {
+        if (!supabaseClientSecundario || !dataAtual || !diaCarregado) return;
+        let faltas = 0, rasgadas = 0;
+        recs.forEach(r => {
+            if (!r.sscc.trim()) return;
+            if (r.kind === 'rasgada') rasgadas++; else faltas++;
         });
-
-        function inicializarDataHoje() {
-            const inputData = document.getElementById('input-data-controle');
-            const hoje = new Date().toISOString().split('T')[0];
-            dataAtual = hoje;
-            if (inputData) inputData.value = dataAtual;
-        }
-
-        async function mudarDataOperacional(novaData) {
-            if (novaData) {
-                dataAtual = novaData;
-                await carregarDadosNuvemELocais();
-                iniciarSincronizacaoRealtime();
-                gerarAbasPortoes();
-                selecionarPortao(portaoAtual === 'todos' ? 7 : portaoAtual);
-                iniciarSincronizacaoRealtime();
-                tocarSomTrocaData();
+        const assinatura = `${dataAtual}|${faltas}|${rasgadas}`;
+        if (assinatura === ocUltimo) return;
+        try {
+            const { data: existente, error } = await supabaseClientSecundario.from('ocorrencias_turno1').select('id').eq('data', dataAtual).maybeSingle();
+            if (error) throw error;
+            if (existente) {
+                await supabaseClientSecundario.from('ocorrencias_turno1').update({ carregamento: rasgadas, faltas }).eq('id', existente.id);
+            } else {
+                await supabaseClientSecundario.from('ocorrencias_turno1').insert([{
+                    data: dataAtual, sorter: 0, carregamento: rasgadas, faltas,
+                    pend_sorter: 0, pend_carregamento: 0, pend_faltas: 0,
+                    observacoes: 'Gerado automaticamente pelo Controle de Carregamento',
+                    responsavel: responsavelAtual || 'Yens Farrapo'
+                }]);
             }
-        }
+            ocUltimo = assinatura;
+        } catch (err) { console.warn('Erro ao sincronizar ocorrências:', err); }
+    }
 
-        async function carregarDadosNuvemELocais() {
-            if (!dataAtual) inicializarDataHoje();
-            dadosPortoes = {};
-            rasgadasPortoes = {};
-            for (let i = 7; i <= 26; i++) {
-                dadosPortoes[i] = [];
-                rasgadasPortoes[i] = [];
+    /* ------------------------------ CRUZAMENTO DE SSCC ------------------------------ */
+    async function cruzarSSCC(rec) {
+        const codigo = rec.sscc;
+        if (!codigo || !supabaseClient) return;
+        let msg = '';
+        try {
+            const rep = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigo}%`).limit(1);
+            if (!rep.error && rep.data && rep.data[0]) {
+                const d = rep.data[0];
+                msg = `Caixa localizada em Reposição: ${d.categoria || 'Reposição'}${d.rastro ? ` (${d.rastro})` : ''}`;
             }
-
-            if (supabaseClient) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('controle_faltas_portao')
-                        .select('*')
-                        .eq('data_operacao', dataAtual)
-                        .order('created_at', { ascending: true })
-                        .order('id', { ascending: true });
-
-                    if (!error && data) {
-                        data.forEach(reg => {
-                            const p = reg.portao;
-                            if (p >= 7 && p <= 26) {
-                                const itemObj = {
-                                    id: reg.id,
-                                    sscc: tratarSSCC(reg.sscc || ''),
-                                    status: reg.status || 'Pendente',
-                                    origem: reg.origem || 'CD',
-                                    ordem: reg.ordem || '',
-                                    prioridadeCor: reg.prioridade_cor || 'azul',
-                                    noApp: reg.no_app || 'Não',
-                                    observacao: reg.observacao || ''
-                                };
-
-                                if (reg.observacao && reg.observacao.includes('Rasgada')) {
-                                    let tipoMatch = 'Nao Lida';
-                                    if (reg.observacao.includes('Rasgada (Lid') || reg.observacao.includes('Rasgada (Lida)')) {
-                                        tipoMatch = 'Lida';
-                                    }
-                                    rasgadasPortoes[p].push({ ...itemObj, tipo: tipoMatch });
-                                } else {
-                                    dadosPortoes[p].push(itemObj);
-                                }
-                            }
-                        });
-                    }
-                } catch (err) {
-                    console.warn("Erro ao buscar da nuvem, carregando local", err);
-                }
-            }
-
-            for (let i = 7; i <= 26; i++) {
-                if (dadosPortoes[i].length === 0) {
-                    const chaveF = `grendene_faltas_${dataAtual}_p${i}`;
-                    const salvoF = localStorage.getItem(chaveF);
-                    if (salvoF) {
-                        try { 
-                            dadosPortoes[i] = JSON.parse(salvoF).map(item => ({ ...item, sscc: tratarSSCC(item.sscc), prioridadeCor: item.prioridadeCor || 'azul' })); 
-                        } catch(e){}
+            if (!msg) {
+                for (const r of recs.values()) {
+                    if (r.kind === 'rasgada' && r.uid !== rec.uid && r.sscc === codigo) {
+                        msg = `ALERTA: Caixa localizada em Rasgadas (Portão ${r.portao} - Tipo: ${tipoDaObs(r.obs)})`;
+                        break;
                     }
                 }
             }
-            persistirDadosLocal();
-            sincronizarOcorrenciasTurno();
-        }
-
-        function persistirDadosLocal() {
-            if (!dataAtual) inicializarDataHoje();
-            const chaveFaltas = `grendene_faltas_${dataAtual}`;
-            const chaveRasgadas = `grendene_rasgadas_${dataAtual}`;
-            localStorage.setItem(chaveFaltas, JSON.stringify(dadosPortoes));
-            localStorage.setItem(chaveRasgadas, JSON.stringify(rasgadasPortoes));
-            atualizarIndicadoresKPI();
-            if (portaoAtual !== 'todos') verificarBannerRasgadas();
-            sincronizarOcorrenciasTurno();
-        }
-
-        // SINCRONIZAÇÃO AUTOMÁTICA COM O CONTROLE DE OCORRÊNCIAS
-        async function sincronizarOcorrenciasTurno() {
-            if (!supabaseClientSecundario || !dataAtual) return;
-
-            let totalFaltasCarregamento = 0;
-            let totalRasgadasCarregamento = 0;
-
-            for (let i = 7; i <= 26; i++) {
-                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
-                totalFaltasCarregamento += listaFaltas.length;
-
-                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
-                totalRasgadasCarregamento += listaRasgadas.length;
+            if (!msg) {
+                const rd = await supabaseClient.from(TABELA).select('portao').eq('sscc', codigo).like('observacao', 'Rasgada (%').limit(1);
+                if (!rd.error && rd.data && rd.data[0]) msg = `ALERTA: Caixa localizada em Rasgadas (Portão ${rd.data[0].portao})`;
             }
+        } catch (e) { console.warn('Erro no cruzamento', e); return; }
 
-            try {
-                const { data: existente, error: errBusca } = await supabaseClientSecundario
-                    .from('ocorrencias_turno1')
-                    .select('*')
-                    .eq('data', dataAtual)
-                    .maybeSingle();
-
-                if (errBusca) throw errBusca;
-
-                if (existente) {
-                    await supabaseClientSecundario
-                        .from('ocorrencias_turno1')
-                        .update({
-                            carregamento: totalRasgadasCarregamento,
-                            faltas: totalFaltasCarregamento
-                        })
-                        .eq('id', existente.id);
-                } else {
-                    await supabaseClientSecundario
-                        .from('ocorrencias_turno1')
-                        .insert([{
-                            data: dataAtual,
-                            sorter: 0,
-                            carregamento: totalRasgadasCarregamento,
-                            faltas: totalFaltasCarregamento,
-                            pend_sorter: 0,
-                            pend_carregamento: 0,
-                            pend_faltas: 0,
-                            observacoes: 'Gerado automaticamente pelo Controle de Carregamento',
-                            responsavel: responsavelAtual || 'Yens Farrapo'
-                        }]);
-                }
-            } catch (err) {
-                console.warn("Erro ao sincronizar ocorrências:", err);
-            }
+        if (!msg || rec.sscc !== codigo || !recs.has(rec.uid)) return;
+        if (!rec.obs.includes(msg)) {
+            rec.obs = `[${msg}]`;
+            marcarSujo(rec, ['obs']);
+            agendarRender();
+            $('texto-alerta-integracao').innerText = msg;
+            $('modal-alerta-integracao').classList.remove('hidden');
         }
+    }
+    function fecharAlertaIntegracao() { $('modal-alerta-integracao').classList.add('hidden'); }
 
-        async function salvarLinhaTempoReal(index) {
-            // 1) Guarda imediatamente no navegador para não perder a edição.
-            persistirDadosLocal();
-            if (!supabaseClient) {
-                console.warn('[SUPABASE] Cliente indisponível; alteração mantida apenas localmente.');
-                return;
-            }
+    /* ------------------------------ RECONCILIAÇÃO DO DOM (por chave) ------------------------------ */
+    function reconciliar(pai, itens, chave, criar, atualizar) {
+        const desejadas = new Set(itens.map(chave));
+        const existentes = new Map();
+        Array.from(pai.children).forEach(el => {
+            const k = el.dataset.k;
+            if (k !== undefined && desejadas.has(k) && !existentes.has(k)) existentes.set(k, el);
+            else el.remove();
+        });
+        itens.forEach((item, i) => {
+            const k = chave(item);
+            let el = existentes.get(k);
+            if (!el) { el = criar(item); el.dataset.k = k; }
+            atualizar(el, item, i);
+            const atual = pai.children[i];
+            if (atual !== el) pai.insertBefore(el, atual || null);
+        });
+    }
 
-            const item = dadosPortoes[portaoAtual]?.[index];
-            if (!item || !item.sscc || item.sscc.trim() === '') return;
-
-            try {
-                const codigoLimpo = tratarSSCC(item.sscc);
-                const payload = {
-                    data_operacao: dataAtual,
-                    portao: Number(portaoAtual),
-                    sscc: String(codigoLimpo),
-                    status: String(item.status || 'Pendente'),
-                    origem: String(item.origem || 'CD'),
-                    ordem: String(item.ordem || ''),
-                    prioridade_cor: String(item.prioridadeCor || 'azul'),
-                    no_app: String(item.noApp || 'Não'),
-                    observacao: String(item.observacao || ''),
-                    turno: String(turnoAtual || 'Turno 1'),
-                    responsavel: String(responsavelAtual || 'Não informado')
-                };
-
-                let res;
-                if (item.id) {
-                    res = await supabaseClient
-                        .from('controle_faltas_portao')
-                        .update(payload)
-                        .eq('id', item.id)
-                        .select();
-                } else {
-                    // Mantém a mesma estratégia do código original: INSERT direto.
-                    // Não fazemos SELECT prévio, pois isso pode ser bloqueado por RLS.
-                    res = await supabaseClient
-                        .from('controle_faltas_portao')
-                        .insert([payload])
-                        .select();
-                }
-
-                if (res.error) {
-                    console.error('[SUPABASE] ERRO AO SALVAR:', res.error);
-                    mostrarErroSupabase(res.error, 'salvar');
-                    return;
-                }
-
-                if (res.data && res.data[0] && res.data[0].id) {
-                    item.id = res.data[0].id;
-                    persistirDadosLocal();
-                }
-            } catch (err) {
-                console.error('[SUPABASE] Exceção ao salvar:', err);
-                mostrarErroSupabase(err, 'salvar');
-            }
+    function setSelectValor(sel, valor) {
+        if (document.activeElement === sel) return;
+        if (sel.value === valor) return;
+        if (!Array.from(sel.options).some(o => o.value === valor)) {
+            const op = document.createElement('option'); op.value = valor; op.textContent = valor; sel.appendChild(op);
         }
+        sel.value = valor;
+    }
+    function setInputValor(inp, valor) {
+        if (document.activeElement === inp) return;
+        if (inp.value !== valor) inp.value = valor;
+    }
+    function aplicarFlash(tr, uid) {
+        if (!flashSet.has(uid)) return;
+        flashSet.delete(uid);
+        tr.classList.remove('flash-remoto');
+        void tr.offsetWidth;
+        tr.classList.add('flash-remoto');
+        setTimeout(() => tr.classList.remove('flash-remoto'), 1700);
+    }
 
-        async function salvarLinhaRasgadaTempoReal(index) {
-            persistirDadosLocal();
-            if (!supabaseClient) {
-                console.warn('[SUPABASE] Cliente indisponível; rasgada mantida apenas localmente.');
-                return;
-            }
+    const optsHTML = lista => lista.map(o => `<option value="${o}">${o}</option>`).join('');
 
-            const item = rasgadasPortoes[portaoAtual]?.[index];
-            if (!item || !item.sscc || item.sscc.trim() === '') return;
+    function getClassStatus(status) {
+        const s = (status || '').toLowerCase().trim();
+        if (s.includes('andamento')) return 'status-em-andamento';
+        if (s.includes('requisitada')) return 'status-requisitada';
+        if (s.includes('apareceu')) return 'status-apareceu-no-portao';
+        if (s.includes('entregue')) return 'status-entregue-no-portao';
+        return 'status-pendente';
+    }
+    function getClassStatusRasgada(status) {
+        if (status === 'Requisitada') return 'status-rasgada-requisitada';
+        if (status === 'Restaurada') return 'status-rasgada-restaurada';
+        if (status === 'Entregue no Portão') return 'status-rasgada-entregue';
+        return 'status-rasgada-pendente';
+    }
+    function getClassCorBadge(cor) {
+        if (cor === 'vermelho') return 'bg-red-600 text-white';
+        if (cor === 'amarelo') return 'bg-amber-500 text-black';
+        return 'bg-blue-600 text-white';
+    }
 
-            try {
-                const codigoLimpo = tratarSSCC(item.sscc);
-                const payload = {
-                    data_operacao: dataAtual,
-                    portao: Number(portaoAtual),
-                    sscc: String(codigoLimpo),
-                    status: String(item.status || 'Pendente'),
-                    origem: String(item.origem || 'CD'),
-                    ordem: String(item.ordem || 'URGENTE'),
-                    prioridade_cor: 'vermelho',
-                    no_app: 'Sim',
-                    observacao: String(item.observacao || `Rasgada (${item.tipo})`),
-                    turno: String(turnoAtual || 'Turno 1'),
-                    responsavel: String(responsavelAtual || 'Não informado')
-                };
+    /* ---------- Linha de FALTA ---------- */
+    function criarLinhaFalta(rec) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="text-center opacity-60 font-mono text-[11px]" data-label="#"></td>
+            <td class="td-sscc-container" data-label="SSCC"><input type="text" data-f="sscc" autocomplete="off" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold"></td>
+            <td data-label="Status"><select data-f="status" class="excel-select">${optsHTML(STATUS_FALTA)}</select></td>
+            <td data-label="Origem"><select data-f="origem" class="excel-select border">${optsHTML(ORIGENS)}</select></td>
+            <td data-label="No App?"><select data-f="noApp" class="excel-select"><option value="Não">Não</option><option value="Sim">Sim</option></select></td>
+            <td data-label="Observação"><input type="text" data-f="obs" autocomplete="off" placeholder="Observação..." class="excel-input"></td>
+            <td class="text-center" data-label="Ação"><button data-action="del-row" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button></td>`;
+        tr.querySelectorAll('[data-f],[data-action]').forEach(e => e.dataset.uid = rec.uid);
+        return tr;
+    }
+    function atualizarLinhaFalta(tr, rec, i) {
+        tr.children[0].textContent = i + 1;
+        setInputValor(tr.querySelector('[data-f="sscc"]'), rec.sscc);
+        const st = tr.querySelector('[data-f="status"]'); setSelectValor(st, rec.status);
+        st.className = 'excel-select ' + getClassStatus(rec.status);
+        setSelectValor(tr.querySelector('[data-f="origem"]'), rec.origem);
+        const ap = tr.querySelector('[data-f="noApp"]'); setSelectValor(ap, rec.noApp);
+        ap.className = 'excel-select ' + (rec.noApp === 'Sim' ? 'app-sim' : 'app-nao');
+        setInputValor(tr.querySelector('[data-f="obs"]'), rec.obs);
+        aplicarFlash(tr, rec.uid);
+    }
 
-                let res;
-                if (item.id) {
-                    res = await supabaseClient
-                        .from('controle_faltas_portao')
-                        .update(payload)
-                        .eq('id', item.id)
-                        .select();
-                } else {
-                    res = await supabaseClient
-                        .from('controle_faltas_portao')
-                        .insert([payload])
-                        .select();
-                }
-
-                if (res.error) {
-                    console.error('[SUPABASE] ERRO AO SALVAR RASGADA:', res.error);
-                    mostrarErroSupabase(res.error, 'salvar a rasgada');
-                    return;
-                }
-
-                if (res.data && res.data[0] && res.data[0].id) {
-                    item.id = res.data[0].id;
-                    persistirDadosLocal();
-                }
-            } catch (err) {
-                console.error('[SUPABASE] Exceção ao salvar rasgada:', err);
-                mostrarErroSupabase(err, 'salvar a rasgada');
-            }
-        }
-
-        let ultimoErroSupabase = '';
-        function mostrarErroSupabase(error, acao) {
-            const mensagem = error?.message || error?.details || error?.hint || String(error);
-            const codigo = error?.code ? ` [${error.code}]` : '';
-            const texto = `Não foi possível ${acao} no banco de dados.${codigo}
-
-${mensagem}`;
-            if (texto !== ultimoErroSupabase) {
-                ultimoErroSupabase = texto;
-                console.error(texto, error);
-                // Não interrompe o uso local do sistema, mas deixa claro que a nuvem falhou.
-                const aviso = document.getElementById('aviso-supabase');
-                if (aviso) {
-                    aviso.textContent = `Banco: falha ao ${acao}`;
-                    aviso.title = mensagem;
-                }
-            }
-        }
-
-        function fecharAlertaIntegracao() {
-            document.getElementById('modal-alerta-integracao').classList.add('hidden');
-        }
-
-        function abrirModalSemExterna() {
-            document.getElementById('busca-produto').value = '';
-            document.getElementById('busca-cor').value = '';
-            document.getElementById('resultado-busca-sem-externa').innerHTML = '<p class="text-center opacity-50 py-4">Insira o produto ou cor e clique em buscar.</p>';
-            document.getElementById('modal-sem-externa').classList.remove('hidden');
-        }
-
-        function fecharModalSemExterna() {
-            document.getElementById('modal-sem-externa').classList.add('hidden');
-        }
-
-        async function executarBuscaSemExterna() {
-            const prod = document.getElementById('busca-produto').value.trim();
-            const cor = document.getElementById('busca-cor').value.trim();
-            const containerRes = document.getElementById('resultado-busca-sem-externa');
-
-            if (!prod && !cor) {
-                alert("Informe pelo menos o Produto ou a Cor para realizar a busca.");
-                return;
-            }
-
-            containerRes.innerHTML = '<p class="text-center opacity-75 py-4"><i class="fa-solid fa-spinner fa-spin"></i> Pesquisando no banco de dados...</p>';
-
-            if (!supabaseClientSecundario) {
-                containerRes.innerHTML = '<p class="text-center text-red-500 py-4">Erro: Conexão com o Supabase indisponível.</p>';
-                return;
-            }
-
-            try {
-                let query = supabaseClientSecundario.from('caixas_cd8').select('*');
-
-                if (prod && cor) {
-                    query = query.ilike('produto', `%${prod}%`).ilike('cor', `%${cor}%`);
-                } else if (prod) {
-                    query = query.ilike('produto', `%${prod}%`);
-                } else if (cor) {
-                    query = query.ilike('cor', `%${cor}%`);
-                }
-
-                const { data, error } = await query.limit(50);
-                if (error) throw error;
-
-                if (!data || data.length === 0) {
-                    containerRes.innerHTML = '<p class="text-center text-amber-500 py-4 font-bold">Nenhum registro encontrado para este produto/cor.</p>';
-                    return;
-                }
-
-                let html = '';
-                data.forEach((item, idx) => {
-                    const dataFormatada = item.created_at ? new Date(item.created_at).toLocaleString('pt-BR') : 'Data não informada';
-                    html += `
-                        <div class="ui-card border p-2.5 rounded shadow-sm flex flex-col gap-1">
-                            <div class="flex justify-between items-center font-bold text-blue-500">
-                                <span>#${idx + 1} - Produto: ${item.produto || 'N/A'}</span>
-                                <span class="text-[10px] opacity-75">${dataFormatada}</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-1 text-[11px] opacity-90">
-                                <div><strong class="opacity-70">Cor:</strong> ${item.cor || 'N/A'}</div>
-                                <div><strong class="opacity-70">Localização:</strong> <span class="text-emerald-600 font-bold">${item.localizacao || 'N/A'}</span></div>
-                            </div>
-                        </div>
-                    `;
-                });
-                containerRes.innerHTML = html;
-            } catch (err) {
-                console.error("Erro ao buscar caixas sem externa:", err);
-                containerRes.innerHTML = `<p class="text-center text-red-500 py-4 font-bold">Erro ao consultar o banco: ${err.message || err}</p>`;
-            }
-        }
-
-        function alternarTema() {
-            const body = document.body;
-            if (body.classList.contains('light')) {
-                body.classList.replace('light', 'dark');
-                document.getElementById('icone-tema').className = "fa-solid fa-sun";
-                localStorage.setItem('tema_grendene', 'dark');
-            } else {
-                body.classList.replace('dark', 'light');
-                document.getElementById('icone-tema').className = "fa-solid fa-moon";
-                localStorage.setItem('tema_grendene', 'light');
-            }
-        }
-
-        const temaSalvo = localStorage.getItem('tema_grendene');
-        if (temaSalvo === 'dark') {
-            document.body.classList.replace('light', 'dark');
-            document.getElementById('icone-tema').className = "fa-solid fa-sun";
-        }
-
-        function mudarTurno(turno) { turnoAtual = turno; }
-        function mudarResponsavel(resp) { responsavelAtual = resp; sincronizarOcorrenciasTurno(); }
-
-        function popularSelectPortoesModal() {
-            const select = document.getElementById('rasgada-portao');
-            select.innerHTML = '';
-            for (let i = 7; i <= 26; i++) {
-                const opt = document.createElement('option');
-                opt.value = i;
-                opt.innerText = `Portão ${i}`;
-                select.appendChild(opt);
-            }
-        }
-
-        function gerarAbasPortoes() {
-            const container = document.getElementById('container-abas-portoes');
-            container.innerHTML = '';
-            
-            const btnTodos = document.createElement('button');
-            btnTodos.id = `btn-portao-todos`;
-            btnTodos.className = "px-3 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border-r text-blue-500";
-            btnTodos.innerHTML = `<i class="fa-solid fa-layer-group text-[11px]"></i> Todos`;
-            btnTodos.onclick = () => selecionarPortao('todos');
-            container.appendChild(btnTodos);
-
-            for (let i = 7; i <= 26; i++) {
-                const btn = document.createElement('button');
-                btn.id = `btn-portao-${i}`;
-                btn.className = "px-2.5 py-1.5 text-xs font-bold rounded hover:opacity-80 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
-                btn.innerHTML = `<i class="fa-solid fa-truck text-[10px] opacity-60"></i> P-${i} <span id="badge-rasgada-${i}" class="hidden w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`;
-                btn.onclick = () => selecionarPortao(i);
-                container.appendChild(btn);
-            }
-            atualizarBadgesPortoesAbas();
-        }
-
-        function atualizarBadgesPortoesAbas() {
-            for (let i = 7; i <= 26; i++) {
-                const badge = document.getElementById(`badge-rasgada-${i}`);
-                if (badge) {
-                    const rasgadas = rasgadasPortoes[i] || [];
-                    if (rasgadas.length > 0) badge.classList.remove('hidden');
-                    else badge.classList.add('hidden');
-                }
-            }
-        }
-
-        function selecionarPortao(paramPortao) {
-            portaoAtual = paramPortao;
-            if (paramPortao === 'todos') {
-                document.getElementById('btn-portao-todos').className = "px-3 py-1.5 text-xs font-bold rounded bg-blue-600 text-white shadow-sm whitespace-nowrap cursor-pointer flex items-center gap-1.5";
-                for (let i = 7; i <= 26; i++) {
-                    const b = document.getElementById(`btn-portao-${i}`);
-                    if (b) b.className = "px-2.5 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
-                }
-                document.getElementById('wrapper-conteudo-dinamico').classList.add('hidden');
-                document.getElementById('wrapper-todos-portoes').classList.remove('hidden');
-                renderizarPanoramaTodosPortoes();
-                return;
-            } else {
-                document.getElementById('btn-portao-todos').className = "px-3 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border-r text-blue-500";
-                document.getElementById('wrapper-todos-portoes').classList.add('hidden');
-                document.getElementById('wrapper-conteudo-dinamico').classList.remove('hidden');
-            }
-
-            for (let i = 7; i <= 26; i++) {
-                const btn = document.getElementById(`btn-portao-${i}`);
-                if (btn) {
-                    if (i === paramPortao) btn.className = "px-2.5 py-1.5 text-xs font-bold rounded bg-blue-600 text-white shadow-sm whitespace-nowrap cursor-pointer flex items-center gap-1.5";
-                    else btn.className = "px-2.5 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
-                }
-            }
-
-            document.getElementById('titulo-portao-atual').innerHTML = `<i class="fa-solid fa-truck text-blue-500"></i> Portão ${portaoAtual} - Faltas`;
-            document.getElementById('titulo-portao-rasgadas').innerText = `Portão ${portaoAtual}`;
-            atualizarOpcoesFiltroOrdem();
-            renderizarTabelas();
-            atualizarIndicadoresKPI();
-            verificarBannerRasgadas();
-        }
-
-        function verificarBannerRasgadas() {
-            const banner = document.getElementById('banner-rasgadas-lidas');
-            const textoAlerta = document.getElementById('texto-alerta-rasgada-lida');
-            const rasgadas = rasgadasPortoes[portaoAtual] || [];
-            const rasgadasLidas = rasgadas.filter(r => r.tipo === 'Lida');
-
-            if (rasgadasLidas.length > 0) {
-                banner.classList.remove('hidden');
-                textoAlerta.innerHTML = `Atenção: Caixa rasgada lida neste portão! (${rasgadasLidas.length} un)`;
-            } else {
-                banner.classList.add('hidden');
-            }
-            atualizarBadgesPortoesAbas();
-        }
-
-        function abrirModalRasgada() {
-            document.getElementById('rasgada-portao').value = portaoAtual === 'todos' ? 7 : portaoAtual;
-            document.getElementById('rasgada-sscc').value = '';
-            document.getElementById('rasgada-obs').value = '';
-            document.getElementById('modal-rasgada').classList.remove('hidden');
-        }
-        function fecharModalRasgada() { document.getElementById('modal-rasgada').classList.add('hidden'); }
-
-        async function salvarCaixaRasgada() {
-            const portaoAlvo = parseInt(document.getElementById('rasgada-portao').value);
-            const sscc = tratarSSCC(document.getElementById('rasgada-sscc').value.trim());
-            const tipo = document.getElementById('rasgada-tipo').value;
-            const obs = document.getElementById('rasgada-obs').value.trim() || 'Caixa rasgada no carregamento';
-
-            if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
-            if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
-
-            const novoItem = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', prioridadeCor: 'vermelho', observacao: `Rasgada (${tipo}): ${obs}` };
-            rasgadasPortoes[portaoAlvo].push(novoItem);
-
-            tocarSomSucesso();
-            persistirDadosLocal();
-            fecharModalRasgada();
-            selecionarPortao(portaoAlvo);
-
-            await salvarLinhaRasgadaTempoReal(rasgadasPortoes[portaoAlvo].length - 1);
-        }
-
-        function atualizarIndicadoresKPI() {
-            let totalFaltas = 0, entregues = 0, pendentes = 0, totalRasgadas = 0, quantificadosNoApp = 0;
-
-            for (let i = 7; i <= 26; i++) {
-                const lista = dadosPortoes[i] || [];
-                const rasgadas = rasgadasPortoes[i] || [];
-                totalRasgadas += rasgadas.length;
-
-                lista.forEach(item => {
-                    if (item.sscc && item.sscc.trim() !== '') {
-                        totalFaltas++;
-                        if (item.status === 'Entregue no Portão') entregues++; else pendentes++;
-                        if (item.noApp === 'Sim') quantificadosNoApp++;
-                    }
-                });
-                rasgadas.forEach(item => {
-                    if (item.sscc && item.sscc.trim() !== '') {
-                        totalFaltas++;
-                        if (item.status === 'Entregue no Portão') entregues++; else pendentes++;
-                    }
-                });
-            }
-
-            document.getElementById('kpi-total-faltas').innerText = totalFaltas;
-            document.getElementById('kpi-entregues').innerText = entregues;
-            document.getElementById('kpi-pendentes').innerText = pendentes;
-            document.getElementById('kpi-rasgadas').innerText = totalRasgadas;
-            document.getElementById('kpi-no-app').innerText = quantificadosNoApp;
-        }
-
-        function renderizarTabelas() {
-            renderizarBlocosOrdensFaltas();
-            renderizarTabelaRasgadas();
-        }
-
-        function getClassStatus(status) {
-            if (!status) return 'status-pendente';
-            const s = status.toLowerCase().trim();
-            if (s.includes('andamento')) return 'status-em-andamento';
-            if (s.includes('requisitada')) return 'status-requisitada';
-            if (s.includes('apareceu')) return 'status-apareceu-no-portao';
-            if (s.includes('entregue')) return 'status-entregue-no-portao';
-            return 'status-pendente';
-        }
-
-        function getClassCorBadge(cor) {
-            if (cor === 'vermelho') return 'bg-red-600 text-white';
-            if (cor === 'amarelo') return 'bg-amber-500 text-black';
-            return 'bg-blue-600 text-white'; // Azul (padrão)
-        }
-
-        function atualizarOpcoesFiltroOrdem() {
-            const selectFiltro = document.getElementById('select-filtro-ordem');
-            if (!selectFiltro) return;
-            const valorAtual = selectFiltro.value;
-            
-            const lista = dadosPortoes[portaoAtual] || [];
-            const ordensSet = new Set();
-            lista.forEach(item => {
-                const ord = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
-                ordensSet.add(ord);
-            });
-
-            let html = `<option value="TODAS">Todas as Ordens</option>`;
-            ordensSet.forEach(ord => {
-                html += `<option value="${ord}">${ord}</option>`;
-            });
-            selectFiltro.innerHTML = html;
-            
-            if (ordensSet.has(valorAtual) || valorAtual === 'TODAS') {
-                selectFiltro.value = valorAtual;
-            } else {
-                selectFiltro.value = 'TODAS';
-            }
-        }
-
-        // RENDERIZAR BLOCOS ORDENADOS POR PRIORIDADE (VERMELHO > AMARELO > AZUL)
-        function renderizarBlocosOrdensFaltas() {
-            const container = document.getElementById('blocos-ordens-container');
-            container.innerHTML = '';
-            const lista = dadosPortoes[portaoAtual] || [];
-            document.getElementById('contador-linhas-portao').innerText = `${lista.length} registo(s)`;
-
-            if (lista.length === 0) {
-                adicionarLinhaVaziaObjeto();
-            }
-
-            const filtroOrdemEl = document.getElementById('select-filtro-ordem');
-            const ordemFiltroAtiva = filtroOrdemEl ? filtroOrdemEl.value : 'TODAS';
-
-            // Agrupar itens por Ordem
-            const gruposOrdens = {};
-            dadosPortoes[portaoAtual].forEach((item, index) => {
-                const ord = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
-                if (!gruposOrdens[ord]) gruposOrdens[ord] = [];
-                gruposOrdens[ord].push({ item, index });
-            });
-
-            const pesoCor = { 'vermelho': 1, 'amarelo': 2, 'azul': 3 };
-            
-            const ordensOrdenadas = Object.keys(gruposOrdens).sort((a, b) => {
-                const corA = gruposOrdens[a][0]?.item.prioridadeCor || 'azul';
-                const corB = gruposOrdens[b][0]?.item.prioridadeCor || 'azul';
-                const pesoA = pesoCor[corA] || 3;
-                const pesoB = pesoCor[corB] || 3;
-                return pesoA - pesoB;
-            });
-
-            let blocosRenderizados = 0;
-
-            ordensOrdenadas.forEach((ordemKey, blocoIdx) => {
-                if (ordemFiltroAtiva !== 'TODAS' && ordemKey !== ordemFiltroAtiva) {
-                    return;
-                }
-
-                blocosRenderizados++;
-                const itensDoBloco = gruposOrdens[ordemKey];
-                const corAtual = itensDoBloco[0]?.item.prioridadeCor || 'azul';
-                const classeCorBadge = getClassCorBadge(corAtual);
-
-                const blocoDiv = document.createElement('div');
-                blocoDiv.className = "ui-card border rounded-lg overflow-hidden shadow-sm";
-
-                let htmlBlocoCabecalho = `
-                    <div class="bg-blue-50/50 dark:bg-zinc-900/80 p-2.5 border-b flex flex-wrap justify-between items-center gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="${classeCorBadge} text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-sm transition-colors uppercase tracking-wide" id="badge-cor-${blocoIdx}">Ordem #${blocoIdx + 1}</span>
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-xs font-bold opacity-75">Nº Ordem:</span>
-                                <input type="text" value="${ordemKey === 'SEM ORDEM DEFINIDA' ? '' : ordemKey}" onblur="atualizarOrdemDoBloco('${ordemKey}', this.value)" placeholder="Digite a ordem..." class="ui-card border rounded px-2 py-0.5 font-mono text-xs font-bold w-36">
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[11px] opacity-75 font-mono">${itensDoBloco.length} item(ns)</span>
-                            <button onclick="adicionarLinhaEmOrdem('${ordemKey}')" class="bg-gray-700 hover:bg-gray-800 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1"><i class="fa-solid fa-plus"></i> Linha</button>
-                            <button onclick="removerBlocoOrdem('${ordemKey}')" class="bg-red-600/80 hover:bg-red-600 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer" title="Remover Bloco"><i class="fa-solid fa-trash-can"></i></button>
-                        </div>
+    /* ---------- Bloco de ORDEM ---------- */
+    function criarBloco(b) {
+        const div = document.createElement('div');
+        div.className = 'bloco ui-card border rounded-lg overflow-hidden shadow-sm';
+        div.innerHTML = `
+            <div class="bg-blue-50/50 dark:bg-zinc-900/80 p-2.5 border-b flex flex-wrap justify-between items-center gap-2">
+                <div class="flex items-center gap-2">
+                    <span data-role="badge" class="text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-sm uppercase tracking-wide"></span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-bold opacity-75">Nº Ordem:</span>
+                        <input type="text" data-role="ordem-input" autocomplete="off" placeholder="Digite a ordem..." class="ui-card border rounded px-2 py-0.5 font-mono text-xs font-bold w-36">
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="excel-table">
-                            <thead>
-                                <tr>
-                                    <th class="w-6 text-center">#</th>
-                                    <th style="width: 155px;">Código SSCC</th>
-                                    <th style="width: 135px;">Status</th>
-                                    <th style="width: 110px;">Origem</th>
-                                    <th style="width: 80px;">No App?</th>
-                                    <th>Observação</th>
-                                    <th class="w-8 text-center">Ação</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
+                </div>
+                <div class="flex items-center gap-2">
+                    <span data-role="count" class="text-[11px] opacity-75 font-mono"></span>
+                    <button data-action="add-line" class="bg-gray-700 hover:bg-gray-800 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1"><i class="fa-solid fa-plus"></i> Linha</button>
+                    <button data-action="del-block" class="bg-red-600/80 hover:bg-red-600 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer" title="Remover Bloco"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="excel-table">
+                    <thead><tr>
+                        <th class="w-6 text-center">#</th><th style="width:155px;">Código SSCC</th><th style="width:135px;">Status</th>
+                        <th style="width:110px;">Origem</th><th style="width:80px;">No App?</th><th>Observação</th><th class="w-8 text-center">Ação</th>
+                    </tr></thead>
+                    <tbody data-role="tbody"></tbody>
+                </table>
+            </div>`;
+        return div;
+    }
+    function atualizarBloco(el, b, idx) {
+        const cor = b.itens[0].cor || 'azul';
+        const badge = el.querySelector('[data-role="badge"]');
+        badge.className = `${getClassCorBadge(cor)} text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-sm uppercase tracking-wide`;
+        badge.textContent = `Ordem #${idx + 1}`;
+        setInputValor(el.querySelector('[data-role="ordem-input"]'), b.key === SEM_ORDEM ? '' : b.key);
+        el.querySelector('[data-role="count"]').textContent = `${b.itens.length} item(ns)`;
+        reconciliar(el.querySelector('[data-role="tbody"]'), b.itens, r => r.uid, criarLinhaFalta, atualizarLinhaFalta);
+    }
 
-                itensDoBloco.forEach(({ item, index }, subIdx) => {
-                    let classeStatus = getClassStatus(item.status);
-                    let classeApp = item.noApp === 'Sim' ? 'app-sim' : 'app-nao';
+    function renderBlocos() {
+        const container = $('blocos-ordens-container');
+        let lista = Array.from(recs.values()).filter(r => r.kind === 'falta' && r.portao === portaoAtual).sort(comparaRec);
+        if (lista.length === 0) {
+            lista = [addRec(novaRec({ portao: portaoAtual }))];
+        }
+        $('contador-linhas-portao').innerText = `${lista.length} registo(s)`;
 
-                    htmlBlocoCabecalho += `
-                        <tr>
-                            <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${subIdx + 1}</td>
-                            <td class="td-sscc-container" data-label="SSCC">
-                                <input type="text" id="input-sscc-${index}" value="${item.sscc || ''}" onblur="alterarCampoFaltaImediato(${index}, 'sscc', this.value)" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
-                            </td>
-                            <td data-label="Status">
-                                <select id="select-status-${index}" onchange="atualizarStatusImediatoVisual(${index}, this.value)" class="excel-select ${classeStatus}">
-                                    <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
-                                    <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
-                                    <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
-                                    <option value="Apareceu no Portão" ${item.status === 'Apareceu no Portão' ? 'selected' : ''}>Apareceu no Portão</option>
-                                    <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue no Portão</option>
-                                </select>
-                            </td>
-                            <td data-label="Origem">
-                                <select onchange="alterarCampoFaltaImediato(${index}, 'origem', this.value)" class="excel-select border">
-                                    <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
-                                    <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
-                                    <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
-                                    <option value="Fábrica 3" ${item.origem === 'Fábrica 3' ? 'selected' : ''}>Fábrica 3</option>
-                                    <option value="Fábrica 5" ${item.origem === 'Fábrica 5' ? 'selected' : ''}>Fábrica 5</option>
-                                    <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
-                                    <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
-                                </select>
-                            </td>
-                            <td data-label="No App?">
-                                <select id="select-app-${index}" onchange="atualizarAppImediatoVisual(${index}, this.value)" class="excel-select ${classeApp}">
-                                    <option value="Não" ${item.noApp === 'Não' ? 'selected' : ''}>Não</option>
-                                    <option value="Sim" ${item.noApp === 'Sim' ? 'selected' : ''}>Sim</option>
-                                </select>
-                            </td>
-                            <td data-label="Observação">
-                                <input type="text" id="input-obs-${index}" value="${item.observacao || ''}" onblur="alterarCampoFaltaImediato(${index}, 'observacao', this.value)" placeholder="Observação..." class="excel-input">
-                            </td>
-                            <td class="text-center" data-label="Ação">
-                                <button onclick="removerLinhaFalta(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
-                            </td>
-                        </tr>
-                    `;
-                });
+        const filtro = $('select-filtro-ordem').value || 'TODAS';
+        const grupos = new Map();
+        lista.forEach(r => {
+            const k = chaveOrdem(r);
+            if (!grupos.has(k)) grupos.set(k, []);
+            grupos.get(k).push(r);
+        });
+        const peso = { vermelho: 1, amarelo: 2, azul: 3 };
+        let blocos = Array.from(grupos, ([key, itens]) => ({ key, itens }));
+        blocos.sort((a, b) => ((peso[a.itens[0].cor] || 3) - (peso[b.itens[0].cor] || 3)) || comparaRec(a.itens[0], b.itens[0]));
+        if (filtro !== 'TODAS') blocos = blocos.filter(b => b.key === filtro);
 
-                htmlBlocoCabecalho += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+        reconciliar(container, blocos, b => b.key, criarBloco, atualizarBloco);
+        if (blocos.length === 0) {
+            container.innerHTML = '<p class="text-center opacity-50 py-6 text-xs">Nenhum registro encontrado para a ordem selecionada.</p>';
+        }
+    }
 
-                blocoDiv.innerHTML = htmlBlocoCabecalho;
-                container.appendChild(blocoDiv);
+    function atualizarFiltroOrdem() {
+        const sel = $('select-filtro-ordem');
+        const ords = new Set();
+        recs.forEach(r => { if (r.kind === 'falta' && r.portao === portaoAtual) ords.add(chaveOrdem(r)); });
+        const lista = ['TODAS', ...ords];
+        const assinatura = lista.join('\u0001');
+        if (sel.dataset.sig === assinatura) return;
+        const atual = sel.value;
+        sel.innerHTML = '';
+        lista.forEach(o => {
+            const op = document.createElement('option');
+            op.value = o; op.textContent = o === 'TODAS' ? 'Todas as Ordens' : o;
+            sel.appendChild(op);
+        });
+        sel.value = lista.includes(atual) ? atual : 'TODAS';
+        sel.dataset.sig = assinatura;
+    }
+
+    /* ---------- Linha de RASGADA ---------- */
+    function criarLinhaRasgada(rec) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="text-center opacity-60 font-mono text-[11px]" data-label="#"></td>
+            <td class="td-sscc-container" data-label="SSCC"><div class="flex items-center gap-1 w-full justify-end">
+                <input type="text" data-f="sscc" autocomplete="off" class="excel-input excel-input-sscc font-bold">
+                <button type="button" data-action="scan" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
+            </div></td>
+            <td data-label="Tipo"><select data-f="tipo" class="excel-select font-bold"><option value="Lida">Rasgada (Lida)</option><option value="Nao Lida">Rasgada (Não Lida)</option></select></td>
+            <td data-label="Status"><select data-f="status" class="excel-select">
+                <option value="Pendente">Pendente</option><option value="Requisitada">Requisitada</option>
+                <option value="Restaurada">Restaurada</option><option value="Entregue no Portão">Entregue</option></select></td>
+            <td data-label="Origem"><select data-f="origem" class="excel-select border">${optsHTML(ORIGENS)}</select></td>
+            <td data-label="Ordem"><input type="text" data-f="ordem" autocomplete="off" class="excel-input font-bold"></td>
+            <td data-label="Observação"><input type="text" data-f="obsRest" autocomplete="off" class="excel-input"></td>
+            <td class="text-center" data-label="Ação"><button data-action="del-row" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button></td>`;
+        tr.querySelectorAll('[data-f],[data-action]').forEach(e => e.dataset.uid = rec.uid);
+        return tr;
+    }
+    function atualizarLinhaRasgada(tr, rec, i) {
+        tr.children[0].textContent = i + 1;
+        setInputValor(tr.querySelector('[data-f="sscc"]'), rec.sscc);
+        const tipo = tipoDaObs(rec.obs);
+        const st = tr.querySelector('[data-f="tipo"]'); setSelectValor(st, tipo);
+        st.className = 'excel-select font-bold ' + (tipo === 'Lida' ? 'text-red-600' : 'text-amber-600');
+        const s = tr.querySelector('[data-f="status"]'); setSelectValor(s, rec.status);
+        s.className = 'excel-select ' + getClassStatusRasgada(rec.status);
+        setSelectValor(tr.querySelector('[data-f="origem"]'), rec.origem);
+        setInputValor(tr.querySelector('[data-f="ordem"]'), rec.ordem);
+        setInputValor(tr.querySelector('[data-f="obsRest"]'), restoDaObs(rec.obs));
+        aplicarFlash(tr, rec.uid);
+    }
+    function renderRasgadas() {
+        const secao = $('secao-tabela-rasgadas');
+        const lista = Array.from(recs.values()).filter(r => r.kind === 'rasgada' && r.portao === portaoAtual).sort(comparaRec);
+        if (lista.length === 0) { secao.classList.add('hidden'); return; }
+        secao.classList.remove('hidden');
+        $('contador-linhas-rasgadas').innerText = `${lista.length} registo(s)`;
+        reconciliar($('corpo-tabela-rasgadas'), lista, r => r.uid, criarLinhaRasgada, atualizarLinhaRasgada);
+    }
+
+    function renderPanorama() {
+        const tbody = $('corpo-tabela-todos-portoes');
+        tbody.innerHTML = '';
+        let total = 0;
+        const lista = Array.from(recs.values()).filter(r => r.sscc.trim()).sort((a, b) => (a.portao - b.portao) || comparaRec(a, b));
+        lista.forEach(r => {
+            total++;
+            const tr = document.createElement('tr');
+            const rasg = r.kind === 'rasgada';
+            const cel = [
+                [`Portão ${r.portao}`, 'font-bold ' + (rasg ? 'text-amber-500' : 'text-blue-500')],
+                [r.sscc, 'font-mono font-bold'],
+                [rasg ? `Rasgada (${tipoDaObs(r.obs)})` : 'Falta Normal', ''],
+                [r.status, ''], [r.origem, ''], [r.ordem, ''],
+                [rasg ? 'Sim' : r.noApp, ''], [rasg ? restoDaObs(r.obs) : r.obs, '']
+            ];
+            cel.forEach(([txt, cls]) => { const td = document.createElement('td'); td.textContent = txt; if (cls) td.className = cls; tr.appendChild(td); });
+            tbody.appendChild(tr);
+        });
+        $('contador-total-geral').innerText = `${total} itens gerais`;
+    }
+
+    /* ---------- KPIs / badges / banner ---------- */
+    function atualizarKPIs() {
+        let total = 0, entregues = 0, pendentes = 0, rasgadas = 0, noApp = 0;
+        recs.forEach(r => {
+            if (r.kind === 'rasgada') rasgadas++;
+            if (!r.sscc.trim()) return;
+            total++;
+            if (r.status === 'Entregue no Portão') entregues++; else pendentes++;
+            if (r.kind === 'falta' && r.noApp === 'Sim') noApp++;
+        });
+        $('kpi-total-faltas').innerText = total;
+        $('kpi-entregues').innerText = entregues;
+        $('kpi-pendentes').innerText = pendentes;
+        $('kpi-rasgadas').innerText = rasgadas;
+        $('kpi-no-app').innerText = noApp;
+    }
+    function atualizarBadgesAbas() {
+        const tem = new Set();
+        recs.forEach(r => { if (r.kind === 'rasgada') tem.add(r.portao); });
+        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) {
+            const b = $(`badge-rasgada-${i}`);
+            if (b) b.classList.toggle('hidden', !tem.has(i));
+        }
+    }
+    function verificarBanner() {
+        const banner = $('banner-rasgadas-lidas');
+        let n = 0;
+        recs.forEach(r => { if (r.kind === 'rasgada' && r.portao === portaoAtual && tipoDaObs(r.obs) === 'Lida') n++; });
+        if (n > 0) { banner.classList.remove('hidden'); $('texto-alerta-rasgada-lida').innerHTML = `Atenção: Caixa rasgada lida neste portão! (${n} un)`; }
+        else banner.classList.add('hidden');
+    }
+
+    /* ---------- Render agendado (1x por frame) ---------- */
+    let rafId = 0;
+    function agendarRender() { if (rafId) return; rafId = requestAnimationFrame(() => { rafId = 0; renderTudo(); }); }
+    function renderTudo() {
+        atualizarKPIs();
+        atualizarBadgesAbas();
+        atualizarIndicadorSync();
+        if (portaoAtual === 'todos') renderPanorama();
+        else {
+            atualizarFiltroOrdem();
+            renderBlocos();
+            renderRasgadas();
+            verificarBanner();
+            if (focoUid) {
+                const el = document.querySelector(`[data-k="${CSS.escape(focoUid)}"] [data-f="sscc"]`);
+                if (el) el.focus();
+                focoUid = null;
+            }
+        }
+        agendarSyncOcorrencias();
+        agendarCache();
+    }
+
+    /* ------------------------------ EVENTOS DA TABELA (delegação) ------------------------------ */
+    function onCampoAlterado(el) {
+        const rec = recs.get(el.dataset.uid);
+        if (!rec) return;
+        let f = el.dataset.f, v = el.value;
+        if (f === 'sscc') { v = tratarSSCC(v); el.value = v; }
+        else if (f === 'obsRest') { f = 'obs'; v = `Rasgada (${tipoDaObs(rec.obs)}): ${v.trim()}`; }
+        else if (f === 'tipo') { f = 'obs'; v = `Rasgada (${v}): ${restoDaObs(rec.obs)}`; }
+        if (rec[f] === v) return;
+        rec[f] = v;
+        marcarSujo(rec, [f]);
+        if (f === 'status' && v === 'Entregue no Portão') tocarSomConquistaAnimada();
+        if (f === 'sscc' && rec.kind === 'falta') cruzarSSCC(rec);
+        agendarRender();
+    }
+
+    function ligarEventos(container) {
+        container.addEventListener('change', e => {
+            const t = e.target;
+            if (t.dataset && t.dataset.f && t.dataset.uid) onCampoAlterado(t);
+            else if (t.dataset && t.dataset.role === 'ordem-input') renomearBloco(t.closest('.bloco').dataset.k, t.value);
+        });
+        container.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); e.target.blur(); }
+        });
+        container.addEventListener('click', e => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const acao = btn.dataset.action;
+            if (acao === 'del-row') {
+                const rec = recs.get(btn.dataset.uid);
+                if (rec) { removerRegistro(rec); agendarRender(); }
+            } else if (acao === 'scan') {
+                const tr = btn.closest('tr');
+                abrirModalScannerParaCampo(tr.querySelector('[data-f="sscc"]'));
+            } else if (acao === 'add-line') {
+                adicionarLinhaEmOrdem(btn.closest('.bloco').dataset.k);
+            } else if (acao === 'del-block') {
+                removerBlocoOrdem(btn.closest('.bloco').dataset.k);
+            }
+        });
+    }
+
+    /* ------------------------------ AÇÕES DE ORDEM ------------------------------ */
+    function abrirModalNovaOrdem() {
+        $('input-modal-num-ordem').value = '';
+        $('select-modal-cor-ordem').value = 'azul';
+        $('modal-nova-ordem').classList.remove('hidden');
+    }
+    function fecharModalNovaOrdem() { $('modal-nova-ordem').classList.add('hidden'); }
+    function confirmarAdicionarNovaOrdem() {
+        const num = $('input-modal-num-ordem').value.trim();
+        if (!num) { alert('Por favor, digite o número da Ordem.'); return; }
+        const rec = addRec(novaRec({ portao: portaoAtual, ordem: num, cor: $('select-modal-cor-ordem').value }));
+        focoUid = rec.uid;
+        fecharModalNovaOrdem();
+        agendarRender();
+    }
+    function adicionarLinhaEmOrdem(ordemKey) {
+        const itens = Array.from(recs.values()).filter(r => r.kind === 'falta' && r.portao === portaoAtual && chaveOrdem(r) === ordemKey).sort(comparaRec);
+        const rec = addRec(novaRec({
+            portao: portaoAtual, ordem: ordemKey === SEM_ORDEM ? '' : ordemKey,
+            cor: itens[0] ? itens[0].cor : 'azul'
+        }));
+        focoUid = rec.uid;
+        agendarRender();
+    }
+    function renomearBloco(ordemAntiga, novoValor) {
+        const v = novoValor.trim();
+        if (v === (ordemAntiga === SEM_ORDEM ? '' : ordemAntiga)) return;
+        recs.forEach(r => {
+            if (r.kind === 'falta' && r.portao === portaoAtual && chaveOrdem(r) === ordemAntiga) {
+                r.ordem = v;
+                marcarSujo(r, ['ordem']);
+            }
+        });
+        agendarRender();
+    }
+    function removerBlocoOrdem(ordemKey) {
+        if (!confirm(`Deseja remover todos os registros da ordem "${ordemKey}" deste portão?`)) return;
+        Array.from(recs.values()).forEach(r => {
+            if (r.kind === 'falta' && r.portao === portaoAtual && chaveOrdem(r) === ordemKey) removerRegistro(r);
+        });
+        agendarRender();
+    }
+
+    /* ------------------------------ RASGADA (modal) ------------------------------ */
+    function popularSelectPortoesModal() {
+        const select = $('rasgada-portao');
+        select.innerHTML = '';
+        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) {
+            const opt = document.createElement('option');
+            opt.value = i; opt.innerText = `Portão ${i}`;
+            select.appendChild(opt);
+        }
+    }
+    function abrirModalRasgada() {
+        $('rasgada-portao').value = portaoAtual === 'todos' ? 7 : portaoAtual;
+        $('rasgada-sscc').value = '';
+        $('rasgada-obs').value = '';
+        $('modal-rasgada').classList.remove('hidden');
+    }
+    function fecharModalRasgada() { $('modal-rasgada').classList.add('hidden'); }
+    function salvarCaixaRasgada() {
+        const portaoAlvo = parseInt($('rasgada-portao').value);
+        const sscc = tratarSSCC($('rasgada-sscc').value.trim());
+        const tipo = $('rasgada-tipo').value;
+        const obs = $('rasgada-obs').value.trim() || 'Caixa rasgada no carregamento';
+        if (!sscc) { alert('Informe o código SSCC da caixa rasgada.'); return; }
+        const rec = addRec(novaRec({
+            portao: portaoAlvo, kind: 'rasgada', sscc, ordem: 'URGENTE', cor: 'vermelho', noApp: 'Sim',
+            obs: `Rasgada (${tipo}): ${obs}`
+        }));
+        tocarSomSucesso();
+        marcarSujo(rec, CAMPOS);
+        fecharModalRasgada();
+        selecionarPortao(portaoAlvo);
+    }
+
+    /* ------------------------------ NAVEGAÇÃO ------------------------------ */
+    function gerarAbasPortoes() {
+        const container = $('container-abas-portoes');
+        container.innerHTML = '';
+        const btnTodos = document.createElement('button');
+        btnTodos.id = 'btn-portao-todos';
+        btnTodos.innerHTML = '<i class="fa-solid fa-layer-group text-[11px]"></i> Todos';
+        btnTodos.onclick = () => selecionarPortao('todos');
+        container.appendChild(btnTodos);
+        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) {
+            const btn = document.createElement('button');
+            btn.id = `btn-portao-${i}`;
+            btn.innerHTML = `<i class="fa-solid fa-truck text-[10px] opacity-60"></i> P-${i} <span id="badge-rasgada-${i}" class="hidden w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`;
+            btn.onclick = () => selecionarPortao(i);
+            container.appendChild(btn);
+        }
+    }
+    function selecionarPortao(p) {
+        portaoAtual = p;
+        const ativo = 'px-2.5 py-1.5 text-xs font-bold rounded bg-blue-600 text-white shadow-sm whitespace-nowrap cursor-pointer flex items-center gap-1.5';
+        const inativo = 'px-2.5 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5';
+        $('btn-portao-todos').className = p === 'todos' ? ativo : inativo + ' border-r text-blue-500';
+        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) $(`btn-portao-${i}`).className = (i === p) ? ativo : inativo;
+        if (p === 'todos') {
+            $('wrapper-conteudo-dinamico').classList.add('hidden');
+            $('wrapper-todos-portoes').classList.remove('hidden');
+        } else {
+            $('wrapper-todos-portoes').classList.add('hidden');
+            $('wrapper-conteudo-dinamico').classList.remove('hidden');
+            $('titulo-portao-atual').innerHTML = `<i class="fa-solid fa-truck text-blue-500"></i> Portão ${p} - Faltas`;
+            $('titulo-portao-rasgadas').innerText = `Portão ${p}`;
+            $('blocos-ordens-container').innerHTML = '';   // troca de portão: monta do zero (uma vez)
+            $('corpo-tabela-rasgadas').innerHTML = '';
+        }
+        renderTudo();
+    }
+
+    /* ------------------------------ CABEÇALHO ------------------------------ */
+    function inicializarDataHoje() {
+        dataAtual = hojeLocal();
+        $('input-data-controle').value = dataAtual;
+    }
+    async function mudarDataOperacional(novaData) {
+        if (!novaData) return;
+        persistirPendentes();
+        dataAtual = novaData;
+        $('select-filtro-ordem').dataset.sig = '';
+        $('blocos-ordens-container').innerHTML = '';
+        $('corpo-tabela-rasgadas').innerHTML = '';
+        tocarSomTrocaData();
+        await carregarDia();
+    }
+    function mudarTurno(t) { turnoAtual = t; try { localStorage.setItem('grendene_turno', t); } catch (e) {} }
+    function mudarResponsavel(r) { responsavelAtual = r; try { localStorage.setItem('grendene_resp', r); } catch (e) {} ocUltimo = ''; agendarSyncOcorrencias(); }
+
+    function alternarTema() {
+        const body = document.body;
+        if (body.classList.contains('light')) {
+            body.classList.replace('light', 'dark'); $('icone-tema').className = 'fa-solid fa-sun'; localStorage.setItem('tema_grendene', 'dark');
+        } else {
+            body.classList.replace('dark', 'light'); $('icone-tema').className = 'fa-solid fa-moon'; localStorage.setItem('tema_grendene', 'light');
+        }
+    }
+    if (localStorage.getItem('tema_grendene') === 'dark') {
+        document.body.classList.replace('light', 'dark');
+        $('icone-tema').className = 'fa-solid fa-sun';
+    }
+
+    /* ------------------------------ SEM EXTERNA ------------------------------ */
+    function abrirModalSemExterna() {
+        $('busca-produto').value = ''; $('busca-cor').value = '';
+        $('resultado-busca-sem-externa').innerHTML = '<p class="text-center opacity-50 py-4">Insira o produto ou cor e clique em buscar.</p>';
+        $('modal-sem-externa').classList.remove('hidden');
+    }
+    function fecharModalSemExterna() { $('modal-sem-externa').classList.add('hidden'); }
+    async function executarBuscaSemExterna() {
+        const prod = $('busca-produto').value.trim();
+        const cor = $('busca-cor').value.trim();
+        const cont = $('resultado-busca-sem-externa');
+        if (!prod && !cor) { alert('Informe pelo menos o Produto ou a Cor para realizar a busca.'); return; }
+        cont.innerHTML = '<p class="text-center opacity-75 py-4"><i class="fa-solid fa-spinner fa-spin"></i> Pesquisando no banco de dados...</p>';
+        if (!supabaseClientSecundario) { cont.innerHTML = '<p class="text-center text-red-500 py-4">Erro: Conexão com o Supabase indisponível.</p>'; return; }
+        try {
+            let query = supabaseClientSecundario.from('caixas_cd8').select('*');
+            if (prod) query = query.ilike('produto', `%${prod}%`);
+            if (cor) query = query.ilike('cor', `%${cor}%`);
+            const { data, error } = await query.limit(50);
+            if (error) throw error;
+            if (!data || data.length === 0) { cont.innerHTML = '<p class="text-center text-amber-500 py-4 font-bold">Nenhum registro encontrado para este produto/cor.</p>'; return; }
+            cont.innerHTML = '';
+            data.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.className = 'ui-card border p-2.5 rounded shadow-sm flex flex-col gap-1';
+                const dt = item.created_at ? new Date(item.created_at).toLocaleString('pt-BR') : 'Data não informada';
+                const topo = document.createElement('div');
+                topo.className = 'flex justify-between items-center font-bold text-blue-500';
+                const a = document.createElement('span'); a.textContent = `#${idx + 1} - Produto: ${item.produto || 'N/A'}`;
+                const b = document.createElement('span'); b.className = 'text-[10px] opacity-75'; b.textContent = dt;
+                topo.append(a, b);
+                const grade = document.createElement('div');
+                grade.className = 'grid grid-cols-2 gap-1 text-[11px] opacity-90';
+                const c1 = document.createElement('div'); c1.innerHTML = '<strong class="opacity-70">Cor:</strong> '; c1.append(item.cor || 'N/A');
+                const c2 = document.createElement('div'); c2.innerHTML = '<strong class="opacity-70">Localização:</strong> ';
+                const loc = document.createElement('span'); loc.className = 'text-emerald-600 font-bold'; loc.textContent = item.localizacao || 'N/A'; c2.append(loc);
+                grade.append(c1, c2);
+                card.append(topo, grade);
+                cont.appendChild(card);
             });
-
-            if (blocosRenderizados === 0) {
-                container.innerHTML = `<p class="text-center opacity-50 py-6 text-xs">Nenhum registro encontrado para a ordem selecionada.</p>`;
-            }
+        } catch (err) {
+            cont.innerHTML = '';
+            const p = document.createElement('p'); p.className = 'text-center text-red-500 py-4 font-bold';
+            p.textContent = `Erro ao consultar o banco: ${err.message || err}`;
+            cont.appendChild(p);
         }
+    }
 
-        function abrirModalNovaOrdem() {
-            document.getElementById('input-modal-num-ordem').value = '';
-            document.getElementById('select-modal-cor-ordem').value = 'azul';
-            document.getElementById('modal-nova-ordem').classList.remove('hidden');
+    /* ------------------------------ SCANNER ------------------------------ */
+    function abrirModalScannerParaCampo(campo) {
+        campoAlvoScanner = typeof campo === 'string' ? $(campo) : campo;
+        $('modal-scanner').classList.remove('hidden');
+        setTimeout(() => iniciarScanner(), 150);
+    }
+    function fecharModalScanner() {
+        $('modal-scanner').classList.add('hidden');
+        if (html5QrcodeScanner) {
+            try { if (html5QrcodeScanner.isScanning) html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear()).catch(() => {}); } catch (e) {}
         }
+    }
+    async function iniciarScanner() {
+        if (!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode('reader');
+        try {
+            if (html5QrcodeScanner.isScanning) return;
+            await html5QrcodeScanner.start(
+                { facingMode: 'environment' },
+                { fps: 30, qrbox: { width: 250, height: 130 } },
+                decoded => {
+                    const codigo = tratarSSCC(decoded);
+                    if (!codigo) return;
+                    tocarSomSucesso();
+                    if (navigator.vibrate) navigator.vibrate(200);
+                    if (campoAlvoScanner) {
+                        campoAlvoScanner.value = codigo;
+                        campoAlvoScanner.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    fecharModalScanner();
+                },
+                () => {}
+            );
+        } catch (err) {}
+    }
 
-        function fecharModalNovaOrdem() {
-            document.getElementById('modal-nova-ordem').classList.add('hidden');
-        }
-
-        function confirmarAdicionarNovaOrdem() {
-            const novaOrdemNum = document.getElementById('input-modal-num-ordem').value.trim();
-            if (!novaOrdemNum) {
-                alert("Por favor, digite o número da Ordem.");
-                return;
-            }
-            const corEscolhida = document.getElementById('select-modal-cor-ordem').value;
-
-            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: novaOrdemNum, prioridadeCor: corEscolhida, noApp: 'Não', observacao: '' };
-            dadosPortoes[portaoAtual].push(novoObj);
-            persistirDadosLocal();
-            atualizarOpcoesFiltroOrdem();
-            renderizarBlocosOrdensFaltas();
-            fecharModalNovaOrdem();
-        }
-
-        function adicionarLinhaEmOrdem(ordemKey) {
-            const ordemVal = ordemKey === 'SEM ORDEM DEFINIDA' ? '' : ordemKey;
-            let corHerdada = 'azul';
-            const itensExistentes = (dadosPortoes[portaoAtual] || []).filter(item => {
-                const k = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
-                return k === ordemKey;
-            });
-            if (itensExistentes.length > 0 && itensExistentes[0].prioridadeCor) {
-                corHerdada = itensExistentes[0].prioridadeCor;
-            }
-
-            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: ordemVal, prioridadeCor: corHerdada, noApp: 'Não', observacao: '' };
-            dadosPortoes[portaoAtual].push(novoObj);
-            persistirDadosLocal();
-            atualizarOpcoesFiltroOrdem();
-            renderizarBlocosOrdensFaltas();
-        }
-
-        function atualizarOrdemDoBloco(ordemAntiga, novaOrdemValor) {
-            const valLimpo = novaOrdemValor.trim();
-            dadosPortoes[portaoAtual].forEach((item, index) => {
-                const itemOrdemKey = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
-                if (itemOrdemKey === ordemAntiga) {
-                    item.ordem = valLimpo;
-                    salvarLinhaTempoReal(index);
-                }
-            });
-            persistirDadosLocal();
-            atualizarOpcoesFiltroOrdem();
-            renderizarBlocosOrdensFaltas();
-        }
-
-        async function removerBlocoOrdem(ordemKey) {
-            if (!confirm(`Deseja remover todos os registros da ordem "${ordemKey}" deste portão?`)) return;
-            let indicesParaRemover = [];
-            dadosPortoes[portaoAtual].forEach((item, index) => {
-                const itemOrdemKey = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
-                if (itemOrdemKey === ordemKey) indicesParaRemover.push(index);
-            });
-
-            for (let i = indicesParaRemover.length - 1; i >= 0; i--) {
-                const idx = indicesParaRemover[i];
-                const item = dadosPortoes[portaoAtual][idx];
-                if (item && item.id && supabaseClient) {
-                    await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
-                }
-                dadosPortoes[portaoAtual].splice(idx, 1);
-            }
-
-            if (dadosPortoes[portaoAtual].length === 0) adicionarLinhaVaziaObjeto();
-            persistirDadosLocal();
-            atualizarOpcoesFiltroOrdem();
-            renderizarBlocosOrdensFaltas();
-        }
-
-        function renderizarTabelaRasgadas() {
-            const secaoRasgadas = document.getElementById('secao-tabela-rasgadas');
-            const tbody = document.getElementById('corpo-tabela-rasgadas');
-            tbody.innerHTML = '';
-            const lista = rasgadasPortoes[portaoAtual] || [];
-            
-            if (lista.length === 0) { secaoRasgadas.classList.add('hidden'); return; }
-
-            secaoRasgadas.classList.remove('hidden');
-            document.getElementById('contador-linhas-rasgadas').innerText = `${lista.length} registo(s)`;
-
-            lista.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                const inputId = `input-rasg-sscc-${index}`;
-                let classeStatusRasgada = 'status-rasgada-pendente';
-                if (item.status === 'Requisitada') classeStatusRasgada = 'status-rasgada-requisitada';
-                if (item.status === 'Restaurada') classeStatusRasgada = 'status-rasgada-restaurada';
-                if (item.status === 'Entregue no Portão') classeStatusRasgada = 'status-rasgada-entregue';
-
-                tr.innerHTML = `
-                    <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
-                    <td class="td-sscc-container" data-label="SSCC">
-                        <div class="flex items-center gap-1 w-full justify-end">
-                            <input type="text" id="${inputId}" value="${item.sscc || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'sscc', this.value)" class="excel-input excel-input-sscc font-bold">
-                            <button type="button" onclick="abrirModalScannerParaCampo('${inputId}')" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
-                        </div>
-                    </td>
-                    <td data-label="Tipo">
-                        <select onchange="alterarCampoRasgadaImediato(${index}, 'tipo', this.value)" class="excel-select font-bold ${item.tipo === 'Lida' ? 'text-red-600' : 'text-amber-600'}">
-                            <option value="Lida" ${item.tipo === 'Lida' ? 'selected' : ''}>Rasgada (Lida)</option>
-                            <option value="Nao Lida" ${item.tipo === 'Nao Lida' ? 'selected' : ''}>Rasgada (Não Lida)</option>
-                        </select>
-                    </td>
-                    <td data-label="Status">
-                        <select onchange="alterarCampoRasgadaImediato(${index}, 'status', this.value)" class="excel-select ${classeStatusRasgada}">
-                            <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
-                            <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
-                            <option value="Restaurada" ${item.status === 'Restaurada' ? 'selected' : ''}>Restaurada</option>
-                            <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue</option>
-                        </select>
-                    </td>
-                    <td data-label="Origem">
-                        <select onchange="alterarCampoRasgadaImediato(${index}, 'origem', this.value)" class="excel-select border">
-                            <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
-                            <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
-                            <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
-                            <option value="Fábrica 3" ${item.origem === 'Fábrica 3' ? 'selected' : ''}>Fábrica 3</option>
-                            <option value="Fábrica 5" ${item.origem === 'Fábrica 5' ? 'selected' : ''}>Fábrica 5</option>
-                            <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
-                            <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
-                        </select>
-                    </td>
-                    <td data-label="Ordem">
-                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'ordem', this.value)" class="excel-input font-bold">
-                    </td>
-                    <td data-label="Observação">
-                        <input type="text" value="${item.observacao || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'observacao', this.value)" class="excel-input">
-                    </td>
-                    <td class="text-center" data-label="Ação">
-                        <button onclick="removerLinhaRasgada(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderizarPanoramaTodosPortoes() {
-            const tbody = document.getElementById('corpo-tabela-todos-portoes');
-            tbody.innerHTML = '';
-            let totalGeral = 0;
-
-            for (let i = 7; i <= 26; i++) {
-                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
-                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
-
-                listaFaltas.forEach(item => {
-                    totalGeral++;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td class="font-bold text-blue-500">Portão ${i}</td><td class="font-mono font-bold">${item.sscc}</td><td>Falta Normal</td><td>${item.status}</td><td>${item.origem}</td><td>${item.ordem}</td><td>${item.noApp}</td><td>${item.observacao}</td>`;
-                    tbody.appendChild(tr);
-                });
-                listaRasgadas.forEach(item => {
-                    totalGeral++;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td class="font-bold text-amber-500">Portão ${i}</td><td class="font-mono font-bold">${item.sscc}</td><td>Rasgada (${item.tipo})</td><td>${item.status}</td><td>${item.origem}</td><td>${item.ordem}</td><td>Sim</td><td>${item.observacao}</td>`;
-                    tbody.appendChild(tr);
-                });
-            }
-            document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
-        }
-
-        function atualizarStatusImediatoVisual(index, novoValor) {
-            const item = dadosPortoes[portaoAtual][index];
-            item.status = novoValor;
-            persistirDadosLocal();
-            salvarLinhaTempoReal(index);
-
-            const selectEl = document.getElementById(`select-status-${index}`);
-            selectEl.className = 'excel-select ' + getClassStatus(novoValor);
-
-            if (novoValor === 'Entregue no Portão') {
-                tocarSomConquistaAnimada();
-            }
-        }
-
-        function atualizarAppImediatoVisual(index, novoValor) {
-            const item = dadosPortoes[portaoAtual][index];
-            item.noApp = novoValor;
-            persistirDadosLocal();
-            salvarLinhaTempoReal(index);
-
-            const selectEl = document.getElementById(`select-app-${index}`);
-            const novaClasse = novoValor === 'Sim' ? 'app-sim' : 'app-nao';
-            selectEl.className = 'excel-select ' + novaClasse;
-        }
-
-        function alterarCampoFaltaImediato(index, campo, valor) {
-            if (campo === 'sscc') {
-                valor = tratarSSCC(valor);
-                const inputEl = document.getElementById(`input-sscc-${index}`);
-                if (inputEl) inputEl.value = valor;
-            }
-            const item = dadosPortoes[portaoAtual][index];
-            if (item[campo] !== valor) {
-                item[campo] = valor;
-                persistirDadosLocal();
-                salvarLinhaTempoReal(index);
-                if (campo === 'ordem') {
-                    atualizarOpcoesFiltroOrdem();
-                    renderizarBlocosOrdensFaltas();
-                }
-            }
-        }
-
-        function alterarCampoRasgadaImediato(index, campo, valor) {
-            if (campo === 'sscc') {
-                valor = tratarSSCC(valor);
-                const inputEl = document.getElementById(`input-rasg-sscc-${index}`);
-                if (inputEl) inputEl.value = valor;
-            }
-            const item = rasgadasPortoes[portaoAtual][index];
-            if (item[campo] !== valor) {
-                item[campo] = valor;
-                if (campo === 'tipo') {
-                    item.observacao = `Rasgada (${valor}): ${item.observacao.replace(/Rasgada \([^)]+\):? /, '')}`;
-                }
-                persistirDadosLocal();
-                salvarLinhaRasgadaTempoReal(index);
-
-                if (campo === 'status' && valor === 'Entregue no Portão') {
-                    tocarSomConquistaAnimada();
-                }
-                renderizarTabelaRasgadas();
-                verificarBannerRasgadas();
-            }
-        }
-
-        function adicionarLinhaVaziaObjeto() {
-            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: '', prioridadeCor: 'azul', noApp: 'Não', observacao: '' };
-            dadosPortoes[portaoAtual].push(novoObj);
-        }
-        
-        async function removerLinhaFalta(index) {
-            const item = dadosPortoes[portaoAtual][index];
-            if (item && item.id && supabaseClient) {
-                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
-            }
-            dadosPortoes[portaoAtual].splice(index, 1);
-            if (dadosPortoes[portaoAtual].length === 0) adicionarLinhaVaziaObjeto();
-            persistirDadosLocal();
-            atualizarOpcoesFiltroOrdem();
-            renderizarBlocosOrdensFaltas();
-        }
-
-        async function removerLinhaRasgada(index) {
-            const item = rasgadasPortoes[portaoAtual][index];
-            if (item && item.id && supabaseClient) {
-                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
-            }
-            rasgadasPortoes[portaoAtual].splice(index, 1);
-            persistirDadosLocal();
-            renderizarTabelas();
-        }
-
-        function abrirModalScannerParaCampo(idCampo) {
-            campoAlvoScannerId = idCampo;
-            document.getElementById('modal-scanner').classList.remove('hidden');
-            setTimeout(() => { iniciarScanner(); }, 150);
-        }
-
-        function fecharModalScanner() {
-            document.getElementById('modal-scanner').classList.add('hidden');
-            if (html5QrcodeScanner) {
-                try { if (html5QrcodeScanner.isScanning) html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear()).catch(()=>{}); } catch(e){}
-            }
-        }
-
-        async function iniciarScanner() {
-            if (!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode("reader");
-            try {
-                if (html5QrcodeScanner.isScanning) return;
-                await html5QrcodeScanner.start(
-                    { facingMode: "environment" },
-                    { fps: 30, qrbox: { width: 250, height: 130 } },
-                    (decodedText) => {
-                        const codigoTratado = tratarSSCC(decodedText);
-                        if (codigoTratado) {
-                            tocarSomSucesso();
-                            if (navigator.vibrate) navigator.vibrate(200);
-                            if (campoAlvoScannerId) {
-                                const inputEl = document.getElementById(campoAlvoScannerId);
-                                if (inputEl) { 
-                                    inputEl.value = codigoTratado; 
-                                    inputEl.dispatchEvent(new Event('blur')); 
-                                }
-                            }
-                            fecharModalScanner();
-                        }
-                    },
-                    () => {}
-                );
-            } catch (err) {}
-        }
-
-        function tratarSSCC(texto) {
-            if (!texto) return '';
-            let limpo = String(texto)
-                .replace(/\][A-Za-z0-9]+/g, '')
-                .replace(/\D/g, '');
-            if (limpo.length === 21) limpo = limpo.substring(1);
-            return limpo || String(texto).replace(/\][A-Za-z0-9]+/g, '').trim();
-        }
-
-        function tocarSomSucesso() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const now = audioCtx.currentTime;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, now);
-                osc.frequency.setValueAtTime(880.00, now + 0.1);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    /* ------------------------------ SONS ------------------------------ */
+    let audioCtx = null;
+    function tocarSequencia(freqs, { tipo = 'sine', passo = 0.1, dur = 0.3, vol = 0.15 } = {}) {
+        try {
+            audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+            freqs.forEach((f, i) => {
+                const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                const t = now + i * passo;
+                osc.type = tipo; osc.frequency.setValueAtTime(f, t);
+                gain.gain.setValueAtTime(vol, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
                 osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(now); osc.stop(now + 0.3);
-            } catch (e) {}
+                osc.start(t); osc.stop(t + dur);
+            });
+        } catch (e) {}
+    }
+    const tocarSomSucesso = () => tocarSequencia([587.33, 880], { passo: 0.1, dur: 0.2 });
+    const tocarSomConquistaAnimada = () => tocarSequencia([523.25, 659.25, 783.99, 1046.5], { tipo: 'triangle', passo: 0.08, dur: 0.25 });
+    const tocarSomTrocaData = () => tocarSequencia([440, 554.37], { passo: 0.12, dur: 0.25, vol: 0.1 });
+
+    /* ------------------------------ EXCEL ------------------------------ */
+    function exportarExcel() {
+        const wb = XLSX.utils.book_new();
+        let temDados = false;
+        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) {
+            const lista = Array.from(recs.values()).filter(r => r.portao === i && r.sscc.trim()).sort(comparaRec);
+            if (!lista.length) continue;
+            temDados = true;
+            const linhas = [{ 'SSCC': `Portão ${i} (${dataAtual})`, 'Status': '', 'Origem': '', 'Ordem': '', 'Prioridade': '', 'No App?': '', 'Observação': '' }];
+            lista.filter(r => r.kind === 'falta').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': r.status, 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': r.cor, 'No App?': r.noApp, 'Observação': r.obs }));
+            lista.filter(r => r.kind === 'rasgada').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': `${r.status} (Rasgada ${tipoDaObs(r.obs)})`, 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': 'vermelho', 'No App?': 'Sim', 'Observação': r.obs }));
+            const ws = XLSX.utils.json_to_sheet(linhas);
+            ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
+            XLSX.utils.book_append_sheet(wb, ws, `Portão ${i}`);
         }
+        if (!temDados) { alert('Nenhum dado encontrado para exportar.'); return; }
+        XLSX.writeFile(wb, `Controle_Carregamento_${dataAtual}.xlsx`);
+    }
 
-        function tocarSomConquistaAnimada() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const now = audioCtx.currentTime;
-                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    const inicio = now + (i * 0.08);
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, inicio);
-                    gain.gain.setValueAtTime(0.15, inicio);
-                    gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.25);
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.start(inicio); osc.stop(inicio + 0.25);
-                });
-            } catch (e) {}
-        }
-
-        function tocarSomTrocaData() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const now = audioCtx.currentTime;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(440, now);
-                osc.frequency.setValueAtTime(554.37, now + 0.12);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(now); osc.stop(now + 0.25);
-            } catch (e) {}
-        }
-
-        function exportarExcel() {
-            const workbook = XLSX.utils.book_new();
-            let temDados = false;
-
-            for (let i = 7; i <= 26; i++) {
-                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
-                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
-
-                if (listaFaltas.length > 0 || listaRasgadas.length > 0) {
-                    temDados = true;
-                    let linhasExport = [{ "SSCC": `Portão ${i} (${dataAtual})`, "Status": "", "Origem": "", "Ordem": "", "Prioridade": "", "No App?": "", "Observação": "" }];
-                    
-                    listaFaltas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": item.status, "Origem": item.origem, "Ordem": item.ordem, "Prioridade": item.prioridadeCor || 'azul', "No App?": item.noApp, "Observação": item.observacao }));
-                    listaRasgadas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": `${item.status} (Rasgada ${item.tipo})`, "Origem": item.origem, "Ordem": item.ordem, "Prioridade": "vermelho", "No App?": "Sim", "Observação": item.observacao }));
-
-                    const worksheet = XLSX.utils.json_to_sheet(linhasExport);
-                    worksheet['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
-                    XLSX.utils.book_append_sheet(workbook, worksheet, `Portão ${i}`);
-                }
-            }
-            if (!temDados) { alert("Nenhum dado encontrado para exportar."); return; }
-            XLSX.writeFile(workbook, `Controle_Carregamento_${dataAtual}.xlsx`);
-        }
+    /* ------------------------------ INÍCIO ------------------------------ */
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const r = localStorage.getItem('grendene_resp'); if (r) { responsavelAtual = r; $('select-responsavel').value = r; }
+            const t = localStorage.getItem('grendene_turno'); if (t) { turnoAtual = t; $('select-turno').value = t; }
+        } catch (e) {}
+        inicializarDataHoje();
+        gerarAbasPortoes();
+        popularSelectPortoesModal();
+        ligarEventos($('blocos-ordens-container'));
+        ligarEventos($('corpo-tabela-rasgadas'));
+        selecionarPortao(7);
+        await carregarDia();
+    });
     </script>
-<div id="aviso-supabase" class="fixed bottom-4 left-4 z-[60] text-[10px] font-bold opacity-70 pointer-events-none"></div>
 </body>
 </html>
