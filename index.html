@@ -731,26 +731,36 @@
         async function carregarDadosNuvemELocais() {
             if (!dataAtual) inicializarDataHoje();
 
-            const locaisFaltas = {};
-            const locaisRasgadas = {};
-            for (let i = 7; i <= 26; i++) {
-                locaisFaltas[i] = [];
-                locaisRasgadas[i] = [];
-
-                const chaveF = `grendene_faltas_${dataAtual}_p${i}`;
-                const chaveR = `grendene_rasgadas_${dataAtual}_p${i}`;
-                try {
-                    const salvoF = localStorage.getItem(chaveF);
-                    const salvoR = localStorage.getItem(chaveR);
-                    if (salvoF) locaisFaltas[i] = JSON.parse(salvoF).map(item => ({ ...item, sscc: tratarSSCC(item.sscc || ''), prioridadeCor: item.prioridadeCor || 'azul' }));
-                    if (salvoR) locaisRasgadas[i] = JSON.parse(salvoR).map(item => ({ ...item, sscc: tratarSSCC(item.sscc || ''), prioridadeCor: item.prioridadeCor || 'vermelho' }));
-                } catch (e) {
-                    console.warn('Erro ao ler dados locais do portão', i, e);
-                }
+            // Guarda o que já existe localmente antes de reconstruir as listas.
+            // Isso evita que uma falha temporária do Supabase apague o trabalho do operador.
+            const chaveFaltas = `grendene_faltas_${dataAtual}`;
+            const chaveRasgadas = `grendene_rasgadas_${dataAtual}`;
+            let localFaltas = {};
+            let localRasgadas = {};
+            try {
+                localFaltas = JSON.parse(localStorage.getItem(chaveFaltas) || '{}') || {};
+                localRasgadas = JSON.parse(localStorage.getItem(chaveRasgadas) || '{}') || {};
+            } catch (e) {
+                console.warn('[LOCAL] Não foi possível ler o backup local:', e);
             }
 
-            let consultaNuvemOK = false;
-            let dadosNuvem = [];
+            dadosPortoes = {};
+            rasgadasPortoes = {};
+            for (let i = 7; i <= 26; i++) {
+                dadosPortoes[i] = Array.isArray(localFaltas[i]) ? localFaltas[i].map(item => ({
+                    ...item,
+                    sscc: tratarSSCC(item.sscc || ''),
+                    prioridadeCor: item.prioridadeCor || 'azul'
+                })) : [];
+                rasgadasPortoes[i] = Array.isArray(localRasgadas[i]) ? localRasgadas[i].map(item => ({
+                    ...item,
+                    sscc: tratarSSCC(item.sscc || ''),
+                    prioridadeCor: item.prioridadeCor || 'vermelho'
+                })) : [];
+            }
+
+            let consultaNuvemRealizada = false;
+            let consultaNuvemComErro = false;
 
             if (supabaseClient) {
                 try {
@@ -761,81 +771,91 @@
                         .order('created_at', { ascending: true })
                         .order('id', { ascending: true });
 
-                    if (error) throw error;
-                    consultaNuvemOK = true;
-                    dadosNuvem = Array.isArray(data) ? data : [];
-                } catch (err) {
-                    console.warn('Erro ao buscar da nuvem; mantendo dados locais:', err);
-                }
-            }
+                    if (error) {
+                        consultaNuvemComErro = true;
+                        console.warn('[SUPABASE] Erro ao carregar dados. O backup local será preservado:', error);
+                    } else if (Array.isArray(data)) {
+                        consultaNuvemRealizada = true;
 
-            dadosPortoes = {};
-            rasgadasPortoes = {};
-            for (let i = 7; i <= 26; i++) {
-                dadosPortoes[i] = [];
-                rasgadasPortoes[i] = [];
-            }
-
-            if (consultaNuvemOK) {
-                dadosNuvem.forEach(reg => {
-                    const p = Number(reg.portao);
-                    if (p < 7 || p > 26) return;
-
-                    const itemObj = {
-                        id: reg.id,
-                        sscc: tratarSSCC(reg.sscc || ''),
-                        status: reg.status || 'Pendente',
-                        origem: reg.origem || 'CD',
-                        ordem: reg.ordem || '',
-                        prioridadeCor: reg.prioridade_cor || 'azul',
-                        noApp: reg.no_app || 'Não',
-                        observacao: reg.observacao || ''
-                    };
-
-                    if (String(reg.observacao || '').includes('Rasgada')) {
-                        let tipoMatch = 'Nao Lida';
-                        if (String(reg.observacao || '').includes('Rasgada (Lida)')) tipoMatch = 'Lida';
-                        rasgadasPortoes[p].push({ ...itemObj, tipo: tipoMatch });
-                    } else {
-                        dadosPortoes[p].push(itemObj);
-                    }
-                });
-
-                // Se o banco confirmou a consulta, ele é a fonte principal.
-                // Porém, preservamos itens locais que ainda não foram enviados ao banco
-                // (por exemplo, quando a conexão caiu logo após a digitação).
-                for (let i = 7; i <= 26; i++) {
-                    const idsNuvem = new Set([
-                        ...dadosPortoes[i].filter(x => x.id != null).map(x => String(x.id)),
-                        ...rasgadasPortoes[i].filter(x => x.id != null).map(x => String(x.id))
-                    ]);
-                    const pendentesLocais = [
-                        ...(locaisFaltas[i] || []).filter(x => !x.id || !idsNuvem.has(String(x.id))),
-                        ...(locaisRasgadas[i] || []).filter(x => !x.id || !idsNuvem.has(String(x.id)))
-                    ];
-
-                    // Só adiciona localmente o que não está no banco.
-                    // Isso evita que um registro já salvo apareça duplicado.
-                    pendentesLocais.forEach(item => {
-                        if (String(item.observacao || '').includes('Rasgada')) {
-                            const tipo = item.tipo || (String(item.observacao || '').includes('Rasgada (Lida)') ? 'Lida' : 'Nao Lida');
-                            if (!rasgadasPortoes[i].some(x => x.id && item.id && String(x.id) === String(item.id))) {
-                                rasgadasPortoes[i].push({ ...item, tipo });
-                            }
-                        } else if (!dadosPortoes[i].some(x => x.id && item.id && String(x.id) === String(item.id))) {
-                            dadosPortoes[i].push(item);
+                        // A nuvem é a fonte principal. Registros salvos nela substituem
+                        // o correspondente local; registros locais sem ID continuam
+                        // preservados até conseguirem sincronizar.
+                        const nuvemFaltas = {};
+                        const nuvemRasgadas = {};
+                        for (let i = 7; i <= 26; i++) {
+                            nuvemFaltas[i] = [];
+                            nuvemRasgadas[i] = [];
                         }
-                    });
+
+                        data.forEach(reg => {
+                            const portao = Number(reg.portao);
+                            if (portao < 7 || portao > 26) return;
+
+                            const itemObj = {
+                                id: reg.id,
+                                sscc: tratarSSCC(reg.sscc || ''),
+                                status: reg.status || 'Pendente',
+                                origem: reg.origem || 'CD',
+                                ordem: reg.ordem || '',
+                                prioridadeCor: reg.prioridade_cor || 'azul',
+                                noApp: reg.no_app || 'Não',
+                                observacao: reg.observacao || ''
+                            };
+
+                            if (reg.observacao && String(reg.observacao).toLowerCase().includes('rasgada')) {
+                                const tipoMatch = String(reg.observacao).includes('Rasgada (Lida)') ? 'Lida' : 'Nao Lida';
+                                nuvemRasgadas[portao].push({ ...itemObj, tipo: tipoMatch });
+                            } else {
+                                nuvemFaltas[portao].push(itemObj);
+                            }
+                        });
+
+                        dadosPortoes = nuvemFaltas;
+                        rasgadasPortoes = nuvemRasgadas;
+
+                        // Recupera somente registros locais que ainda não foram enviados.
+                        for (let i = 7; i <= 26; i++) {
+                            const idsNuvem = new Set(dadosPortoes[i].filter(x => x.id != null).map(x => String(x.id)));
+                            const ssccNuvem = new Set(dadosPortoes[i].filter(x => x.sscc).map(x => tratarSSCC(x.sscc)));
+                            (localFaltas[i] || []).forEach(local => {
+                                const idExiste = local.id != null && idsNuvem.has(String(local.id));
+                                const ssccExiste = local.sscc && ssccNuvem.has(tratarSSCC(local.sscc));
+                                if (!idExiste && !ssccExiste && !local.id && local.sscc) dadosPortoes[i].push(local);
+                            });
+
+                            const idsRasgNuvem = new Set(rasgadasPortoes[i].filter(x => x.id != null).map(x => String(x.id)));
+                            const ssccRasgNuvem = new Set(rasgadasPortoes[i].filter(x => x.sscc).map(x => tratarSSCC(x.sscc)));
+                            (localRasgadas[i] || []).forEach(local => {
+                                const idExiste = local.id != null && idsRasgNuvem.has(String(local.id));
+                                const ssccExiste = local.sscc && ssccRasgNuvem.has(tratarSSCC(local.sscc));
+                                if (!idExiste && !ssccExiste && !local.id && local.sscc) rasgadasPortoes[i].push(local);
+                            });
+                        }
+                    }
+                } catch (err) {
+                    consultaNuvemComErro = true;
+                    console.warn('[SUPABASE] Falha na leitura. Mantendo backup local:', err);
                 }
-            } else {
-                // Sem acesso à nuvem, restaura integralmente o último estado local.
-                for (let i = 7; i <= 26; i++) {
-                    dadosPortoes[i] = locaisFaltas[i] || [];
-                    rasgadasPortoes[i] = locaisRasgadas[i] || [];
-                }
+            }
+
+            // Se a consulta falhar, os dados locais permanecem intactos.
+            // Se não houver Supabase, o aplicativo também continua funcionando localmente.
+            if (!consultaNuvemRealizada && (consultaNuvemComErro || !supabaseClient)) {
+                console.info('[LOCAL] Dados carregados do backup local para', dataAtual);
             }
 
             persistirDadosLocal();
+            sincronizarOcorrenciasTurno();
+        }
+
+        function persistirDadosLocal() {
+            if (!dataAtual) inicializarDataHoje();
+            const chaveFaltas = `grendene_faltas_${dataAtual}`;
+            const chaveRasgadas = `grendene_rasgadas_${dataAtual}`;
+            localStorage.setItem(chaveFaltas, JSON.stringify(dadosPortoes));
+            localStorage.setItem(chaveRasgadas, JSON.stringify(rasgadasPortoes));
+            atualizarIndicadoresKPI();
+            if (portaoAtual !== 'todos') verificarBannerRasgadas();
             sincronizarOcorrenciasTurno();
         }
 
@@ -893,22 +913,17 @@
 
         async function salvarLinhaTempoReal(index) {
             persistirDadosLocal();
-            if (!supabaseClient) {
-                console.warn('[SALVAR] Supabase indisponível. Dados mantidos no navegador.');
-                return false;
-            }
+            if (!supabaseClient) return;
 
-            const portaoDoItem = portaoAtual === 'todos' ? null : Number(portaoAtual);
-            if (!portaoDoItem || portaoDoItem < 7 || portaoDoItem > 26) return false;
-
-            const item = dadosPortoes[portaoDoItem]?.[index];
-            if (!item || !item.sscc || item.sscc.trim() === '') return false;
+            const item = dadosPortoes[portaoAtual][index];
+            if (!item || !item.sscc || item.sscc.trim() === '') return;
 
             try {
                 const codigoLimpo = tratarSSCC(item.sscc);
                 let mensagemCruzamento = '';
 
                 const resRep = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigoLimpo}%`).maybeSingle();
+                
                 if (!resRep.error && resRep.data) {
                     const categoria = resRep.data.categoria || 'Reposição';
                     const rastro = resRep.data.rastro ? ` (${resRep.data.rastro})` : '';
@@ -916,32 +931,37 @@
                 } else {
                     let achouRasgadaLocal = false;
                     for (let p = 7; p <= 26; p++) {
-                        const matchRasgada = (rasgadasPortoes[p] || []).find(r => tratarSSCC(r.sscc) === codigoLimpo);
+                        const listaRasg = rasgadasPortoes[p] || [];
+                        const matchRasgada = listaRasg.find(r => tratarSSCC(r.sscc) === codigoLimpo);
                         if (matchRasgada) {
                             achouRasgadaLocal = true;
                             mensagemCruzamento = `ALERTA: Caixa localizada em Rasgadas (Portão ${p} - Tipo: ${matchRasgada.tipo})`;
                             break;
                         }
                     }
+
                     if (!achouRasgadaLocal) {
                         const resRasgDb = await supabaseClient.from('controle_faltas_portao').select('*').ilike('sscc', `%${codigoLimpo}%`).ilike('observacao', '%Rasgada%').maybeSingle();
-                        if (!resRasgDb.error && resRasgDb.data) mensagemCruzamento = `ALERTA: Caixa localizada em Rasgadas (Portão ${resRasgDb.data.portao})`;
+                        if (!resRasgDb.error && resRasgDb.data) {
+                            mensagemCruzamento = `ALERTA: Caixa localizada em Rasgadas (Portão ${resRasgDb.data.portao})`;
+                        }
                     }
                 }
 
-                if (mensagemCruzamento && !String(item.observacao || '').includes(mensagemCruzamento)) {
+                if (mensagemCruzamento && !item.observacao.includes(mensagemCruzamento)) {
                     item.observacao = `[${mensagemCruzamento}]`;
                     const inputObs = document.getElementById(`input-obs-${index}`);
-                    if (inputObs && document.activeElement !== inputObs) inputObs.value = item.observacao;
-                    const textoAlerta = document.getElementById('texto-alerta-integracao');
-                    const modalAlerta = document.getElementById('modal-alerta-integracao');
-                    if (textoAlerta) textoAlerta.innerText = mensagemCruzamento;
-                    if (modalAlerta) modalAlerta.classList.remove('hidden');
+                    if (inputObs && document.activeElement !== inputObs) {
+                        inputObs.value = item.observacao;
+                    }
+
+                    document.getElementById('texto-alerta-integracao').innerText = mensagemCruzamento;
+                    document.getElementById('modal-alerta-integracao').classList.remove('hidden');
                 }
 
                 const payload = {
                     data_operacao: dataAtual,
-                    portao: portaoDoItem,
+                    portao: Number(portaoAtual),
                     sscc: String(codigoLimpo),
                     status: String(item.status || 'Pendente'),
                     origem: String(item.origem || 'CD'),
@@ -955,73 +975,64 @@
 
                 let res;
                 if (item.id) {
-                    res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select().single();
+                    res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
                 } else {
-                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select().single();
+                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
                 }
 
-                if (res.error) throw res.error;
-                if (!res.data || !res.data.id) throw new Error('Supabase não retornou o registro salvo.');
-
-                item.id = res.data.id;
-                persistirDadosLocal();
-                atualizarIndicadorRealtime('conectado', 'Última alteração salva no Supabase');
-                return true;
+                if (res.error) {
+                    console.error('[SUPABASE] Erro ao salvar falta:', res.error);
+                    return;
+                }
+                if (res.data && res.data[0] && res.data[0].id) {
+                    item.id = res.data[0].id;
+                    persistirDadosLocal();
+                }
             } catch (err) {
-                console.error('[SALVAR] Falha ao salvar registro:', err);
-                atualizarIndicadorRealtime('erro', `Falha ao salvar: ${err.message || err}`);
-                // O dado continua no localStorage e será reenviado na próxima tentativa.
-                return false;
+                console.warn("Erro na gravação tempo real", err);
             }
         }
 
         async function salvarLinhaRasgadaTempoReal(index) {
             persistirDadosLocal();
-            if (!supabaseClient) {
-                console.warn('[SALVAR RASGADA] Supabase indisponível. Dados mantidos no navegador.');
-                return false;
-            }
+            if (!supabaseClient) return;
 
-            const portaoDoItem = portaoAtual === 'todos' ? null : Number(portaoAtual);
-            if (!portaoDoItem || portaoDoItem < 7 || portaoDoItem > 26) return false;
-
-            const item = rasgadasPortoes[portaoDoItem]?.[index];
-            if (!item || !item.sscc || item.sscc.trim() === '') return false;
+            const item = rasgadasPortoes[portaoAtual][index];
+            if (!item || !item.sscc || item.sscc.trim() === '') return;
 
             try {
                 const codigoLimpo = tratarSSCC(item.sscc);
                 const payload = {
                     data_operacao: dataAtual,
-                    portao: portaoDoItem,
+                    portao: Number(portaoAtual),
                     sscc: String(codigoLimpo),
                     status: String(item.status || 'Pendente'),
                     origem: String(item.origem || 'CD'),
                     ordem: String(item.ordem || 'URGENTE'),
                     prioridade_cor: 'vermelho',
                     no_app: 'Sim',
-                    observacao: String(item.observacao || `Rasgada (${item.tipo || 'Nao Lida'})`),
+                    observacao: String(item.observacao || `Rasgada (${item.tipo})`),
                     turno: String(turnoAtual || 'Turno 1'),
                     responsavel: String(responsavelAtual || 'Não informado')
                 };
 
                 let res;
                 if (item.id) {
-                    res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select().single();
+                    res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
                 } else {
-                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select().single();
+                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
                 }
 
-                if (res.error) throw res.error;
-                if (!res.data || !res.data.id) throw new Error('Supabase não retornou a rasgada salva.');
-
-                item.id = res.data.id;
-                persistirDadosLocal();
-                atualizarIndicadorRealtime('conectado', 'Rasgada salva no Supabase');
-                return true;
+                if (res.error) {
+                    console.error('[SUPABASE] Erro ao salvar rasgada:', res.error);
+                    return;
+                }
+                if (res.data && res.data[0] && res.data[0].id) {
+                    item.id = res.data[0].id;
+                    persistirDadosLocal();
+                }
             } catch (err) {
-                console.error('[SALVAR RASGADA] Falha ao salvar:', err);
-                atualizarIndicadorRealtime('erro', `Falha ao salvar rasgada: ${err.message || err}`);
-                return false;
+                console.warn("Erro na gravação tempo real de rasgada", err);
             }
         }
 
@@ -1239,13 +1250,31 @@
             fecharModalRasgada();
             selecionarPortao(portaoAlvo);
 
-            // Salva no banco usando a mesma rotina de persistência das demais rasgadas.
-            // O localStorage já foi atualizado acima, então uma falha de rede não apaga o registro.
-            const indiceNovo = rasgadasPortoes[portaoAlvo].length - 1;
-            const portaoAnterior = portaoAtual;
-            portaoAtual = portaoAlvo;
-            await salvarLinhaRasgadaTempoReal(indiceNovo);
-            portaoAtual = portaoAnterior;
+            if (supabaseClient) {
+                const res = await supabaseClient.from('controle_faltas_portao').insert([{
+                    data_operacao: dataAtual,
+                    portao: Number(portaoAlvo),
+                    sscc: String(sscc),
+                    status: 'Pendente',
+                    origem: 'CD',
+                    ordem: 'URGENTE',
+                    prioridade_cor: 'vermelho',
+                    no_app: 'Sim',
+                    observacao: `Rasgada (${tipo}): ${obs}`,
+                    turno: String(turnoAtual),
+                    responsavel: String(responsavelAtual)
+                }]).select();
+
+                if (res.error) {
+                    console.error('[SUPABASE] Erro ao salvar caixa rasgada:', res.error);
+                    alert('A caixa foi mantida localmente, mas não foi gravada no Supabase. Verifique a conexão/permissões.');
+                    return;
+                }
+                if (res.data && res.data[0] && res.data[0].id) {
+                    novoItem.id = res.data[0].id;
+                    persistirDadosLocal();
+                }
+            }
         }
 
         function atualizarIndicadoresKPI() {
