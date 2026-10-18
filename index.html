@@ -437,6 +437,10 @@
     const PORTAO_MIN = 7, PORTAO_MAX = 26;
     const ORIGENS = ['CD', 'Fábrica 1', 'Fábrica 2', 'Fábrica 3', 'Fábrica 5', 'Fábrica 6', 'Fábrica 7'];
     const STATUS_FALTA = ['Pendente', 'Em andamento', 'Requisitada', 'Apareceu no Portão', 'Entregue no Portão'];
+    // Rótulo exibido na tela. O valor gravado no banco continua "Entregue no Portão" (compatível com dados antigos e outras telas).
+    const ROTULO_STATUS = { 'Entregue no Portão': 'Ok' };
+    const rotuloStatus = v => ROTULO_STATUS[v] || v;
+    const optsStatusHTML = lista => lista.map(o => `<option value="${o}">${rotuloStatus(o)}</option>`).join('');
     const CAMPOS = ['sscc', 'status', 'origem', 'ordem', 'cor', 'noApp', 'obs'];
     const COLUNA = { sscc: 'sscc', status: 'status', origem: 'origem', ordem: 'ordem', cor: 'prioridade_cor', noApp: 'no_app', obs: 'observacao' };
     const SEM_ORDEM = 'SEM ORDEM DEFINIDA';
@@ -1025,27 +1029,43 @@
     }
 
     /* ------------------------------ CRUZAMENTO DE SSCC ------------------------------ */
+    // O SSCC do banco "bate" com o digitado só se for IGUAL depois de normalizado
+    // (ex.: 21 dígitos guardados com 1 dígito a mais). Nunca por "contém".
+    const mesmoSSCC = (guardado, codigo) => {
+        const g = String(guardado == null ? '' : guardado).trim();
+        return g !== '' && (g === codigo || tratarSSCC(g) === codigo);
+    };
+
     async function cruzarSSCC(rec) {
         const codigo = rec.sscc;
         if (!codigo || !supabaseClient) return;
         let msg = '';
         try {
-            const rep = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigo}%`).limit(1);
-            if (!rep.error && rep.data && rep.data[0]) {
-                const d = rep.data[0];
-                msg = `Caixa localizada em Reposição: ${d.categoria || 'Reposição'}${d.rastro ? ` (${d.rastro})` : ''}`;
+            // 1) Reposição: busca exata; se não achar, tolera só um prefixo extra no valor guardado.
+            let achado = null;
+            const exato = await supabaseClient.from('registros_sscc').select('*').eq('sscc', codigo).limit(5);
+            if (!exato.error && exato.data) achado = exato.data.find(x => mesmoSSCC(x.sscc, codigo)) || null;
+            if (!achado && codigo.length >= 15) {
+                const fim = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigo}`).limit(10);
+                if (!fim.error && fim.data) achado = fim.data.find(x => mesmoSSCC(x.sscc, codigo)) || null;
             }
+            if (achado) {
+                msg = `Caixa localizada em Reposição: ${achado.categoria || 'Reposição'}${achado.rastro ? ` (${achado.rastro})` : ''}`;
+            }
+            // 2) Rasgadas de HOJE já carregadas na tela (todos os portões)
             if (!msg) {
                 for (const r of recs.values()) {
-                    if (r.kind === 'rasgada' && r.uid !== rec.uid && r.sscc === codigo) {
+                    if (r.kind === 'rasgada' && r.uid !== rec.uid && r.data === dataAtual && r.sscc === codigo) {
                         msg = `ALERTA: Caixa localizada em Rasgadas (Portão ${r.portao} - Tipo: ${tipoDaObs(r.obs)})`;
                         break;
                     }
                 }
             }
+            // 3) Rasgadas de HOJE no banco (outras telas que ainda não chegaram aqui) — nunca de outros dias
             if (!msg) {
-                const rd = await supabaseClient.from(TABELA).select('portao').eq('sscc', codigo).like('observacao', 'Rasgada (%').limit(1);
-                if (!rd.error && rd.data && rd.data[0]) msg = `ALERTA: Caixa localizada em Rasgadas (Portão ${rd.data[0].portao})`;
+                const rd = await supabaseClient.from(TABELA).select('portao,sscc').eq('sscc', codigo)
+                    .eq('data_operacao', dataAtual).like('observacao', 'Rasgada (%').limit(1);
+                if (!rd.error && rd.data && rd.data[0] && rd.data[0].sscc === codigo) msg = `ALERTA: Caixa localizada em Rasgadas (Portão ${rd.data[0].portao})`;
             }
         } catch (e) { console.warn('Erro no cruzamento', e); return; }
 
@@ -1083,7 +1103,7 @@
         if (document.activeElement === sel) return;
         if (sel.value === valor) return;
         if (!Array.from(sel.options).some(o => o.value === valor)) {
-            const op = document.createElement('option'); op.value = valor; op.textContent = valor; sel.appendChild(op);
+            const op = document.createElement('option'); op.value = valor; op.textContent = rotuloStatus(valor); sel.appendChild(op);
         }
         sel.value = valor;
     }
@@ -1128,7 +1148,7 @@
         tr.innerHTML = `
             <td class="text-center opacity-60 font-mono text-[11px]" data-label="#"></td>
             <td class="td-sscc-container" data-label="SSCC"><input type="text" data-f="sscc" autocomplete="off" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold"></td>
-            <td data-label="Status"><select data-f="status" class="excel-select">${optsHTML(STATUS_FALTA)}</select></td>
+            <td data-label="Status"><select data-f="status" class="excel-select">${optsStatusHTML(STATUS_FALTA)}</select></td>
             <td data-label="Origem"><select data-f="origem" class="excel-select border">${optsHTML(ORIGENS)}</select></td>
             <td data-label="No App?"><select data-f="noApp" class="excel-select"><option value="Não">Não</option><option value="Sim">Sim</option></select></td>
             <td data-label="Observação"><input type="text" data-f="obs" autocomplete="off" placeholder="Observação..." class="excel-input"></td>
@@ -1287,7 +1307,7 @@
             <td data-label="Tipo"><select data-f="tipo" class="excel-select font-bold"><option value="Lida">Rasgada (Lida)</option><option value="Nao Lida">Rasgada (Não Lida)</option></select></td>
             <td data-label="Status"><select data-f="status" class="excel-select">
                 <option value="Pendente">Pendente</option><option value="Requisitada">Requisitada</option>
-                <option value="Restaurada">Restaurada</option><option value="Entregue no Portão">Entregue</option></select></td>
+                <option value="Restaurada">Restaurada</option><option value="Entregue no Portão">Ok</option></select></td>
             <td data-label="Origem"><select data-f="origem" class="excel-select border">${optsHTML(ORIGENS)}</select></td>
             <td data-label="Ordem"><select data-f="ordem" class="excel-select font-mono"></select></td>
             <td data-label="Observação"><input type="text" data-f="obsRest" autocomplete="off" class="excel-input"></td>
@@ -1328,7 +1348,7 @@
                 [`Portão ${r.portao}`, 'font-bold ' + (rasg ? 'text-amber-500' : 'text-blue-500')],
                 [r.sscc, 'font-mono font-bold'],
                 [rasg ? `Rasgada (${tipoDaObs(r.obs)})` : 'Falta Normal', ''],
-                [r.status, ''], [r.origem, ''], [r.ordem, ''],
+                [rotuloStatus(r.status), ''], [r.origem, ''], [r.ordem, ''],
                 [rasg ? 'Sim' : r.noApp, ''], [rasg ? restoDaObs(r.obs) : r.obs, '']
             ];
             cel.forEach(([txt, cls]) => { const td = document.createElement('td'); td.textContent = txt; if (cls) td.className = cls; tr.appendChild(td); });
@@ -1717,8 +1737,8 @@
             if (!lista.length) continue;
             temDados = true;
             const linhas = [{ 'SSCC': `Portão ${i} (${dataAtual})`, 'Status': '', 'Origem': '', 'Ordem': '', 'Prioridade': '', 'No App?': '', 'Observação': '' }];
-            lista.filter(r => r.kind === 'falta').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': r.status, 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': r.cor, 'No App?': r.noApp, 'Observação': r.obs }));
-            lista.filter(r => r.kind === 'rasgada').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': `${r.status} (Rasgada ${tipoDaObs(r.obs)})`, 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': 'vermelho', 'No App?': 'Sim', 'Observação': r.obs }));
+            lista.filter(r => r.kind === 'falta').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': rotuloStatus(r.status), 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': r.cor, 'No App?': r.noApp, 'Observação': r.obs }));
+            lista.filter(r => r.kind === 'rasgada').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': `${rotuloStatus(r.status)} (Rasgada ${tipoDaObs(r.obs)})`, 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': 'vermelho', 'No App?': 'Sim', 'Observação': r.obs }));
             const ws = XLSX.utils.json_to_sheet(linhas);
             ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
             XLSX.utils.book_append_sheet(wb, ws, `Portão ${i}`);
