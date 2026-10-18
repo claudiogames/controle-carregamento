@@ -231,7 +231,11 @@
             <div class="space-y-3 text-xs">
                 <div>
                     <label class="block opacity-75 mb-1">Selecione o Portão</label>
-                    <select id="rasgada-portao" class="w-full ui-card border rounded p-2 font-mono"></select>
+                    <select id="rasgada-portao" onchange="popularOrdensModalRasgada()" class="w-full ui-card border rounded p-2 font-mono"></select>
+                </div>
+                <div>
+                    <label class="block opacity-75 mb-1">Ordem a que a caixa pertence</label>
+                    <select id="rasgada-ordem" class="w-full ui-card border rounded p-2 font-mono font-bold"></select>
                 </div>
                 <div>
                     <div class="flex justify-between items-center mb-1">
@@ -367,31 +371,6 @@
             <div id="blocos-ordens-container" class="p-3 space-y-4"></div>
         </div>
 
-        <div id="secao-tabela-rasgadas" class="hidden ui-card rounded-lg border shadow-sm overflow-hidden mb-6 fade-in">
-            <div class="p-2.5 border-b flex justify-between items-center bg-amber-500/10">
-                <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Caixas Rasgadas - <span id="titulo-portao-rasgadas">Portão 7</span>
-                </span>
-                <span class="text-xs opacity-75 font-mono" id="contador-linhas-rasgadas">0 registo(s)</span>
-            </div>
-            <div class="overflow-x-auto max-h-[35vh]">
-                <table class="excel-table">
-                    <thead>
-                        <tr>
-                            <th class="w-6 text-center">#</th>
-                            <th style="width: 155px;">Código SSCC</th>
-                            <th style="width: 130px;">Tipo</th>
-                            <th style="width: 135px;">Status</th>
-                            <th style="width: 110px;">Origem</th>
-                            <th style="width: 75px;">Ordem</th>
-                            <th>Observação</th>
-                            <th class="w-8 text-center">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpo-tabela-rasgadas"></tbody>
-                </table>
-            </div>
-        </div>
     </div>
 
     <!-- VISÃO GLOBAL -->
@@ -1169,6 +1148,29 @@
         aplicarFlash(tr, rec.uid);
     }
 
+    /* ---------- Agrupamento por ORDEM (faltas + rasgadas juntas) ---------- */
+    function montarBlocos(p) {
+        const grupos = new Map();
+        const g = k => { if (!grupos.has(k)) grupos.set(k, { key: k, itens: [], rasg: [] }); return grupos.get(k); };
+        Array.from(recs.values()).filter(r => r.portao === p).sort(comparaRec).forEach(r => {
+            (r.kind === 'rasgada' ? g(chaveOrdem(r)).rasg : g(chaveOrdem(r)).itens).push(r);
+        });
+        const peso = { vermelho: 1, amarelo: 2, azul: 3 };
+        const blocos = Array.from(grupos.values());
+        blocos.forEach(b => { b.primeiro = b.itens[0] || b.rasg[0]; b.cor = b.primeiro.cor || 'azul'; });
+        blocos.sort((a, b) => ((peso[a.cor] || 3) - (peso[b.cor] || 3)) || comparaRec(a.primeiro, b.primeiro));
+        return blocos;
+    }
+
+    // Opções do seletor "Ordem" das linhas de rasgada (todas as ordens do portão + "sem ordem").
+    let opcoesOrdem = [], sigOrdens = '';
+    function calcularOpcoesOrdem(blocos) {
+        const ops = blocos.filter(b => b.key !== SEM_ORDEM).map(b => ({ v: b.key, l: `Ordem ${b.key}` }));
+        ops.push({ v: '', l: 'Sem ordem definida' });
+        opcoesOrdem = ops;
+        sigOrdens = ops.map(o => o.v).join('\u0001');
+    }
+
     /* ---------- Bloco de ORDEM ---------- */
     function criarBloco(b) {
         const div = document.createElement('div');
@@ -1188,7 +1190,7 @@
                     <button data-action="del-block" class="bg-red-600/80 hover:bg-red-600 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer" title="Remover Bloco"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
             </div>
-            <div class="overflow-x-auto">
+            <div data-role="wrap-faltas" class="overflow-x-auto">
                 <table class="excel-table">
                     <thead><tr>
                         <th class="w-6 text-center">#</th><th style="width:155px;">Código SSCC</th><th style="width:135px;">Status</th>
@@ -1196,37 +1198,57 @@
                     </tr></thead>
                     <tbody data-role="tbody"></tbody>
                 </table>
+            </div>
+            <div data-role="wrap-rasg" class="hidden border-t-2 border-amber-500/70">
+                <div class="px-2.5 py-1.5 bg-amber-500/10 flex justify-between items-center text-xs font-bold uppercase tracking-wider text-amber-600">
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Caixas rasgadas desta ordem</span>
+                    <span data-role="count-rasg" class="font-mono opacity-75 normal-case"></span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="excel-table">
+                        <thead><tr>
+                            <th class="w-6 text-center">#</th><th style="width:155px;">Código SSCC</th><th style="width:130px;">Tipo</th>
+                            <th style="width:135px;">Status</th><th style="width:110px;">Origem</th><th style="width:130px;">Ordem</th>
+                            <th>Observação</th><th class="w-8 text-center">Ação</th>
+                        </tr></thead>
+                        <tbody data-role="tbody-rasg"></tbody>
+                    </table>
+                </div>
             </div>`;
         return div;
     }
     function atualizarBloco(el, b, idx) {
-        const cor = b.itens[0].cor || 'azul';
         const badge = el.querySelector('[data-role="badge"]');
-        badge.className = `${getClassCorBadge(cor)} text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-sm uppercase tracking-wide`;
+        badge.className = `${getClassCorBadge(b.cor)} text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-sm uppercase tracking-wide`;
         badge.textContent = `Ordem #${idx + 1}`;
         setInputValor(el.querySelector('[data-role="ordem-input"]'), b.key === SEM_ORDEM ? '' : b.key);
-        el.querySelector('[data-role="count"]').textContent = `${b.itens.length} item(ns)`;
+        el.querySelector('[data-role="count"]').textContent =
+            `${b.itens.length} item(ns)` + (b.rasg.length ? ` • ${b.rasg.length} rasgada(s)` : '');
+        el.querySelector('[data-role="wrap-faltas"]').classList.toggle('hidden', b.itens.length === 0);
         reconciliar(el.querySelector('[data-role="tbody"]'), b.itens, r => r.uid, criarLinhaFalta, atualizarLinhaFalta);
+        el.querySelector('[data-role="wrap-rasg"]').classList.toggle('hidden', b.rasg.length === 0);
+        el.querySelector('[data-role="count-rasg"]').textContent = `${b.rasg.length} registo(s)`;
+        reconciliar(el.querySelector('[data-role="tbody-rasg"]'), b.rasg, r => r.uid, criarLinhaRasgada, atualizarLinhaRasgada);
     }
 
     function renderBlocos() {
         const container = $('blocos-ordens-container');
-        let lista = Array.from(recs.values()).filter(r => r.kind === 'falta' && r.portao === portaoAtual).sort(comparaRec);
-        if (lista.length === 0) {
-            lista = [addRec(novaRec({ portao: portaoAtual }))];
+        let doPortao = Array.from(recs.values()).filter(r => r.portao === portaoAtual);
+        // Linha-modelo vazia (placeholder): só existe quando o portão não tem nenhum registro real.
+        const reais = doPortao.filter(r => !r.placeholder);
+        if (reais.length) {
+            doPortao.filter(r => r.placeholder && !r.sscc.trim() && !Object.keys(r.dirty).length && !r.inflight).forEach(removerLocal);
+        } else if (doPortao.length === 0) {
+            addRec(novaRec({ portao: portaoAtual })).placeholder = true;
         }
-        $('contador-linhas-portao').innerText = `${lista.length} registo(s)`;
+        doPortao = Array.from(recs.values()).filter(r => r.portao === portaoAtual);
+        const nFaltas = doPortao.filter(r => r.kind === 'falta').length;
+        const nRasg = doPortao.length - nFaltas;
+        $('contador-linhas-portao').innerText = `${nFaltas} registo(s)` + (nRasg ? ` + ${nRasg} rasgada(s)` : '');
 
         const filtro = $('select-filtro-ordem').value || 'TODAS';
-        const grupos = new Map();
-        lista.forEach(r => {
-            const k = chaveOrdem(r);
-            if (!grupos.has(k)) grupos.set(k, []);
-            grupos.get(k).push(r);
-        });
-        const peso = { vermelho: 1, amarelo: 2, azul: 3 };
-        let blocos = Array.from(grupos, ([key, itens]) => ({ key, itens }));
-        blocos.sort((a, b) => ((peso[a.itens[0].cor] || 3) - (peso[b.itens[0].cor] || 3)) || comparaRec(a.itens[0], b.itens[0]));
+        let blocos = montarBlocos(portaoAtual);
+        calcularOpcoesOrdem(blocos);
         if (filtro !== 'TODAS') blocos = blocos.filter(b => b.key === filtro);
 
         reconciliar(container, blocos, b => b.key, criarBloco, atualizarBloco);
@@ -1238,7 +1260,7 @@
     function atualizarFiltroOrdem() {
         const sel = $('select-filtro-ordem');
         const ords = new Set();
-        recs.forEach(r => { if (r.kind === 'falta' && r.portao === portaoAtual) ords.add(chaveOrdem(r)); });
+        recs.forEach(r => { if (r.portao === portaoAtual) ords.add(chaveOrdem(r)); });
         const lista = ['TODAS', ...ords];
         const assinatura = lista.join('\u0001');
         if (sel.dataset.sig === assinatura) return;
@@ -1253,7 +1275,7 @@
         sel.dataset.sig = assinatura;
     }
 
-    /* ---------- Linha de RASGADA ---------- */
+    /* ---------- Linha de RASGADA (fica dentro do bloco da sua ordem) ---------- */
     function criarLinhaRasgada(rec) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -1267,7 +1289,7 @@
                 <option value="Pendente">Pendente</option><option value="Requisitada">Requisitada</option>
                 <option value="Restaurada">Restaurada</option><option value="Entregue no Portão">Entregue</option></select></td>
             <td data-label="Origem"><select data-f="origem" class="excel-select border">${optsHTML(ORIGENS)}</select></td>
-            <td data-label="Ordem"><input type="text" data-f="ordem" autocomplete="off" class="excel-input font-bold"></td>
+            <td data-label="Ordem"><select data-f="ordem" class="excel-select font-mono"></select></td>
             <td data-label="Observação"><input type="text" data-f="obsRest" autocomplete="off" class="excel-input"></td>
             <td class="text-center" data-label="Ação"><button data-action="del-row" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button></td>`;
         tr.querySelectorAll('[data-f],[data-action]').forEach(e => e.dataset.uid = rec.uid);
@@ -1282,17 +1304,15 @@
         const s = tr.querySelector('[data-f="status"]'); setSelectValor(s, rec.status);
         s.className = 'excel-select ' + getClassStatusRasgada(rec.status);
         setSelectValor(tr.querySelector('[data-f="origem"]'), rec.origem);
-        setInputValor(tr.querySelector('[data-f="ordem"]'), rec.ordem);
+        const so = tr.querySelector('[data-f="ordem"]');
+        if (so.dataset.sig !== sigOrdens && document.activeElement !== so) {
+            so.textContent = '';
+            opcoesOrdem.forEach(o => { const op = document.createElement('option'); op.value = o.v; op.textContent = o.l; so.appendChild(op); });
+            so.dataset.sig = sigOrdens;
+        }
+        setSelectValor(so, rec.ordem);
         setInputValor(tr.querySelector('[data-f="obsRest"]'), restoDaObs(rec.obs));
         aplicarFlash(tr, rec.uid);
-    }
-    function renderRasgadas() {
-        const secao = $('secao-tabela-rasgadas');
-        const lista = Array.from(recs.values()).filter(r => r.kind === 'rasgada' && r.portao === portaoAtual).sort(comparaRec);
-        if (lista.length === 0) { secao.classList.add('hidden'); return; }
-        secao.classList.remove('hidden');
-        $('contador-linhas-rasgadas').innerText = `${lista.length} registo(s)`;
-        reconciliar($('corpo-tabela-rasgadas'), lista, r => r.uid, criarLinhaRasgada, atualizarLinhaRasgada);
     }
 
     function renderPanorama() {
@@ -1360,7 +1380,6 @@
         else {
             atualizarFiltroOrdem();
             renderBlocos();
-            renderRasgadas();
             verificarBanner();
             if (focoUid) {
                 const el = document.querySelector(`[data-k="${CSS.escape(focoUid)}"] [data-f="sscc"]`);
@@ -1382,6 +1401,7 @@
         else if (f === 'tipo') { f = 'obs'; v = `Rasgada (${v}): ${restoDaObs(rec.obs)}`; }
         if (rec[f] === v) return;
         rec[f] = v;
+        rec.placeholder = false;
         marcarSujo(rec, [f]);
         if (f === 'status' && v === 'Entregue no Portão') tocarSomConquistaAnimada();
         if (f === 'sscc' && rec.kind === 'falta') cruzarSSCC(rec);
@@ -1443,7 +1463,7 @@
         const v = novoValor.trim();
         if (v === (ordemAntiga === SEM_ORDEM ? '' : ordemAntiga)) return;
         recs.forEach(r => {
-            if (r.kind === 'falta' && r.portao === portaoAtual && chaveOrdem(r) === ordemAntiga) {
+            if (r.portao === portaoAtual && chaveOrdem(r) === ordemAntiga) {   // faltas E rasgadas da ordem
                 r.ordem = v;
                 marcarSujo(r, ['ordem']);
             }
@@ -1451,9 +1471,9 @@
         agendarRender();
     }
     function removerBlocoOrdem(ordemKey) {
-        if (!confirm(`Deseja remover todos os registros da ordem "${ordemKey}" deste portão?`)) return;
+        if (!confirm(`Deseja remover todos os registros da ordem "${ordemKey}" deste portão (faltas e caixas rasgadas)?`)) return;
         Array.from(recs.values()).forEach(r => {
-            if (r.kind === 'falta' && r.portao === portaoAtual && chaveOrdem(r) === ordemKey) removerRegistro(r);
+            if (r.portao === portaoAtual && chaveOrdem(r) === ordemKey) removerRegistro(r);
         });
         agendarRender();
     }
@@ -1468,10 +1488,35 @@
             select.appendChild(opt);
         }
     }
+    function popularOrdensModalRasgada(preferida) {
+        const p = parseInt($('rasgada-portao').value);
+        const sel = $('rasgada-ordem');
+        sel.innerHTML = '';
+        let temVazio = false;
+        montarBlocos(p).forEach(b => {
+            const v = b.key === SEM_ORDEM ? '' : b.key;
+            if (v === '') temVazio = true;
+            const op = document.createElement('option');
+            op.value = v; op.textContent = v === '' ? 'Sem ordem definida' : `Ordem ${v}`;
+            sel.appendChild(op);
+        });
+        if (!temVazio) {
+            const op = document.createElement('option');
+            op.value = ''; op.textContent = 'Sem ordem definida';
+            sel.appendChild(op);
+        }
+        if (typeof preferida === 'string' && Array.from(sel.options).some(o => o.value === preferida)) sel.value = preferida;
+    }
     function abrirModalRasgada() {
         $('rasgada-portao').value = portaoAtual === 'todos' ? 7 : portaoAtual;
         $('rasgada-sscc').value = '';
         $('rasgada-obs').value = '';
+        let preferida;
+        if (portaoAtual !== 'todos') {
+            const f = $('select-filtro-ordem').value;
+            if (f && f !== 'TODAS') preferida = (f === SEM_ORDEM) ? '' : f;
+        }
+        popularOrdensModalRasgada(preferida);
         $('modal-rasgada').classList.remove('hidden');
     }
     function fecharModalRasgada() { $('modal-rasgada').classList.add('hidden'); }
@@ -1479,15 +1524,18 @@
         const portaoAlvo = parseInt($('rasgada-portao').value);
         const sscc = tratarSSCC($('rasgada-sscc').value.trim());
         const tipo = $('rasgada-tipo').value;
+        const ordemSel = $('rasgada-ordem').value || '';
         const obs = $('rasgada-obs').value.trim() || 'Caixa rasgada no carregamento';
         if (!sscc) { alert('Informe o código SSCC da caixa rasgada.'); return; }
+        const bloco = montarBlocos(portaoAlvo).find(b => (b.key === SEM_ORDEM ? '' : b.key) === ordemSel);
         const rec = addRec(novaRec({
-            portao: portaoAlvo, kind: 'rasgada', sscc, ordem: 'URGENTE', cor: 'vermelho', noApp: 'Sim',
+            portao: portaoAlvo, kind: 'rasgada', sscc, ordem: ordemSel, cor: bloco ? bloco.cor : 'vermelho', noApp: 'Sim',
             obs: `Rasgada (${tipo}): ${obs}`
         }));
         tocarSomSucesso();
         marcarSujo(rec, CAMPOS);
         fecharModalRasgada();
+        $('select-filtro-ordem').value = 'TODAS';   // garante que o bloco da ordem apareça
         selecionarPortao(portaoAlvo);
     }
 
@@ -1521,9 +1569,7 @@
             $('wrapper-todos-portoes').classList.add('hidden');
             $('wrapper-conteudo-dinamico').classList.remove('hidden');
             $('titulo-portao-atual').innerHTML = `<i class="fa-solid fa-truck text-blue-500"></i> Portão ${p} - Faltas`;
-            $('titulo-portao-rasgadas').innerText = `Portão ${p}`;
             $('blocos-ordens-container').innerHTML = '';   // troca de portão: monta do zero (uma vez)
-            $('corpo-tabela-rasgadas').innerHTML = '';
         }
         renderTudo();
     }
@@ -1539,7 +1585,6 @@
         dataAtual = novaData;
         $('select-filtro-ordem').dataset.sig = '';
         $('blocos-ordens-container').innerHTML = '';
-        $('corpo-tabela-rasgadas').innerHTML = '';
         tocarSomTrocaData();
         await carregarDia();
     }
@@ -1692,7 +1737,6 @@
         gerarAbasPortoes();
         popularSelectPortoesModal();
         ligarEventos($('blocos-ordens-container'));
-        ligarEventos($('corpo-tabela-rasgadas'));
         selecionarPortao(7);
         await carregarDia();
     });
