@@ -4,21 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle e Acompanhamento do Carregamento - Portão 1 CD</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: { extend: { colors: { darkbg: '#0d1117', darkcard: '#161b22', darkborder: '#30363d' } } }
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0d1117',
+                        darkcard: '#161b22',
+                        darkborder: '#30363d'
+                    }
+                }
+            }
         }
     </script>
+    <!-- FontAwesome para Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS para Exportação para Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Html5-Qrcode (Scanner de Câmera) -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1"></script>
+    <!-- Supabase JS Client Oficial -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s, color 0.3s; }
-
+        
+        /* TEMAS */
         body.light { background-color: #f3f4f6; color: #1f2937; }
         body.light .ui-card { background-color: #ffffff; border-color: #e5e7eb; color: #1f2937; }
         body.light .excel-table th { background-color: #e5e7eb; color: #374151; border-color: #d1d5db; }
@@ -36,34 +50,89 @@
         .excel-table td { padding: 3px 2px; position: relative; vertical-align: middle; }
 
         .excel-input {
-            width: 100%; border: none; outline: none; background: transparent;
-            font-size: 13px; font-family: monospace; padding: 4px; border-radius: 4px; box-sizing: border-box;
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 13px;
+            font-family: monospace;
+            padding: 4px;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
 
+        /* FORMATO RETANGULAR COMPACTO E OTIMIZADO */
         .excel-select {
-            width: 100% !important; min-width: 105px !important; border: none !important; outline: none !important;
-            font-size: 12px !important; padding: 3px 6px !important; border-radius: 4px !important; cursor: pointer !important;
-            box-sizing: border-box !important; font-weight: 700 !important; display: block !important;
-            height: 28px !important; line-height: 20px !important;
+            width: 100% !important;
+            min-width: 105px !important;
+            border: none !important;
+            outline: none !important;
+            font-size: 12px !important;
+            padding: 3px 6px !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            box-sizing: border-box !important;
+            font-weight: 700 !important;
+            display: block !important;
+            height: 28px !important;
+            line-height: 20px !important;
         }
 
-        .td-sscc-container { position: relative; width: 160px; max-width: 180px; }
-        .excel-input-sscc { width: 100%; transition: border-color 0.15s ease, background-color 0.15s ease; }
-        .excel-input-sscc:focus { border: 2px solid #2563eb !important; background-color: rgba(37, 99, 235, 0.05) !important; border-radius: 6px; }
-        body.dark .excel-input-sscc:focus { border: 2px solid #3b82f6 !important; background-color: rgba(59, 130, 246, 0.1) !important; }
+        .td-sscc-container {
+            position: relative;
+            width: 160px;
+            max-width: 180px;
+        }
+
+        .excel-input-sscc {
+            width: 100%;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+
+        .excel-input-sscc:focus {
+            border: 2px solid #2563eb !important;
+            background-color: rgba(37, 99, 235, 0.05) !important;
+            border-radius: 6px;
+        }
+
+        body.dark .excel-input-sscc:focus {
+            border: 2px solid #3b82f6 !important;
+            background-color: rgba(59, 130, 246, 0.1) !important;
+        }
 
         @media (max-width: 768px) {
             .excel-table thead { display: none; }
             .excel-table, .excel-table tbody, .excel-table tr, .excel-table td { display: block; width: 100%; }
-            .excel-table tr { margin-bottom: 12px; border: 1px solid #30363d; border-radius: 8px; padding: 8px; background: inherit; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-            .excel-table td { padding: 6px 0; border: none !important; display: flex; justify-content: space-between; align-items: center; }
-            .excel-table td::before { content: attr(data-label); font-weight: bold; font-size: 11px; text-transform: uppercase; opacity: 0.7; margin-right: 8px; }
+            .excel-table tr {
+                margin-bottom: 12px;
+                border: 1px solid #30363d;
+                border-radius: 8px;
+                padding: 8px;
+                background: inherit;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .excel-table td {
+                padding: 6px 0;
+                border: none !important;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .excel-table td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                font-size: 11px;
+                text-transform: uppercase;
+                opacity: 0.7;
+                margin-right: 8px;
+            }
             .excel-table td:first-child { display: none; }
             .excel-input { text-align: right; }
             .excel-select { text-align: right !important; width: auto !important; min-width: 140px !important; }
             .td-sscc-container { width: 100%; max-width: 100%; }
         }
 
+        /* CORES DAS CLASSES DE STATUS */
         .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; }
         .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; }
         .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; }
@@ -85,9 +154,7 @@
         .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes flashRemoto { 0% { background-color: rgba(250, 204, 21, 0.55); } 100% { background-color: rgba(250, 204, 21, 0); } }
-        tr.flash-remoto td { animation: flashRemoto 1.6s ease-out; }
-
+        /* ANIMAÇÃO DA CAIXA QUICANDO NO CHÃO */
         @keyframes caixaQuicando {
             0% { transform: translateY(-120px) scale(0.9); opacity: 0; }
             40% { transform: translateY(0px) scale(1, 0.85); opacity: 1; }
@@ -96,6 +163,7 @@
             85% { transform: translateY(-12px) scale(1, 1); }
             100% { transform: translateY(0px) scale(1, 1); opacity: 1; }
         }
+
         @keyframes sombraQuique {
             0% { transform: scale(0.3); opacity: 0; }
             40% { transform: scale(1.2); opacity: 0.6; }
@@ -104,32 +172,48 @@
             85% { transform: scale(0.85); opacity: 0.3; }
             100% { transform: scale(1); opacity: 0.5; }
         }
-        .animar-quique { animation: caixaQuicando 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-        .animar-sombra { animation: sombraQuique 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+
+        .animar-quique {
+            animation: caixaQuicando 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        .animar-sombra {
+            animation: sombraQuique 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
     </style>
 </head>
 <body class="light p-2 sm:p-3 pb-16">
 
+    <!-- ANIMAÇÃO CURTA INICIAL (CAIXA QUICANDO) -->
     <div id="splash-screen" class="fixed inset-0 bg-[#0d1117] z-[999999] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="relative flex flex-col items-center">
+            <!-- Caixa Quicando -->
             <div class="w-24 h-24 rounded-2xl bg-blue-600/15 border border-blue-500/40 flex items-center justify-center p-3 shadow-2xl animar-quique">
                 <img src="https://pub-f46b0cda8b8d434aabcf14ccac85f3af.r2.dev/1791682069820.png" alt="Caixa Grendene" class="w-full h-full object-contain drop-shadow-[0_8px_10px_rgba(0,0,0,0.6)]">
             </div>
+            <!-- Sombra no Chão -->
             <div class="w-16 h-2 bg-blue-500/50 rounded-full blur-[2px] mt-4 animar-sombra"></div>
+
+            <!-- Título Portão 1 CD -->
             <h1 class="text-white text-base font-extrabold tracking-wider uppercase mt-5 flex items-center gap-2 opacity-0 animate-[fadeIn_0.3s_ease_0.6s_forwards]">
                 <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span> Portão 1 CD
             </h1>
         </div>
     </div>
+
     <script>
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
-                if (splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
+                if (splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => splash.remove(), 500);
+                }
             }, 1400);
         });
     </script>
 
+    <!-- MODAL DE ALERTA DE LOCALIZAÇÃO -->
     <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-sm w-full p-5 text-center shadow-2xl border border-amber-500 my-auto">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
@@ -141,10 +225,13 @@
         </div>
     </div>
 
+    <!-- MODAL PARA ADICIONAR NOVA ORDEM (COM SELEÇÃO DE COR) -->
     <div id="modal-nova-ordem" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-sm w-full p-5 shadow-2xl border my-auto">
             <div class="flex justify-between items-center pb-2 border-b mb-4">
-                <h3 class="text-xs font-bold text-blue-500 flex items-center gap-1.5 uppercase"><i class="fa-solid fa-layer-group"></i> Adicionar Nova Ordem</h3>
+                <h3 class="text-xs font-bold text-blue-500 flex items-center gap-1.5 uppercase">
+                    <i class="fa-solid fa-layer-group"></i> Adicionar Nova Ordem
+                </h3>
                 <button onclick="fecharModalNovaOrdem()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
             <div class="space-y-3 text-xs">
@@ -168,10 +255,13 @@
         </div>
     </div>
 
+    <!-- MODAL DE BUSCA "SEM EXTERNA" -->
     <div id="modal-sem-externa" class="fixed inset-0 bg-black/70 hidden z-[99999] flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-lg w-full p-5 shadow-2xl border border-blue-500 my-auto">
             <div class="flex justify-between items-center pb-2 border-b mb-4">
-                <h3 class="text-sm font-bold text-blue-500 flex items-center gap-1.5"><i class="fa-solid fa-box-archive"></i> Consulta de Caixas Sem Externa</h3>
+                <h3 class="text-sm font-bold text-blue-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-box-archive"></i> Consulta de Caixas Sem Externa
+                </h3>
                 <button onclick="fecharModalSemExterna()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
             <div class="space-y-3 text-xs">
@@ -188,6 +278,7 @@
                 <button onclick="executarBuscaSemExterna()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs cursor-pointer shadow flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-magnifying-glass"></i> Buscar no Banco
                 </button>
+
                 <div class="mt-4 border-t pt-3">
                     <span class="text-[11px] font-bold uppercase tracking-wider opacity-75 block mb-2">Resultados da Consulta</span>
                     <div id="resultado-busca-sem-externa" class="max-h-[220px] overflow-y-auto space-y-2 font-mono text-[11px]">
@@ -201,13 +292,20 @@
         </div>
     </div>
 
+    <!-- MODAL DE SCANNER (RASGADAS) -->
     <div id="modal-scanner" class="fixed inset-0 bg-black/90 hidden z-[99999] flex items-center justify-center p-4">
         <div class="ui-card border rounded-lg max-w-md w-full p-5 shadow-2xl">
             <div class="flex justify-between items-center pb-3 border-b mb-4">
-                <h3 class="text-sm font-bold flex items-center gap-2 text-amber-500"><i class="fa-solid fa-barcode"></i> Leitor de SSCC (Caixa Rasgada)</h3>
-                <button type="button" onclick="fecharModalScanner()" class="opacity-70 hover:opacity-100 p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+                <h3 class="text-sm font-bold flex items-center gap-2 text-amber-500">
+                    <i class="fa-solid fa-barcode"></i> Leitor de SSCC (Caixa Rasgada)
+                </h3>
+                <button type="button" onclick="fecharModalScanner()" class="opacity-70 hover:opacity-100 p-1 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
             </div>
-            <div class="mb-4"><div id="reader" class="scanner-frame bg-black w-full min-h-[220px]"></div></div>
+            <div class="mb-4">
+                <div id="reader" class="scanner-frame bg-black w-full min-h-[220px]"></div>
+            </div>
             <p class="text-[11px] opacity-75 text-center mb-3">Aponte a câmara para o código da caixa rasgada.</p>
             <div class="flex justify-end pt-2 border-t">
                 <button type="button" onclick="fecharModalScanner()" class="px-3 py-1.5 border rounded text-xs cursor-pointer">Concluir / Fechar</button>
@@ -215,10 +313,13 @@
         </div>
     </div>
 
+    <!-- MODAL REGISTRO DE CAIXA RASGADA -->
     <div id="modal-rasgada" class="fixed inset-0 bg-black/60 hidden z-40 flex items-center justify-center p-4">
         <div class="ui-card rounded-lg max-w-md w-full p-5 shadow-xl border">
             <div class="flex justify-between items-center pb-2 border-b mb-3">
-                <h3 class="text-xs font-bold text-amber-500 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Registar Caixa Rasgada</h3>
+                <h3 class="text-xs font-bold text-amber-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Registar Caixa Rasgada
+                </h3>
                 <button onclick="fecharModalRasgada()" class="opacity-70 hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="space-y-3 text-xs">
@@ -252,6 +353,7 @@
         </div>
     </div>
 
+    <!-- CABEÇALHO -->
     <header class="ui-card p-3 sm:p-4 rounded-xl shadow-sm border mb-3 flex flex-col xl:flex-row justify-between items-center gap-3">
         <div class="flex items-center gap-3 w-full xl:w-auto justify-center sm:justify-start">
             <div class="bg-white p-1.5 rounded-lg border border-gray-200 flex items-center justify-center min-w-[110px]">
@@ -262,12 +364,7 @@
                     <h1 class="text-sm sm:text-base font-extrabold tracking-tight">Controle de Carregamento</h1>
                     <span class="hidden sm:inline-block bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-mono font-bold">Portão 1 CD</span>
                 </div>
-                <p class="text-[11px] opacity-75 flex items-center gap-2 flex-wrap">
-                    <span>Gestão Operacional &bull; Faltas e Ocorrências</span>
-                    <span id="status-conexao" class="inline-flex items-center gap-1 font-bold text-amber-500"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span> Conectando…</span>
-                    <span id="status-pendentes" class="hidden font-mono text-amber-500"></span>
-                    <span id="status-ultimo-evento" class="hidden font-mono text-cyan-500"></span>
-                </p>
+                <p class="text-[11px] opacity-75">Gestão Operacional &bull; Faltas e Ocorrências</p>
             </div>
         </div>
 
@@ -276,6 +373,7 @@
                 <i class="fa-solid fa-calendar-days text-blue-500"></i>
                 <input type="date" id="input-data-controle" onchange="mudarDataOperacional(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
             </div>
+
             <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
                 <i class="fa-solid fa-user-tie text-blue-500"></i>
                 <select id="select-responsavel" onchange="mudarResponsavel(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
@@ -287,6 +385,7 @@
                     <option value="Yens Farrapo">Yens Farrapo</option>
                 </select>
             </div>
+
             <div class="flex items-center gap-1 ui-card border rounded-lg px-2 py-1 text-xs shadow-sm">
                 <i class="fa-solid fa-clock text-blue-500"></i>
                 <select id="select-turno" onchange="mudarTurno(this.value)" class="bg-transparent outline-none font-medium cursor-pointer text-xs">
@@ -296,6 +395,7 @@
                     <option value="Comercial">Com.</option>
                 </select>
             </div>
+
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
             <button onclick="abrirModalSemExterna()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-box-archive"></i> Sem Externa</button>
@@ -304,8 +404,7 @@
         </div>
     </header>
 
-    <div id="aviso-sistema" class="hidden mb-3 p-2.5 rounded-lg text-xs font-bold border"></div>
-
+    <!-- KPI / INDICADORES -->
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
         <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold opacity-75 uppercase block">Total Faltas</span>
@@ -329,8 +428,10 @@
         </div>
     </div>
 
+    <!-- ABAS PORTÕES -->
     <div class="flex border-b mb-3 overflow-x-auto ui-card rounded-t-lg border p-1 gap-1" id="container-abas-portoes"></div>
 
+    <!-- CONTEÚDO PRINCIPAL -->
     <div id="wrapper-conteudo-dinamico" class="fade-in">
         <div class="ui-card rounded-lg border shadow-sm overflow-hidden mb-4">
             <div id="banner-rasgadas-lidas" class="hidden bg-red-600 text-white p-2.5 flex items-center justify-between text-xs font-bold animate-pulse">
@@ -340,22 +441,27 @@
                 </div>
             </div>
 
+            <!-- BARRA DE TÍTULO E FILTRO DE ORDEM -->
             <div class="p-2.5 border-b flex flex-wrap justify-between items-center gap-2 opacity-90 bg-slate-100 dark:bg-zinc-900">
                 <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" id="titulo-portao-atual">
                     <i class="fa-solid fa-truck text-blue-500"></i> Portão 7 - Faltas
                 </span>
+                
+                <!-- FILTRO RÁPIDO POR ORDEM -->
                 <div class="flex items-center gap-1.5">
                     <span class="text-[11px] font-bold opacity-75"><i class="fa-solid fa-filter text-blue-500"></i> Filtrar Ordem:</span>
-                    <select id="select-filtro-ordem" onchange="agendarRender()" class="ui-card border rounded px-2 py-1 text-xs font-mono font-bold cursor-pointer">
+                    <select id="select-filtro-ordem" onchange="renderizarBlocosOrdensFaltas()" class="ui-card border rounded px-2 py-1 text-xs font-mono font-bold cursor-pointer">
                         <option value="TODAS">Todas as Ordens</option>
                     </select>
                     <span class="text-xs opacity-75 font-mono ml-2" id="contador-linhas-portao">0 registo(s)</span>
                 </div>
             </div>
 
+            <!-- CONTAINER DINÂMICO DE BLOCOS DE ORDEM -->
             <div id="blocos-ordens-container" class="p-3 space-y-4"></div>
         </div>
 
+        <!-- TABELA DE RASGADAS -->
         <div id="secao-tabela-rasgadas" class="hidden ui-card rounded-lg border shadow-sm overflow-hidden mb-6 fade-in">
             <div class="p-2.5 border-b flex justify-between items-center bg-amber-500/10">
                 <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
@@ -383,6 +489,7 @@
         </div>
     </div>
 
+    <!-- VISÃO GLOBAL -->
     <div id="wrapper-todos-portoes" class="hidden fade-in space-y-4 mb-6">
         <div class="ui-card border p-4 rounded-lg shadow-sm">
             <div class="flex justify-between items-center border-b pb-3 mb-3">
@@ -411,8 +518,9 @@
         </div>
     </div>
 
+    <!-- BOTÃO FLUTUANTE DE SAÍDA (VOLTAR AO PAINEL DE SISTEMAS) NO RODAPÉ -->
     <div class="fixed bottom-4 right-4 z-50">
-        <a href="https://oppo1-lac.vercel.app/" target="_blank" rel="noopener noreferrer"
+        <a href="https://oppo1-lac.vercel.app/" target="_blank" rel="noopener noreferrer" 
            class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-wider transition-all transform hover:scale-105 border border-blue-400/40 cursor-pointer">
             <i class="fa-solid fa-arrow-right-from-bracket text-base"></i>
             <span>Voltar ao Painel</span>
@@ -420,9 +528,1289 @@
     </div>
 
     <script>
-    /* =====================================================================
-     * v3 — CORREÇÕES DE TEMPO REAL
-     *
-     * 1) realtime.worker: true → heartbeat em Worker, imune a throttling
-     *    de aba em segundo plano (causa #1 de "parou de atualizar").
-     * 2) heartbeatCallback → detecta desconexão e força
+        const SUPABASE_URL = "https://mpsyqawieuwjgupoedib.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wc3lxYXdpZXV3amd1cG9lZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTA1OTQsImV4cCI6MjEwNjA4NjU5NH0.P9I8u6ycOBCKYIT2mvp35kZ-SfNTHiVY3Jkw7ltYFuQ";
+        
+        // SUPABASE COMPARTILHADO (SEM EXTERNAS E OCORRÊNCIAS)
+        const SUPABASE_URL_SEC = "Https://dylwhnsxjbeiukdmcupq.supabase.co";
+        const SUPABASE_KEY_SEC = "sb_publishable_uZL-3Z0_a-X-ZjMhwRXC9w_RP8c754J";
+
+        let supabaseClient = null;
+        let supabaseClientSecundario = null;
+
+        // CANAL DE SINCRONIZAÇÃO EM TEMPO REAL ENTRE TODAS AS TELAS
+        let canalRealtimeCarregamento = null;
+        let realtimeConectado = false;
+        let realtimeIniciando = false;
+
+        function atualizarIndicadorRealtime(status, mensagem) {
+            let el = document.getElementById('indicador-realtime');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'indicador-realtime';
+                el.className = 'fixed bottom-4 left-4 z-[60] flex items-center gap-2 px-3 py-2 rounded-full shadow-lg text-[10px] font-bold uppercase tracking-wider border bg-slate-900 text-white';
+                document.body.appendChild(el);
+            }
+
+            const estados = {
+                conectado: { icone: 'fa-wifi', texto: 'Tempo real conectado', classe: 'text-emerald-300 border-emerald-500/40' },
+                conectando: { icone: 'fa-spinner fa-spin', texto: 'Conectando tempo real...', classe: 'text-amber-300 border-amber-500/40' },
+                desconectado: { icone: 'fa-wifi-slash', texto: 'Tempo real desconectado', classe: 'text-red-300 border-red-500/40' },
+                erro: { icone: 'fa-triangle-exclamation', texto: 'Falha no tempo real', classe: 'text-red-300 border-red-500/40' }
+            };
+            const cfg = estados[status] || estados.desconectado;
+            el.className = `fixed bottom-4 left-4 z-[60] flex items-center gap-2 px-3 py-2 rounded-full shadow-lg text-[10px] font-bold uppercase tracking-wider border bg-slate-900 ${cfg.classe}`;
+            el.innerHTML = `<i class="fa-solid ${cfg.icone}"></i><span>${cfg.texto}</span>`;
+            el.title = mensagem || cfg.texto;
+        }
+
+        function removerCanalRealtime() {
+            if (canalRealtimeCarregamento && supabaseClient) {
+                try { supabaseClient.removeChannel(canalRealtimeCarregamento); } catch (e) {}
+            }
+            canalRealtimeCarregamento = null;
+            realtimeConectado = false;
+        }
+
+        function ehRegistroRasgada(reg) {
+            const obs = String(reg?.observacao || '');
+            return obs.includes('Rasgada');
+        }
+
+        function converterRegistroRealtime(reg) {
+            return {
+                id: reg.id,
+                sscc: tratarSSCC(reg.sscc || ''),
+                status: reg.status || 'Pendente',
+                origem: reg.origem || 'CD',
+                ordem: reg.ordem || '',
+                prioridadeCor: reg.prioridade_cor || 'azul',
+                noApp: reg.no_app || 'Não',
+                observacao: reg.observacao || ''
+            };
+        }
+
+        function removerRegistroLocalPorId(id) {
+            let removido = false;
+            for (let p = 7; p <= 26; p++) {
+                const antesF = dadosPortoes[p]?.length || 0;
+                const antesR = rasgadasPortoes[p]?.length || 0;
+                dadosPortoes[p] = (dadosPortoes[p] || []).filter(item => item.id !== id);
+                rasgadasPortoes[p] = (rasgadasPortoes[p] || []).filter(item => item.id !== id);
+                if (dadosPortoes[p].length !== antesF || rasgadasPortoes[p].length !== antesR) removido = true;
+            }
+            return removido;
+        }
+
+        function aplicarRegistroRealtime(reg, evento) {
+            if (!reg || !reg.id) return;
+
+            const portao = Number(reg.portao);
+            const dataRegistro = String(reg.data_operacao || '');
+
+            // Registros de outra data não devem alterar a tela atual.
+            if (dataRegistro !== String(dataAtual)) return;
+            if (portao < 7 || portao > 26) return;
+
+            removerRegistroLocalPorId(reg.id);
+
+            if (evento === 'DELETE') {
+                persistirDadosLocal();
+                renderizarTabelas();
+                renderizarPanoramaTodosPortoes();
+                atualizarOpcoesFiltroOrdem();
+                return;
+            }
+
+            const item = converterRegistroRealtime(reg);
+            if (ehRegistroRasgada(reg)) {
+                let tipo = 'Nao Lida';
+                if (String(reg.observacao || '').includes('Rasgada (Lida)')) tipo = 'Lida';
+                rasgadasPortoes[portao].push({ ...item, tipo });
+            } else {
+                dadosPortoes[portao].push(item);
+            }
+
+            persistirDadosLocal();
+            renderizarTabelas();
+            renderizarPanoramaTodosPortoes();
+            atualizarOpcoesFiltroOrdem();
+
+            // Se a alteração ocorreu em outro portão, não muda a seleção do operador.
+            if (portaoAtual !== 'todos' && Number(portaoAtual) === portao) {
+                selecionarPortao(portao);
+            }
+        }
+
+        function iniciarSincronizacaoRealtime() {
+            if (!supabaseClient) {
+                atualizarIndicadorRealtime('erro', 'Cliente Supabase indisponível');
+                return;
+            }
+            if (!dataAtual) return;
+            if (realtimeIniciando) return;
+
+            realtimeIniciando = true;
+            removerCanalRealtime();
+            atualizarIndicadorRealtime('conectando');
+
+            canalRealtimeCarregamento = supabaseClient
+                .channel(`controle-carregamento-${dataAtual}-${Date.now()}`)
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'controle_faltas_portao' },
+                    payload => {
+                        console.log('[REALTIME] Alteração recebida:', payload.eventType, payload.new || payload.old);
+                        aplicarRegistroRealtime(payload.eventType === 'DELETE' ? payload.old : payload.new, payload.eventType);
+                    }
+                )
+                .subscribe(status => {
+                    console.log('[REALTIME] Status:', status);
+                    if (status === 'SUBSCRIBED') {
+                        realtimeConectado = true;
+                        atualizarIndicadorRealtime('conectado');
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                        realtimeConectado = false;
+                        atualizarIndicadorRealtime(status === 'TIMED_OUT' ? 'desconectado' : 'erro', `Status: ${status}`);
+                    }
+                });
+
+            realtimeIniciando = false;
+        }
+
+        try {
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                    auth: { persistSession: false, autoRefreshToken: false }
+                });
+                supabaseClientSecundario = supabase.createClient(SUPABASE_URL_SEC, SUPABASE_KEY_SEC, {
+                    auth: { persistSession: false, autoRefreshToken: false }
+                });
+            }
+        } catch (e) {
+            console.warn("Supabase SDK indisponível", e);
+        }
+
+        let portaoAtual = 7;
+        let dadosPortoes = {};
+        let rasgadasPortoes = {};
+        let turnoAtual = 'Turno 1';
+        let responsavelAtual = '';
+        let dataAtual = '';
+        
+        let html5QrcodeScanner = null;
+        let campoAlvoScannerId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            inicializarDataHoje();
+            await carregarDadosNuvemELocais();
+            gerarAbasPortoes();
+            popularSelectPortoesModal();
+            selecionarPortao(7);
+            iniciarSincronizacaoRealtime();
+        });
+
+        function inicializarDataHoje() {
+            const inputData = document.getElementById('input-data-controle');
+            const hoje = new Date().toISOString().split('T')[0];
+            dataAtual = hoje;
+            if (inputData) inputData.value = dataAtual;
+        }
+
+        async function mudarDataOperacional(novaData) {
+            if (novaData) {
+                dataAtual = novaData;
+                await carregarDadosNuvemELocais();
+                gerarAbasPortoes();
+                selecionarPortao(portaoAtual === 'todos' ? 7 : portaoAtual);
+                iniciarSincronizacaoRealtime();
+                tocarSomTrocaData();
+            }
+        }
+
+        async function carregarDadosNuvemELocais() {
+            if (!dataAtual) inicializarDataHoje();
+            dadosPortoes = {};
+            rasgadasPortoes = {};
+            for (let i = 7; i <= 26; i++) {
+                dadosPortoes[i] = [];
+                rasgadasPortoes[i] = [];
+            }
+
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('controle_faltas_portao')
+                        .select('*')
+                        .eq('data_operacao', dataAtual)
+                        .order('created_at', { ascending: true })
+                        .order('id', { ascending: true });
+
+                    if (!error && data) {
+                        data.forEach(reg => {
+                            const p = reg.portao;
+                            if (p >= 7 && p <= 26) {
+                                const itemObj = {
+                                    id: reg.id,
+                                    sscc: tratarSSCC(reg.sscc || ''),
+                                    status: reg.status || 'Pendente',
+                                    origem: reg.origem || 'CD',
+                                    ordem: reg.ordem || '',
+                                    prioridadeCor: reg.prioridade_cor || 'azul',
+                                    noApp: reg.no_app || 'Não',
+                                    observacao: reg.observacao || ''
+                                };
+
+                                if (reg.observacao && reg.observacao.includes('Rasgada')) {
+                                    let tipoMatch = 'Nao Lida';
+                                    if (reg.observacao.includes('Rasgada (Lid') || reg.observacao.includes('Rasgada (Lida)')) {
+                                        tipoMatch = 'Lida';
+                                    }
+                                    rasgadasPortoes[p].push({ ...itemObj, tipo: tipoMatch });
+                                } else {
+                                    dadosPortoes[p].push(itemObj);
+                                }
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.warn("Erro ao buscar da nuvem, carregando local", err);
+                }
+            }
+
+            for (let i = 7; i <= 26; i++) {
+                if (dadosPortoes[i].length === 0) {
+                    const chaveF = `grendene_faltas_${dataAtual}_p${i}`;
+                    const salvoF = localStorage.getItem(chaveF);
+                    if (salvoF) {
+                        try { 
+                            dadosPortoes[i] = JSON.parse(salvoF).map(item => ({ ...item, sscc: tratarSSCC(item.sscc), prioridadeCor: item.prioridadeCor || 'azul' })); 
+                        } catch(e){}
+                    }
+                }
+            }
+            persistirDadosLocal();
+            sincronizarOcorrenciasTurno();
+        }
+
+        function persistirDadosLocal() {
+            if (!dataAtual) inicializarDataHoje();
+            const chaveFaltas = `grendene_faltas_${dataAtual}`;
+            const chaveRasgadas = `grendene_rasgadas_${dataAtual}`;
+            localStorage.setItem(chaveFaltas, JSON.stringify(dadosPortoes));
+            localStorage.setItem(chaveRasgadas, JSON.stringify(rasgadasPortoes));
+            atualizarIndicadoresKPI();
+            if (portaoAtual !== 'todos') verificarBannerRasgadas();
+            sincronizarOcorrenciasTurno();
+        }
+
+        // SINCRONIZAÇÃO AUTOMÁTICA COM O CONTROLE DE OCORRÊNCIAS
+        async function sincronizarOcorrenciasTurno() {
+            if (!supabaseClientSecundario || !dataAtual) return;
+
+            let totalFaltasCarregamento = 0;
+            let totalRasgadasCarregamento = 0;
+
+            for (let i = 7; i <= 26; i++) {
+                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+                totalFaltasCarregamento += listaFaltas.length;
+
+                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+                totalRasgadasCarregamento += listaRasgadas.length;
+            }
+
+            try {
+                const { data: existente, error: errBusca } = await supabaseClientSecundario
+                    .from('ocorrencias_turno1')
+                    .select('*')
+                    .eq('data', dataAtual)
+                    .maybeSingle();
+
+                if (errBusca) throw errBusca;
+
+                if (existente) {
+                    await supabaseClientSecundario
+                        .from('ocorrencias_turno1')
+                        .update({
+                            carregamento: totalRasgadasCarregamento,
+                            faltas: totalFaltasCarregamento
+                        })
+                        .eq('id', existente.id);
+                } else {
+                    await supabaseClientSecundario
+                        .from('ocorrencias_turno1')
+                        .insert([{
+                            data: dataAtual,
+                            sorter: 0,
+                            carregamento: totalRasgadasCarregamento,
+                            faltas: totalFaltasCarregamento,
+                            pend_sorter: 0,
+                            pend_carregamento: 0,
+                            pend_faltas: 0,
+                            observacoes: 'Gerado automaticamente pelo Controle de Carregamento',
+                            responsavel: responsavelAtual || 'Yens Farrapo'
+                        }]);
+                }
+            } catch (err) {
+                console.warn("Erro ao sincronizar ocorrências:", err);
+            }
+        }
+
+        async function salvarLinhaTempoReal(index) {
+            persistirDadosLocal();
+            if (!supabaseClient) return;
+
+            const item = dadosPortoes[portaoAtual][index];
+            if (!item || !item.sscc || item.sscc.trim() === '') return;
+
+            try {
+                const codigoLimpo = tratarSSCC(item.sscc);
+                let mensagemCruzamento = '';
+
+                const resRep = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigoLimpo}%`).maybeSingle();
+                
+                if (!resRep.error && resRep.data) {
+                    const categoria = resRep.data.categoria || 'Reposição';
+                    const rastro = resRep.data.rastro ? ` (${resRep.data.rastro})` : '';
+                    mensagemCruzamento = `Caixa localizada em Reposição: ${categoria}${rastro}`;
+                } else {
+                    let achouRasgadaLocal = false;
+                    for (let p = 7; p <= 26; p++) {
+                        const listaRasg = rasgadasPortoes[p] || [];
+                        const matchRasgada = listaRasg.find(r => tratarSSCC(r.sscc) === codigoLimpo);
+                        if (matchRasgada) {
+                            achouRasgadaLocal = true;
+                            mensagemCruzamento = `ALERTA: Caixa localizada em Rasgadas (Portão ${p} - Tipo: ${matchRasgada.tipo})`;
+                            break;
+                        }
+                    }
+
+                    if (!achouRasgadaLocal) {
+                        const resRasgDb = await supabaseClient.from('controle_faltas_portao').select('*').ilike('sscc', `%${codigoLimpo}%`).ilike('observacao', '%Rasgada%').maybeSingle();
+                        if (!resRasgDb.error && resRasgDb.data) {
+                            mensagemCruzamento = `ALERTA: Caixa localizada em Rasgadas (Portão ${resRasgDb.data.portao})`;
+                        }
+                    }
+                }
+
+                if (mensagemCruzamento && !item.observacao.includes(mensagemCruzamento)) {
+                    item.observacao = `[${mensagemCruzamento}]`;
+                    const inputObs = document.getElementById(`input-obs-${index}`);
+                    if (inputObs && document.activeElement !== inputObs) {
+                        inputObs.value = item.observacao;
+                    }
+
+                    document.getElementById('texto-alerta-integracao').innerText = mensagemCruzamento;
+                    document.getElementById('modal-alerta-integracao').classList.remove('hidden');
+                }
+
+                const payload = {
+                    data_operacao: dataAtual,
+                    portao: Number(portaoAtual),
+                    sscc: String(codigoLimpo),
+                    status: String(item.status || 'Pendente'),
+                    origem: String(item.origem || 'CD'),
+                    ordem: String(item.ordem || ''),
+                    prioridade_cor: String(item.prioridadeCor || 'azul'),
+                    no_app: String(item.noApp || 'Não'),
+                    observacao: String(item.observacao || ''),
+                    turno: String(turnoAtual || 'Turno 1'),
+                    responsavel: String(responsavelAtual || 'Não informado')
+                };
+
+                let res;
+                if (item.id) {
+                    res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
+                } else {
+                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
+                }
+
+                if (res.data && res.data[0] && res.data[0].id) {
+                    item.id = res.data[0].id;
+                    persistirDadosLocal();
+                }
+            } catch (err) {
+                console.warn("Erro na gravação tempo real", err);
+            }
+        }
+
+        async function salvarLinhaRasgadaTempoReal(index) {
+            persistirDadosLocal();
+            if (!supabaseClient) return;
+
+            const item = rasgadasPortoes[portaoAtual][index];
+            if (!item || !item.sscc || item.sscc.trim() === '') return;
+
+            try {
+                const codigoLimpo = tratarSSCC(item.sscc);
+                const payload = {
+                    data_operacao: dataAtual,
+                    portao: Number(portaoAtual),
+                    sscc: String(codigoLimpo),
+                    status: String(item.status || 'Pendente'),
+                    origem: String(item.origem || 'CD'),
+                    ordem: String(item.ordem || 'URGENTE'),
+                    prioridade_cor: 'vermelho',
+                    no_app: 'Sim',
+                    observacao: String(item.observacao || `Rasgada (${item.tipo})`),
+                    turno: String(turnoAtual || 'Turno 1'),
+                    responsavel: String(responsavelAtual || 'Não informado')
+                };
+
+                let res;
+                if (item.id) {
+                    res = await supabaseClient.from('controle_faltas_portao').update(payload).eq('id', item.id).select();
+                } else {
+                    res = await supabaseClient.from('controle_faltas_portao').insert([payload]).select();
+                }
+
+                if (res.data && res.data[0] && res.data[0].id) {
+                    item.id = res.data[0].id;
+                    persistirDadosLocal();
+                }
+            } catch (err) {
+                console.warn("Erro na gravação tempo real de rasgada", err);
+            }
+        }
+
+        function fecharAlertaIntegracao() {
+            document.getElementById('modal-alerta-integracao').classList.add('hidden');
+        }
+
+        function abrirModalSemExterna() {
+            document.getElementById('busca-produto').value = '';
+            document.getElementById('busca-cor').value = '';
+            document.getElementById('resultado-busca-sem-externa').innerHTML = '<p class="text-center opacity-50 py-4">Insira o produto ou cor e clique em buscar.</p>';
+            document.getElementById('modal-sem-externa').classList.remove('hidden');
+        }
+
+        function fecharModalSemExterna() {
+            document.getElementById('modal-sem-externa').classList.add('hidden');
+        }
+
+        async function executarBuscaSemExterna() {
+            const prod = document.getElementById('busca-produto').value.trim();
+            const cor = document.getElementById('busca-cor').value.trim();
+            const containerRes = document.getElementById('resultado-busca-sem-externa');
+
+            if (!prod && !cor) {
+                alert("Informe pelo menos o Produto ou a Cor para realizar a busca.");
+                return;
+            }
+
+            containerRes.innerHTML = '<p class="text-center opacity-75 py-4"><i class="fa-solid fa-spinner fa-spin"></i> Pesquisando no banco de dados...</p>';
+
+            if (!supabaseClientSecundario) {
+                containerRes.innerHTML = '<p class="text-center text-red-500 py-4">Erro: Conexão com o Supabase indisponível.</p>';
+                return;
+            }
+
+            try {
+                let query = supabaseClientSecundario.from('caixas_cd8').select('*');
+
+                if (prod && cor) {
+                    query = query.ilike('produto', `%${prod}%`).ilike('cor', `%${cor}%`);
+                } else if (prod) {
+                    query = query.ilike('produto', `%${prod}%`);
+                } else if (cor) {
+                    query = query.ilike('cor', `%${cor}%`);
+                }
+
+                const { data, error } = await query.limit(50);
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    containerRes.innerHTML = '<p class="text-center text-amber-500 py-4 font-bold">Nenhum registro encontrado para este produto/cor.</p>';
+                    return;
+                }
+
+                let html = '';
+                data.forEach((item, idx) => {
+                    const dataFormatada = item.created_at ? new Date(item.created_at).toLocaleString('pt-BR') : 'Data não informada';
+                    html += `
+                        <div class="ui-card border p-2.5 rounded shadow-sm flex flex-col gap-1">
+                            <div class="flex justify-between items-center font-bold text-blue-500">
+                                <span>#${idx + 1} - Produto: ${item.produto || 'N/A'}</span>
+                                <span class="text-[10px] opacity-75">${dataFormatada}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1 text-[11px] opacity-90">
+                                <div><strong class="opacity-70">Cor:</strong> ${item.cor || 'N/A'}</div>
+                                <div><strong class="opacity-70">Localização:</strong> <span class="text-emerald-600 font-bold">${item.localizacao || 'N/A'}</span></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                containerRes.innerHTML = html;
+            } catch (err) {
+                console.error("Erro ao buscar caixas sem externa:", err);
+                containerRes.innerHTML = `<p class="text-center text-red-500 py-4 font-bold">Erro ao consultar o banco: ${err.message || err}</p>`;
+            }
+        }
+
+        function alternarTema() {
+            const body = document.body;
+            if (body.classList.contains('light')) {
+                body.classList.replace('light', 'dark');
+                document.getElementById('icone-tema').className = "fa-solid fa-sun";
+                localStorage.setItem('tema_grendene', 'dark');
+            } else {
+                body.classList.replace('dark', 'light');
+                document.getElementById('icone-tema').className = "fa-solid fa-moon";
+                localStorage.setItem('tema_grendene', 'light');
+            }
+        }
+
+        const temaSalvo = localStorage.getItem('tema_grendene');
+        if (temaSalvo === 'dark') {
+            document.body.classList.replace('light', 'dark');
+            document.getElementById('icone-tema').className = "fa-solid fa-sun";
+        }
+
+        function mudarTurno(turno) { turnoAtual = turno; }
+        function mudarResponsavel(resp) { responsavelAtual = resp; sincronizarOcorrenciasTurno(); }
+
+        function popularSelectPortoesModal() {
+            const select = document.getElementById('rasgada-portao');
+            select.innerHTML = '';
+            for (let i = 7; i <= 26; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = `Portão ${i}`;
+                select.appendChild(opt);
+            }
+        }
+
+        function gerarAbasPortoes() {
+            const container = document.getElementById('container-abas-portoes');
+            container.innerHTML = '';
+            
+            const btnTodos = document.createElement('button');
+            btnTodos.id = `btn-portao-todos`;
+            btnTodos.className = "px-3 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border-r text-blue-500";
+            btnTodos.innerHTML = `<i class="fa-solid fa-layer-group text-[11px]"></i> Todos`;
+            btnTodos.onclick = () => selecionarPortao('todos');
+            container.appendChild(btnTodos);
+
+            for (let i = 7; i <= 26; i++) {
+                const btn = document.createElement('button');
+                btn.id = `btn-portao-${i}`;
+                btn.className = "px-2.5 py-1.5 text-xs font-bold rounded hover:opacity-80 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
+                btn.innerHTML = `<i class="fa-solid fa-truck text-[10px] opacity-60"></i> P-${i} <span id="badge-rasgada-${i}" class="hidden w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`;
+                btn.onclick = () => selecionarPortao(i);
+                container.appendChild(btn);
+            }
+            atualizarBadgesPortoesAbas();
+        }
+
+        function atualizarBadgesPortoesAbas() {
+            for (let i = 7; i <= 26; i++) {
+                const badge = document.getElementById(`badge-rasgada-${i}`);
+                if (badge) {
+                    const rasgadas = rasgadasPortoes[i] || [];
+                    if (rasgadas.length > 0) badge.classList.remove('hidden');
+                    else badge.classList.add('hidden');
+                }
+            }
+        }
+
+        function selecionarPortao(paramPortao) {
+            portaoAtual = paramPortao;
+            if (paramPortao === 'todos') {
+                document.getElementById('btn-portao-todos').className = "px-3 py-1.5 text-xs font-bold rounded bg-blue-600 text-white shadow-sm whitespace-nowrap cursor-pointer flex items-center gap-1.5";
+                for (let i = 7; i <= 26; i++) {
+                    const b = document.getElementById(`btn-portao-${i}`);
+                    if (b) b.className = "px-2.5 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
+                }
+                document.getElementById('wrapper-conteudo-dinamico').classList.add('hidden');
+                document.getElementById('wrapper-todos-portoes').classList.remove('hidden');
+                renderizarPanoramaTodosPortoes();
+                return;
+            } else {
+                document.getElementById('btn-portao-todos').className = "px-3 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border-r text-blue-500";
+                document.getElementById('wrapper-todos-portoes').classList.add('hidden');
+                document.getElementById('wrapper-conteudo-dinamico').classList.remove('hidden');
+            }
+
+            for (let i = 7; i <= 26; i++) {
+                const btn = document.getElementById(`btn-portao-${i}`);
+                if (btn) {
+                    if (i === paramPortao) btn.className = "px-2.5 py-1.5 text-xs font-bold rounded bg-blue-600 text-white shadow-sm whitespace-nowrap cursor-pointer flex items-center gap-1.5";
+                    else btn.className = "px-2.5 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5";
+                }
+            }
+
+            document.getElementById('titulo-portao-atual').innerHTML = `<i class="fa-solid fa-truck text-blue-500"></i> Portão ${portaoAtual} - Faltas`;
+            document.getElementById('titulo-portao-rasgadas').innerText = `Portão ${portaoAtual}`;
+            atualizarOpcoesFiltroOrdem();
+            renderizarTabelas();
+            atualizarIndicadoresKPI();
+            verificarBannerRasgadas();
+        }
+
+        function verificarBannerRasgadas() {
+            const banner = document.getElementById('banner-rasgadas-lidas');
+            const textoAlerta = document.getElementById('texto-alerta-rasgada-lida');
+            const rasgadas = rasgadasPortoes[portaoAtual] || [];
+            const rasgadasLidas = rasgadas.filter(r => r.tipo === 'Lida');
+
+            if (rasgadasLidas.length > 0) {
+                banner.classList.remove('hidden');
+                textoAlerta.innerHTML = `Atenção: Caixa rasgada lida neste portão! (${rasgadasLidas.length} un)`;
+            } else {
+                banner.classList.add('hidden');
+            }
+            atualizarBadgesPortoesAbas();
+        }
+
+        function abrirModalRasgada() {
+            document.getElementById('rasgada-portao').value = portaoAtual === 'todos' ? 7 : portaoAtual;
+            document.getElementById('rasgada-sscc').value = '';
+            document.getElementById('rasgada-obs').value = '';
+            document.getElementById('modal-rasgada').classList.remove('hidden');
+        }
+        function fecharModalRasgada() { document.getElementById('modal-rasgada').classList.add('hidden'); }
+
+        async function salvarCaixaRasgada() {
+            const portaoAlvo = parseInt(document.getElementById('rasgada-portao').value);
+            const sscc = tratarSSCC(document.getElementById('rasgada-sscc').value.trim());
+            const tipo = document.getElementById('rasgada-tipo').value;
+            const obs = document.getElementById('rasgada-obs').value.trim() || 'Caixa rasgada no carregamento';
+
+            if (!sscc) { alert("Informe o código SSCC da caixa rasgada."); return; }
+            if (!rasgadasPortoes[portaoAlvo]) rasgadasPortoes[portaoAlvo] = [];
+
+            const novoItem = { sscc, tipo, status: 'Pendente', origem: 'CD', ordem: 'URGENTE', prioridadeCor: 'vermelho', observacao: `Rasgada (${tipo}): ${obs}` };
+            rasgadasPortoes[portaoAlvo].push(novoItem);
+
+            tocarSomSucesso();
+            persistirDadosLocal();
+            fecharModalRasgada();
+            selecionarPortao(portaoAlvo);
+
+            if (supabaseClient) {
+                const res = await supabaseClient.from('controle_faltas_portao').insert([{
+                    data_operacao: dataAtual,
+                    portao: Number(portaoAlvo),
+                    sscc: String(sscc),
+                    status: 'Pendente',
+                    origem: 'CD',
+                    ordem: 'URGENTE',
+                    prioridade_cor: 'vermelho',
+                    no_app: 'Sim',
+                    observacao: `Rasgada (${tipo}): ${obs}`,
+                    turno: String(turnoAtual),
+                    responsavel: String(responsavelAtual)
+                }]).select();
+
+                if (res.data && res.data[0] && res.data[0].id) {
+                    novoItem.id = res.data[0].id;
+                    persistirDadosLocal();
+                }
+            }
+        }
+
+        function atualizarIndicadoresKPI() {
+            let totalFaltas = 0, entregues = 0, pendentes = 0, totalRasgadas = 0, quantificadosNoApp = 0;
+
+            for (let i = 7; i <= 26; i++) {
+                const lista = dadosPortoes[i] || [];
+                const rasgadas = rasgadasPortoes[i] || [];
+                totalRasgadas += rasgadas.length;
+
+                lista.forEach(item => {
+                    if (item.sscc && item.sscc.trim() !== '') {
+                        totalFaltas++;
+                        if (item.status === 'Entregue no Portão') entregues++; else pendentes++;
+                        if (item.noApp === 'Sim') quantificadosNoApp++;
+                    }
+                });
+                rasgadas.forEach(item => {
+                    if (item.sscc && item.sscc.trim() !== '') {
+                        totalFaltas++;
+                        if (item.status === 'Entregue no Portão') entregues++; else pendentes++;
+                    }
+                });
+            }
+
+            document.getElementById('kpi-total-faltas').innerText = totalFaltas;
+            document.getElementById('kpi-entregues').innerText = entregues;
+            document.getElementById('kpi-pendentes').innerText = pendentes;
+            document.getElementById('kpi-rasgadas').innerText = totalRasgadas;
+            document.getElementById('kpi-no-app').innerText = quantificadosNoApp;
+        }
+
+        function renderizarTabelas() {
+            renderizarBlocosOrdensFaltas();
+            renderizarTabelaRasgadas();
+        }
+
+        function getClassStatus(status) {
+            if (!status) return 'status-pendente';
+            const s = status.toLowerCase().trim();
+            if (s.includes('andamento')) return 'status-em-andamento';
+            if (s.includes('requisitada')) return 'status-requisitada';
+            if (s.includes('apareceu')) return 'status-apareceu-no-portao';
+            if (s.includes('entregue')) return 'status-entregue-no-portao';
+            return 'status-pendente';
+        }
+
+        function getClassCorBadge(cor) {
+            if (cor === 'vermelho') return 'bg-red-600 text-white';
+            if (cor === 'amarelo') return 'bg-amber-500 text-black';
+            return 'bg-blue-600 text-white'; // Azul (padrão)
+        }
+
+        function atualizarOpcoesFiltroOrdem() {
+            const selectFiltro = document.getElementById('select-filtro-ordem');
+            if (!selectFiltro) return;
+            const valorAtual = selectFiltro.value;
+            
+            const lista = dadosPortoes[portaoAtual] || [];
+            const ordensSet = new Set();
+            lista.forEach(item => {
+                const ord = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
+                ordensSet.add(ord);
+            });
+
+            let html = `<option value="TODAS">Todas as Ordens</option>`;
+            ordensSet.forEach(ord => {
+                html += `<option value="${ord}">${ord}</option>`;
+            });
+            selectFiltro.innerHTML = html;
+            
+            if (ordensSet.has(valorAtual) || valorAtual === 'TODAS') {
+                selectFiltro.value = valorAtual;
+            } else {
+                selectFiltro.value = 'TODAS';
+            }
+        }
+
+        // RENDERIZAR BLOCOS ORDENADOS POR PRIORIDADE (VERMELHO > AMARELO > AZUL)
+        function renderizarBlocosOrdensFaltas() {
+            const container = document.getElementById('blocos-ordens-container');
+            container.innerHTML = '';
+            const lista = dadosPortoes[portaoAtual] || [];
+            document.getElementById('contador-linhas-portao').innerText = `${lista.length} registo(s)`;
+
+            if (lista.length === 0) {
+                adicionarLinhaVaziaObjeto();
+            }
+
+            const filtroOrdemEl = document.getElementById('select-filtro-ordem');
+            const ordemFiltroAtiva = filtroOrdemEl ? filtroOrdemEl.value : 'TODAS';
+
+            // Agrupar itens por Ordem
+            const gruposOrdens = {};
+            dadosPortoes[portaoAtual].forEach((item, index) => {
+                const ord = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
+                if (!gruposOrdens[ord]) gruposOrdens[ord] = [];
+                gruposOrdens[ord].push({ item, index });
+            });
+
+            const pesoCor = { 'vermelho': 1, 'amarelo': 2, 'azul': 3 };
+            
+            const ordensOrdenadas = Object.keys(gruposOrdens).sort((a, b) => {
+                const corA = gruposOrdens[a][0]?.item.prioridadeCor || 'azul';
+                const corB = gruposOrdens[b][0]?.item.prioridadeCor || 'azul';
+                const pesoA = pesoCor[corA] || 3;
+                const pesoB = pesoCor[corB] || 3;
+                return pesoA - pesoB;
+            });
+
+            let blocosRenderizados = 0;
+
+            ordensOrdenadas.forEach((ordemKey, blocoIdx) => {
+                if (ordemFiltroAtiva !== 'TODAS' && ordemKey !== ordemFiltroAtiva) {
+                    return;
+                }
+
+                blocosRenderizados++;
+                const itensDoBloco = gruposOrdens[ordemKey];
+                const corAtual = itensDoBloco[0]?.item.prioridadeCor || 'azul';
+                const classeCorBadge = getClassCorBadge(corAtual);
+
+                const blocoDiv = document.createElement('div');
+                blocoDiv.className = "ui-card border rounded-lg overflow-hidden shadow-sm";
+
+                let htmlBlocoCabecalho = `
+                    <div class="bg-blue-50/50 dark:bg-zinc-900/80 p-2.5 border-b flex flex-wrap justify-between items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="${classeCorBadge} text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-sm transition-colors uppercase tracking-wide" id="badge-cor-${blocoIdx}">Ordem #${blocoIdx + 1}</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs font-bold opacity-75">Nº Ordem:</span>
+                                <input type="text" value="${ordemKey === 'SEM ORDEM DEFINIDA' ? '' : ordemKey}" onblur="atualizarOrdemDoBloco('${ordemKey}', this.value)" placeholder="Digite a ordem..." class="ui-card border rounded px-2 py-0.5 font-mono text-xs font-bold w-36">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] opacity-75 font-mono">${itensDoBloco.length} item(ns)</span>
+                            <button onclick="adicionarLinhaEmOrdem('${ordemKey}')" class="bg-gray-700 hover:bg-gray-800 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1"><i class="fa-solid fa-plus"></i> Linha</button>
+                            <button onclick="removerBlocoOrdem('${ordemKey}')" class="bg-red-600/80 hover:bg-red-600 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer" title="Remover Bloco"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="excel-table">
+                            <thead>
+                                <tr>
+                                    <th class="w-6 text-center">#</th>
+                                    <th style="width: 155px;">Código SSCC</th>
+                                    <th style="width: 135px;">Status</th>
+                                    <th style="width: 110px;">Origem</th>
+                                    <th style="width: 80px;">No App?</th>
+                                    <th>Observação</th>
+                                    <th class="w-8 text-center">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                itensDoBloco.forEach(({ item, index }, subIdx) => {
+                    let classeStatus = getClassStatus(item.status);
+                    let classeApp = item.noApp === 'Sim' ? 'app-sim' : 'app-nao';
+
+                    htmlBlocoCabecalho += `
+                        <tr>
+                            <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${subIdx + 1}</td>
+                            <td class="td-sscc-container" data-label="SSCC">
+                                <input type="text" id="input-sscc-${index}" value="${item.sscc || ''}" onblur="alterarCampoFaltaImediato(${index}, 'sscc', this.value)" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                            </td>
+                            <td data-label="Status">
+                                <select id="select-status-${index}" onchange="atualizarStatusImediatoVisual(${index}, this.value)" class="excel-select ${classeStatus}">
+                                    <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                                    <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
+                                    <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
+                                    <option value="Apareceu no Portão" ${item.status === 'Apareceu no Portão' ? 'selected' : ''}>Apareceu no Portão</option>
+                                    <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue no Portão</option>
+                                </select>
+                            </td>
+                            <td data-label="Origem">
+                                <select onchange="alterarCampoFaltaImediato(${index}, 'origem', this.value)" class="excel-select border">
+                                    <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
+                                    <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
+                                    <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
+                                    <option value="Fábrica 3" ${item.origem === 'Fábrica 3' ? 'selected' : ''}>Fábrica 3</option>
+                                    <option value="Fábrica 5" ${item.origem === 'Fábrica 5' ? 'selected' : ''}>Fábrica 5</option>
+                                    <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
+                                    <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
+                                </select>
+                            </td>
+                            <td data-label="No App?">
+                                <select id="select-app-${index}" onchange="atualizarAppImediatoVisual(${index}, this.value)" class="excel-select ${classeApp}">
+                                    <option value="Não" ${item.noApp === 'Não' ? 'selected' : ''}>Não</option>
+                                    <option value="Sim" ${item.noApp === 'Sim' ? 'selected' : ''}>Sim</option>
+                                </select>
+                            </td>
+                            <td data-label="Observação">
+                                <input type="text" id="input-obs-${index}" value="${item.observacao || ''}" onblur="alterarCampoFaltaImediato(${index}, 'observacao', this.value)" placeholder="Observação..." class="excel-input">
+                            </td>
+                            <td class="text-center" data-label="Ação">
+                                <button onclick="removerLinhaFalta(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                htmlBlocoCabecalho += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                blocoDiv.innerHTML = htmlBlocoCabecalho;
+                container.appendChild(blocoDiv);
+            });
+
+            if (blocosRenderizados === 0) {
+                container.innerHTML = `<p class="text-center opacity-50 py-6 text-xs">Nenhum registro encontrado para a ordem selecionada.</p>`;
+            }
+        }
+
+        function abrirModalNovaOrdem() {
+            document.getElementById('input-modal-num-ordem').value = '';
+            document.getElementById('select-modal-cor-ordem').value = 'azul';
+            document.getElementById('modal-nova-ordem').classList.remove('hidden');
+        }
+
+        function fecharModalNovaOrdem() {
+            document.getElementById('modal-nova-ordem').classList.add('hidden');
+        }
+
+        function confirmarAdicionarNovaOrdem() {
+            const novaOrdemNum = document.getElementById('input-modal-num-ordem').value.trim();
+            if (!novaOrdemNum) {
+                alert("Por favor, digite o número da Ordem.");
+                return;
+            }
+            const corEscolhida = document.getElementById('select-modal-cor-ordem').value;
+
+            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: novaOrdemNum, prioridadeCor: corEscolhida, noApp: 'Não', observacao: '' };
+            dadosPortoes[portaoAtual].push(novoObj);
+            persistirDadosLocal();
+            atualizarOpcoesFiltroOrdem();
+            renderizarBlocosOrdensFaltas();
+            fecharModalNovaOrdem();
+        }
+
+        function adicionarLinhaEmOrdem(ordemKey) {
+            const ordemVal = ordemKey === 'SEM ORDEM DEFINIDA' ? '' : ordemKey;
+            let corHerdada = 'azul';
+            const itensExistentes = (dadosPortoes[portaoAtual] || []).filter(item => {
+                const k = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
+                return k === ordemKey;
+            });
+            if (itensExistentes.length > 0 && itensExistentes[0].prioridadeCor) {
+                corHerdada = itensExistentes[0].prioridadeCor;
+            }
+
+            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: ordemVal, prioridadeCor: corHerdada, noApp: 'Não', observacao: '' };
+            dadosPortoes[portaoAtual].push(novoObj);
+            persistirDadosLocal();
+            atualizarOpcoesFiltroOrdem();
+            renderizarBlocosOrdensFaltas();
+        }
+
+        function atualizarOrdemDoBloco(ordemAntiga, novaOrdemValor) {
+            const valLimpo = novaOrdemValor.trim();
+            dadosPortoes[portaoAtual].forEach((item, index) => {
+                const itemOrdemKey = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
+                if (itemOrdemKey === ordemAntiga) {
+                    item.ordem = valLimpo;
+                    salvarLinhaTempoReal(index);
+                }
+            });
+            persistirDadosLocal();
+            atualizarOpcoesFiltroOrdem();
+            renderizarBlocosOrdensFaltas();
+        }
+
+        async function removerBlocoOrdem(ordemKey) {
+            if (!confirm(`Deseja remover todos os registros da ordem "${ordemKey}" deste portão?`)) return;
+            let indicesParaRemover = [];
+            dadosPortoes[portaoAtual].forEach((item, index) => {
+                const itemOrdemKey = (item.ordem && item.ordem.trim() !== '') ? item.ordem.trim() : 'SEM ORDEM DEFINIDA';
+                if (itemOrdemKey === ordemKey) indicesParaRemover.push(index);
+            });
+
+            for (let i = indicesParaRemover.length - 1; i >= 0; i--) {
+                const idx = indicesParaRemover[i];
+                const item = dadosPortoes[portaoAtual][idx];
+                if (item && item.id && supabaseClient) {
+                    await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+                }
+                dadosPortoes[portaoAtual].splice(idx, 1);
+            }
+
+            if (dadosPortoes[portaoAtual].length === 0) adicionarLinhaVaziaObjeto();
+            persistirDadosLocal();
+            atualizarOpcoesFiltroOrdem();
+            renderizarBlocosOrdensFaltas();
+        }
+
+        function renderizarTabelaRasgadas() {
+            const secaoRasgadas = document.getElementById('secao-tabela-rasgadas');
+            const tbody = document.getElementById('corpo-tabela-rasgadas');
+            tbody.innerHTML = '';
+            const lista = rasgadasPortoes[portaoAtual] || [];
+            
+            if (lista.length === 0) { secaoRasgadas.classList.add('hidden'); return; }
+
+            secaoRasgadas.classList.remove('hidden');
+            document.getElementById('contador-linhas-rasgadas').innerText = `${lista.length} registo(s)`;
+
+            lista.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                const inputId = `input-rasg-sscc-${index}`;
+                let classeStatusRasgada = 'status-rasgada-pendente';
+                if (item.status === 'Requisitada') classeStatusRasgada = 'status-rasgada-requisitada';
+                if (item.status === 'Restaurada') classeStatusRasgada = 'status-rasgada-restaurada';
+                if (item.status === 'Entregue no Portão') classeStatusRasgada = 'status-rasgada-entregue';
+
+                tr.innerHTML = `
+                    <td class="text-center opacity-60 font-mono text-[11px]" data-label="#">${index + 1}</td>
+                    <td class="td-sscc-container" data-label="SSCC">
+                        <div class="flex items-center gap-1 w-full justify-end">
+                            <input type="text" id="${inputId}" value="${item.sscc || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'sscc', this.value)" class="excel-input excel-input-sscc font-bold">
+                            <button type="button" onclick="abrirModalScannerParaCampo('${inputId}')" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
+                        </div>
+                    </td>
+                    <td data-label="Tipo">
+                        <select onchange="alterarCampoRasgadaImediato(${index}, 'tipo', this.value)" class="excel-select font-bold ${item.tipo === 'Lida' ? 'text-red-600' : 'text-amber-600'}">
+                            <option value="Lida" ${item.tipo === 'Lida' ? 'selected' : ''}>Rasgada (Lida)</option>
+                            <option value="Nao Lida" ${item.tipo === 'Nao Lida' ? 'selected' : ''}>Rasgada (Não Lida)</option>
+                        </select>
+                    </td>
+                    <td data-label="Status">
+                        <select onchange="alterarCampoRasgadaImediato(${index}, 'status', this.value)" class="excel-select ${classeStatusRasgada}">
+                            <option value="Pendente" ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                            <option value="Requisitada" ${item.status === 'Requisitada' ? 'selected' : ''}>Requisitada</option>
+                            <option value="Restaurada" ${item.status === 'Restaurada' ? 'selected' : ''}>Restaurada</option>
+                            <option value="Entregue no Portão" ${item.status === 'Entregue no Portão' ? 'selected' : ''}>Entregue</option>
+                        </select>
+                    </td>
+                    <td data-label="Origem">
+                        <select onchange="alterarCampoRasgadaImediato(${index}, 'origem', this.value)" class="excel-select border">
+                            <option value="CD" ${item.origem === 'CD' ? 'selected' : ''}>CD</option>
+                            <option value="Fábrica 1" ${item.origem === 'Fábrica 1' ? 'selected' : ''}>Fábrica 1</option>
+                            <option value="Fábrica 2" ${item.origem === 'Fábrica 2' ? 'selected' : ''}>Fábrica 2</option>
+                            <option value="Fábrica 3" ${item.origem === 'Fábrica 3' ? 'selected' : ''}>Fábrica 3</option>
+                            <option value="Fábrica 5" ${item.origem === 'Fábrica 5' ? 'selected' : ''}>Fábrica 5</option>
+                            <option value="Fábrica 6" ${item.origem === 'Fábrica 6' ? 'selected' : ''}>Fábrica 6</option>
+                            <option value="Fábrica 7" ${item.origem === 'Fábrica 7' ? 'selected' : ''}>Fábrica 7</option>
+                        </select>
+                    </td>
+                    <td data-label="Ordem">
+                        <input type="text" value="${item.ordem || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'ordem', this.value)" class="excel-input font-bold">
+                    </td>
+                    <td data-label="Observação">
+                        <input type="text" value="${item.observacao || ''}" onblur="alterarCampoRasgadaImediato(${index}, 'observacao', this.value)" class="excel-input">
+                    </td>
+                    <td class="text-center" data-label="Ação">
+                        <button onclick="removerLinhaRasgada(${index})" class="opacity-60 hover:opacity-100 hover:text-red-600 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderizarPanoramaTodosPortoes() {
+            const tbody = document.getElementById('corpo-tabela-todos-portoes');
+            tbody.innerHTML = '';
+            let totalGeral = 0;
+
+            for (let i = 7; i <= 26; i++) {
+                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+
+                listaFaltas.forEach(item => {
+                    totalGeral++;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td class="font-bold text-blue-500">Portão ${i}</td><td class="font-mono font-bold">${item.sscc}</td><td>Falta Normal</td><td>${item.status}</td><td>${item.origem}</td><td>${item.ordem}</td><td>${item.noApp}</td><td>${item.observacao}</td>`;
+                    tbody.appendChild(tr);
+                });
+                listaRasgadas.forEach(item => {
+                    totalGeral++;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td class="font-bold text-amber-500">Portão ${i}</td><td class="font-mono font-bold">${item.sscc}</td><td>Rasgada (${item.tipo})</td><td>${item.status}</td><td>${item.origem}</td><td>${item.ordem}</td><td>Sim</td><td>${item.observacao}</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+            document.getElementById('contador-total-geral').innerText = `${totalGeral} itens gerais`;
+        }
+
+        function atualizarStatusImediatoVisual(index, novoValor) {
+            const item = dadosPortoes[portaoAtual][index];
+            item.status = novoValor;
+            persistirDadosLocal();
+            salvarLinhaTempoReal(index);
+
+            const selectEl = document.getElementById(`select-status-${index}`);
+            selectEl.className = 'excel-select ' + getClassStatus(novoValor);
+
+            if (novoValor === 'Entregue no Portão') {
+                tocarSomConquistaAnimada();
+            }
+        }
+
+        function atualizarAppImediatoVisual(index, novoValor) {
+            const item = dadosPortoes[portaoAtual][index];
+            item.noApp = novoValor;
+            persistirDadosLocal();
+            salvarLinhaTempoReal(index);
+
+            const selectEl = document.getElementById(`select-app-${index}`);
+            const novaClasse = novoValor === 'Sim' ? 'app-sim' : 'app-nao';
+            selectEl.className = 'excel-select ' + novaClasse;
+        }
+
+        function alterarCampoFaltaImediato(index, campo, valor) {
+            if (campo === 'sscc') {
+                valor = tratarSSCC(valor);
+                const inputEl = document.getElementById(`input-sscc-${index}`);
+                if (inputEl) inputEl.value = valor;
+            }
+            const item = dadosPortoes[portaoAtual][index];
+            if (item[campo] !== valor) {
+                item[campo] = valor;
+                persistirDadosLocal();
+                salvarLinhaTempoReal(index);
+                if (campo === 'ordem') {
+                    atualizarOpcoesFiltroOrdem();
+                    renderizarBlocosOrdensFaltas();
+                }
+            }
+        }
+
+        function alterarCampoRasgadaImediato(index, campo, valor) {
+            if (campo === 'sscc') {
+                valor = tratarSSCC(valor);
+                const inputEl = document.getElementById(`input-rasg-sscc-${index}`);
+                if (inputEl) inputEl.value = valor;
+            }
+            const item = rasgadasPortoes[portaoAtual][index];
+            if (item[campo] !== valor) {
+                item[campo] = valor;
+                if (campo === 'tipo') {
+                    item.observacao = `Rasgada (${valor}): ${item.observacao.replace(/Rasgada \([^)]+\):? /, '')}`;
+                }
+                persistirDadosLocal();
+                salvarLinhaRasgadaTempoReal(index);
+
+                if (campo === 'status' && valor === 'Entregue no Portão') {
+                    tocarSomConquistaAnimada();
+                }
+                renderizarTabelaRasgadas();
+                verificarBannerRasgadas();
+            }
+        }
+
+        function adicionarLinhaVaziaObjeto() {
+            const novoObj = { sscc: '', status: 'Pendente', origem: 'CD', ordem: '', prioridadeCor: 'azul', noApp: 'Não', observacao: '' };
+            dadosPortoes[portaoAtual].push(novoObj);
+        }
+        
+        async function removerLinhaFalta(index) {
+            const item = dadosPortoes[portaoAtual][index];
+            if (item && item.id && supabaseClient) {
+                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+            }
+            dadosPortoes[portaoAtual].splice(index, 1);
+            if (dadosPortoes[portaoAtual].length === 0) adicionarLinhaVaziaObjeto();
+            persistirDadosLocal();
+            atualizarOpcoesFiltroOrdem();
+            renderizarBlocosOrdensFaltas();
+        }
+
+        async function removerLinhaRasgada(index) {
+            const item = rasgadasPortoes[portaoAtual][index];
+            if (item && item.id && supabaseClient) {
+                await supabaseClient.from('controle_faltas_portao').delete().eq('id', item.id);
+            }
+            rasgadasPortoes[portaoAtual].splice(index, 1);
+            persistirDadosLocal();
+            renderizarTabelas();
+        }
+
+        function abrirModalScannerParaCampo(idCampo) {
+            campoAlvoScannerId = idCampo;
+            document.getElementById('modal-scanner').classList.remove('hidden');
+            setTimeout(() => { iniciarScanner(); }, 150);
+        }
+
+        function fecharModalScanner() {
+            document.getElementById('modal-scanner').classList.add('hidden');
+            if (html5QrcodeScanner) {
+                try { if (html5QrcodeScanner.isScanning) html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear()).catch(()=>{}); } catch(e){}
+            }
+        }
+
+        async function iniciarScanner() {
+            if (!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode("reader");
+            try {
+                if (html5QrcodeScanner.isScanning) return;
+                await html5QrcodeScanner.start(
+                    { facingMode: "environment" },
+                    { fps: 30, qrbox: { width: 250, height: 130 } },
+                    (decodedText) => {
+                        const codigoTratado = tratarSSCC(decodedText);
+                        if (codigoTratado) {
+                            tocarSomSucesso();
+                            if (navigator.vibrate) navigator.vibrate(200);
+                            if (campoAlvoScannerId) {
+                                const inputEl = document.getElementById(campoAlvoScannerId);
+                                if (inputEl) { 
+                                    inputEl.value = codigoTratado; 
+                                    inputEl.dispatchEvent(new Event('blur')); 
+                                }
+                            }
+                            fecharModalScanner();
+                        }
+                    },
+                    () => {}
+                );
+            } catch (err) {}
+        }
+
+        function tratarSSCC(texto) {
+            if (!texto) return '';
+            let limpo = String(texto)
+                .replace(/\][A-Za-z0-9]+/g, '')
+                .replace(/\D/g, '');
+            if (limpo.length === 21) limpo = limpo.substring(1);
+            return limpo || String(texto).replace(/\][A-Za-z0-9]+/g, '').trim();
+        }
+
+        function tocarSomSucesso() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, now);
+                osc.frequency.setValueAtTime(880.00, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.3);
+            } catch (e) {}
+        }
+
+        function tocarSomConquistaAnimada() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioCtx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    const inicio = now + (i * 0.08);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, inicio);
+                    gain.gain.setValueAtTime(0.15, inicio);
+                    gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.25);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(inicio); osc.stop(inicio + 0.25);
+                });
+            } catch (e) {}
+        }
+
+        function tocarSomTrocaData() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554.37, now + 0.12);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.25);
+            } catch (e) {}
+        }
+
+        function exportarExcel() {
+            const workbook = XLSX.utils.book_new();
+            let temDados = false;
+
+            for (let i = 7; i <= 26; i++) {
+                const listaFaltas = (dadosPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+                const listaRasgadas = (rasgadasPortoes[i] || []).filter(item => item.sscc && item.sscc.trim() !== '');
+
+                if (listaFaltas.length > 0 || listaRasgadas.length > 0) {
+                    temDados = true;
+                    let linhasExport = [{ "SSCC": `Portão ${i} (${dataAtual})`, "Status": "", "Origem": "", "Ordem": "", "Prioridade": "", "No App?": "", "Observação": "" }];
+                    
+                    listaFaltas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": item.status, "Origem": item.origem, "Ordem": item.ordem, "Prioridade": item.prioridadeCor || 'azul', "No App?": item.noApp, "Observação": item.observacao }));
+                    listaRasgadas.forEach(item => linhasExport.push({ "SSCC": item.sscc, "Status": `${item.status} (Rasgada ${item.tipo})`, "Origem": item.origem, "Ordem": item.ordem, "Prioridade": "vermelho", "No App?": "Sim", "Observação": item.observacao }));
+
+                    const worksheet = XLSX.utils.json_to_sheet(linhasExport);
+                    worksheet['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
+                    XLSX.utils.book_append_sheet(workbook, worksheet, `Portão ${i}`);
+                }
+            }
+            if (!temDados) { alert("Nenhum dado encontrado para exportar."); return; }
+            XLSX.writeFile(workbook, `Controle_Carregamento_${dataAtual}.xlsx`);
+        }
+    </script>
+</body>
+</html>
