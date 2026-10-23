@@ -85,7 +85,6 @@
         .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Destaque quando OUTRO usuário altera uma linha */
         @keyframes flashRemoto { 0% { background-color: rgba(250, 204, 21, 0.55); } 100% { background-color: rgba(250, 204, 21, 0); } }
         tr.flash-remoto td { animation: flashRemoto 1.6s ease-out; }
 
@@ -111,8 +110,11 @@
 </head>
 <body class="light p-2 sm:p-3 pb-16">
 
+    <!-- CONTENEDOR DE NOTIFICAÇÕES TOAST EM TEMPO REAL -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[999999] flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
     <!-- SPLASH -->
-    <div id="splash-screen" class="fixed inset-0 bg-[#0d1117] z-[999999] flex flex-col items-center justify-center transition-opacity duration-500">
+    <div id="splash-screen" class="fixed inset-0 bg-[#0d1117] z-[99999] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="relative flex flex-col items-center">
             <div class="w-24 h-24 rounded-2xl bg-blue-600/15 border border-blue-500/40 flex items-center justify-center p-3 shadow-2xl animar-quique">
                 <img src="https://pub-f46b0cda8b8d434aabcf14ccac85f3af.r2.dev/1791682069820.png" alt="Caixa Grendene" class="w-full h-full object-contain drop-shadow-[0_8px_10px_rgba(0,0,0,0.6)]">
@@ -293,7 +295,7 @@
                     <option value="" disabled selected>Responsável</option>
                     <option value="Aldo">Supervisor Aldo</option>
                     <option value="Elisson">Supervisor Elisson</option>
-                    <option value="Jhonatan Carlos">Líder Jhonatan</option>
+                    <option value="Jonathan Carlos">Líder Jonathan</option>
                     <option value="Cláudio Sousa">Cláudio Sousa</option>
                     <option value="Yens Farrapo">Yens Farrapo</option>
                 </select>
@@ -315,7 +317,7 @@
         </div>
     </header>
 
-    <!-- AVISOS DO SISTEMA (erros reais de leitura/gravação/tempo real) -->
+    <!-- AVISOS DO SISTEMA -->
     <div id="aviso-sistema" class="hidden mb-3 p-2.5 rounded-lg text-xs font-bold border"></div>
 
     <!-- KPIs -->
@@ -361,7 +363,7 @@
                 </span>
                 <div class="flex items-center gap-1.5">
                     <span class="text-[11px] font-bold opacity-75"><i class="fa-solid fa-filter text-blue-500"></i> Filtrar Ordem:</span>
-                    <select id="select-filtro-ordem" onchange="agendarRender()" class="ui-card border rounded px-2 py-1 text-xs font-mono font-bold cursor-pointer">
+                    <select id="select-filtro-ordem" onchange="mudarFiltroOrdem(this.value)" class="ui-card border rounded px-2 py-1 text-xs font-mono font-bold cursor-pointer">
                         <option value="TODAS">Todas as Ordens</option>
                     </select>
                     <span class="text-xs opacity-75 font-mono ml-2" id="contador-linhas-portao">0 registo(s)</span>
@@ -411,23 +413,6 @@
     </div>
 
     <script>
-    /* =====================================================================
-     * ARQUITETURA (resumo)
-     *
-     * 1) Cada linha tem um UID ESTÁVEL gerado no navegador (nunca é índice
-     *    de array). Toda edição, gravação, evento remoto e remoção usa o UID.
-     * 2) A ordem das linhas é imutável: vem do carimbo de criação embutido
-     *    no UID. Editar um campo NUNCA muda a posição da linha.
-     * 3) O DOM é reconciliado por chave (UID): linhas existentes são
-     *    atualizadas no lugar, nunca recriadas. Campo com foco não é tocado.
-     * 4) Gravação por linha, em fila: apenas os campos alterados são enviados
-     *    (PATCH). Alterar uma linha não interfere em outra, nem em outros
-     *    campos da mesma linha editados por outra pessoa.
-     * 5) Supabase Realtime (postgres_changes) + consulta automática a cada
-     *    2,5-6 s (garante a atualização mesmo sem Realtime) + refetch ao
-     *    reconectar/voltar à aba + cópia local do dia (tela nunca fica vazia).
-     * ===================================================================== */
-
     const SUPABASE_URL = "https://mpsyqawieuwjgupoedib.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wc3lxYXdpZXV3amd1cG9lZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTA1OTQsImV4cCI6MjEwNjA4NjU5NH0.P9I8u6ycOBCKYIT2mvp35kZ-SfNTHiVY3Jkw7ltYFuQ";
     const SUPABASE_URL_SEC = "https://dylwhnsxjbeiukdmcupq.supabase.co";
@@ -437,7 +422,6 @@
     const PORTAO_MIN = 7, PORTAO_MAX = 26;
     const ORIGENS = ['CD', 'Fábrica 1', 'Fábrica 2', 'Fábrica 3', 'Fábrica 5', 'Fábrica 6', 'Fábrica 7'];
     const STATUS_FALTA = ['Pendente', 'Em andamento', 'Requisitada', 'Apareceu no Portão', 'Entregue no Portão'];
-    // Rótulo exibido na tela. O valor gravado no banco continua "Entregue no Portão" (compatível com dados antigos e outras telas).
     const ROTULO_STATUS = { 'Entregue no Portão': 'Ok' };
     const rotuloStatus = v => ROTULO_STATUS[v] || v;
     const optsStatusHTML = lista => lista.map(o => `<option value="${o}">${rotuloStatus(o)}</option>`).join('');
@@ -459,11 +443,11 @@
         }
     } catch (e) { console.warn('Supabase SDK indisponível', e); }
 
-    /* ------------------------------ ESTADO ------------------------------ */
-    const recs = new Map();        // uid -> registro (faltas E rasgadas)
-    const idIndex = new Map();     // id do banco -> uid
-    const tombstones = new Set();  // uids/ids removidos localmente (evita "ressuscitar")
-    const flashSet = new Set();    // uids a destacar após alteração remota
+    const recs = new Map();
+    const idIndex = new Map();
+    const tombstones = new Set();
+    const flashSet = new Set();
+    const filtrosPortoes = {}; // Guarda o filtro selecionado por portão
 
     let portaoAtual = 7;
     let turnoAtual = 'Turno 1';
@@ -476,15 +460,14 @@
     let html5QrcodeScanner = null;
     let campoAlvoScanner = null;
 
-    let semUid = false;            // banco sem a coluna "uid" -> modo compatível
+    let semUid = false;
     let uidChecado = false;
-    let rtOk = false;              // websocket do Realtime inscrito com sucesso
+    let rtOk = false;
     let tentouFetch = false;
     let ultimoFetchOk = false;
     let buscandoToken = -1;
     let pollTimer = null, cacheTimer = null, reinscreverTimer = null;
 
-    /* ------------------------------ UTILITÁRIOS ------------------------------ */
     function novoUid() {
         return Date.now().toString(36).padStart(9, '0') + '-' + Math.random().toString(36).slice(2, 8);
     }
@@ -509,6 +492,43 @@
     const comparaRec = (a, b) => (a.sortKey - b.sortKey) || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0);
     const $ = id => document.getElementById(id);
 
+    // SISTEMA DE NOTIFICAÇÕES TOAST (EM TEMPO REAL)
+    function mostrarToast(mensagem) {
+        const container = $('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = 'pointer-events-auto ui-card border border-blue-500/50 bg-white dark:bg-zinc-900 shadow-xl rounded-lg p-3 text-xs flex items-center gap-3 transform translate-x-full opacity-0 transition-all duration-300';
+        toast.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-bell"></i>
+            </div>
+            <div class="flex-1 font-medium">${mensagem}</div>
+        `;
+        container.appendChild(toast);
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+        });
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 4500);
+    }
+
+    function enviarNotificacao(texto) {
+        const resp = responsavelAtual || 'Alguém';
+        const msg = `${resp} ${texto}`;
+        mostrarToast(msg);
+        if (canal && supabaseClient) {
+            try {
+                canal.send({
+                    type: 'broadcast',
+                    event: 'notificacao',
+                    payload: { mensagem: msg }
+                });
+            } catch (e) {}
+        }
+    }
+
     function novaRec(o) {
         const uid = o.uid || novoUid();
         return {
@@ -531,10 +551,9 @@
         if (r.id) idIndex.delete(r.id);
     }
 
-    /* ------------------------------ GRAVAÇÃO (fila por linha) ------------------------------ */
     function marcarSujo(rec, campos) {
         if (!rec.saved) {
-            if (!rec.sscc.trim()) { persistirPendentes(); return; } // linha em branco não vai ao banco
+            if (!rec.sscc.trim()) { persistirPendentes(); return; }
             CAMPOS.forEach(f => rec.dirty[f] = rec[f]);
         } else {
             campos.forEach(f => rec.dirty[f] = rec[f]);
@@ -562,7 +581,6 @@
         return p;
     }
 
-    // Nome da coluna que o banco diz não existir (PGRST204 / 42703), ou null.
     function colunaAusenteDe(err) {
         const msg = String((err && err.message) || err || '');
         let m = msg.match(/Could not find the '([^']+)' column/i);
@@ -573,7 +591,6 @@
     }
     function erroDeColunaUid(err) { return colunaAusenteDe(err) === 'uid'; }
 
-    // Colunas que a tabela real não tem: o app para de enviá-las em vez de travar tudo.
     const colunasAusentes = new Set((() => { try { return JSON.parse(localStorage.getItem('grendene_cols_ausentes') || '[]'); } catch (e) { return []; } })());
     function lembrarColunasAusentes() { try { localStorage.setItem('grendene_cols_ausentes', JSON.stringify([...colunasAusentes])); } catch (e) {} }
     function descreverErro(err) {
@@ -585,13 +602,11 @@
         return partes.join(' | ');
     }
 
-    // Grava UMA linha nova com INSERT simples (mesma permissão que o app original usava).
-    // Nunca usa upsert: ele exige permissões extras e foi o que impedia de salvar.
     async function inserirLinha(rec) {
         const tabela = supabaseClient.from(TABELA);
         const res = await tabela.insert([payloadCompleto(rec)]).select('id');
         if (res.error) {
-            if (res.error.code === '23505' && !semUid) {          // mesmo uid já gravado (reenvio): apenas recupera o id
+            if (res.error.code === '23505' && !semUid) {
                 const ja = await supabaseClient.from(TABELA).select('id').eq('uid', rec.uid).limit(1);
                 if (!ja.error && ja.data && ja.data[0]) return ja.data[0].id;
             }
@@ -599,12 +614,11 @@
         }
         const row = Array.isArray(res.data) ? res.data[0] : res.data;
         if (row && row.id) return row.id;
-        // Sem erro, mas sem linha de volta: confirma de verdade antes de dar como salvo.
         if (!semUid) {
             const conf = await supabaseClient.from(TABELA).select('id').eq('uid', rec.uid).limit(1);
             if (!conf.error && conf.data && conf.data[0]) return conf.data[0].id;
         }
-        throw new Error('O banco não confirmou a gravação (verifique as permissões/RLS de INSERT e SELECT da tabela).');
+        throw new Error('O banco não confirmou a gravação.');
     }
 
     async function enviar(rec) {
@@ -625,6 +639,13 @@
                     const novoId = await inserirLinha(rec);
                     rec.id = novoId; idIndex.set(novoId, rec.uid);
                     rec.saved = true;
+                    if (rec.sscc.trim()) {
+                        if (rec.kind === 'rasgada') {
+                            enviarNotificacao(`registrou uma caixa rasgada no portão ${rec.portao}`);
+                        } else {
+                            enviarNotificacao(`registrou falta no portão ${rec.portao}`);
+                        }
+                    }
                 } else {
                     sent = { ...rec.dirty };
                     const patch = {};
@@ -636,13 +657,11 @@
                     if (res.error) throw res.error;
                     const linhas = Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []);
                     if (linhas.length === 0) {
-                        // Nenhuma linha atualizada: ou foi apagada por outra pessoa, ou o banco bloqueou.
                         const existe = rec.id
                             ? await supabaseClient.from(TABELA).select('id').eq('id', rec.id).limit(1)
                             : await supabaseClient.from(TABELA).select('id').eq('uid', rec.uid).limit(1);
                         if (existe.error) throw existe.error;
-                        if (existe.data && existe.data.length) throw new Error('O banco recusou a alteração (verifique a permissão de UPDATE da tabela).');
-                        // a linha não existe mais no banco: regrava inteira
+                        if (existe.data && existe.data.length) throw new Error('O banco recusou a alteração.');
                         if (idIndex.get(rec.id) === rec.uid) idIndex.delete(rec.id);
                         rec.id = null; rec.saved = false;
                         CAMPOS.forEach(f => rec.dirty[f] = rec[f]);
@@ -662,15 +681,15 @@
                 colunasAusentes.add(colFalta);
                 lembrarColunasAusentes();
                 repetirJa = true;
-                setAviso('colunas', `A tabela do banco não tem a coluna "${colFalta}": esse campo NÃO está sendo salvo. Execute o migracao_tempo_real_v3.sql para criá-la.`, 'aviso');
+                setAviso('colunas', `A tabela do banco não tem a coluna "${colFalta}".`, 'aviso');
             } else if (!semUid && erroDeColunaUid(err)) {
                 semUid = true;
                 uidChecado = true;
                 repetirJa = true;
-                setAviso('modo', 'Banco sem a coluna "uid": funcionando em modo compatível. Execute o migracao_tempo_real_v2.sql para ativar todos os recursos.', 'aviso');
+                setAviso('modo', 'Banco sem a coluna "uid": funcionando em modo compatível.', 'aviso');
             } else {
                 falhou = true;
-                setAviso('escrita', `NÃO SALVOU no banco: ${descreverErro(err)}. Nova tentativa automática em 5 s (os dados ficam guardados neste aparelho).`, 'erro');
+                setAviso('escrita', `NÃO SALVOU no banco: ${descreverErro(err)}.`, 'erro');
             }
         } finally {
             rec.inflight = false;
@@ -702,7 +721,6 @@
         persistirPendentes();
     }
 
-    /* ----------- Persistência local apenas do que ainda não foi confirmado ----------- */
     const chavePend = () => `grendene_pend_v2_${dataAtual}`;
     function persistirPendentes() {
         try {
@@ -756,10 +774,10 @@
         if (!el) return;
         const cfg = {
             ok: ['text-emerald-500', 'bg-emerald-500', 'Ao vivo'],
-            poll: ['text-emerald-500', 'bg-emerald-500', 'Sincronizando (atualiza sozinho)'],
+            poll: ['text-emerald-500', 'bg-emerald-500', 'Sincronizando'],
             conectando: ['text-amber-500', 'bg-amber-500', 'Conectando…'],
-            cache: ['text-red-500', 'bg-red-500', 'Sem conexão com o banco — mostrando cópia salva neste aparelho'],
-            offline: ['text-red-500', 'bg-red-500', 'Offline (Supabase não carregou)']
+            cache: ['text-red-500', 'bg-red-500', 'Modo Offline (Cópia local)'],
+            offline: ['text-red-500', 'bg-red-500', 'Offline']
         }[estado];
         el.className = `inline-flex items-center gap-1 font-bold ${cfg[0]}`;
         el.innerHTML = `<span class="w-2 h-2 rounded-full ${cfg[1]} inline-block"></span> ${cfg[2]}`;
@@ -771,7 +789,6 @@
         setConexao(rtOk ? 'ok' : 'poll');
     }
 
-    /* ------------------------------ REMOTO → LOCAL ------------------------------ */
     function estaEditando(uid, f) {
         const a = document.activeElement;
         if (!a || !a.dataset || a.dataset.uid !== uid) return false;
@@ -787,7 +804,6 @@
             sscc: row.sscc || '', status: row.status || 'Pendente', origem: row.origem || 'CD',
             ordem: row.ordem || '', cor: row.prioridade_cor || 'azul', noApp: row.no_app || 'Não', obs: row.observacao || ''
         };
-        // Modo compatível (sem coluna uid): casa o evento com a linha nossa que está sendo enviada agora
         if (!rec && (semUid || !row.uid)) {
             for (const r of recs.values()) {
                 if (!r.id && r.inflight && r.portao === row.portao && r.sscc === vals.sscc && r.data === row.data_operacao) { rec = r; break; }
@@ -804,14 +820,14 @@
             flashSet.add(rec.uid);
             return rec;
         }
-        if (fetchStart && rec.touched > fetchStart) return rec; // evento mais novo já aplicado
+        if (fetchStart && rec.touched > fetchStart) return rec;
         rec.id = row.id; idIndex.set(row.id, rec.uid);
         rec.saved = true;
         rec.touched = Date.now();
         let mudou = false;
         for (const f of CAMPOS) {
-            if (rec.dirty[f] !== undefined) continue;     // alteração local pendente vence
-            if (estaEditando(rec.uid, f)) continue;       // usuário digitando neste campo
+            if (rec.dirty[f] !== undefined) continue;
+            if (estaEditando(rec.uid, f)) continue;
             if (rec[f] !== vals[f]) { rec[f] = vals[f]; mudou = true; }
         }
         if (mudou) flashSet.add(rec.uid);
@@ -834,7 +850,7 @@
     }
 
     function avisarColunasAusentes() {
-        if (colunasAusentes.size) setAviso('colunas', `A tabela do banco não tem a(s) coluna(s) ${[...colunasAusentes].map(c => '"' + c + '"').join(', ')}: esse(s) campo(s) NÃO estão sendo salvos. Execute o migracao_tempo_real_v3.sql.`, 'aviso');
+        if (colunasAusentes.size) setAviso('colunas', `A tabela do banco não tem a(s) coluna(s) ${[...colunasAusentes].map(c => '"' + c + '"').join(', ')}.`, 'aviso');
     }
     async function checarColunaUid() {
         try {
@@ -842,12 +858,11 @@
             if (!error) { uidChecado = true; semUid = false; setAviso('modo', ''); return; }
             if (erroDeColunaUid(error)) {
                 uidChecado = true; semUid = true;
-                setAviso('modo', 'Banco sem a coluna "uid": funcionando em modo compatível. Execute o migracao_tempo_real.sql para ativar todos os recursos.', 'aviso');
+                setAviso('modo', 'Banco sem a coluna "uid".', 'aviso');
             }
-        } catch (e) { /* rede: tenta de novo na próxima busca */ }
+        } catch (e) {}
     }
 
-    // Busca o dia inteiro em páginas de 1000 (o Supabase corta em 1000 por consulta).
     async function buscarDiaCompleto(dia) {
         const TAM = 1000, todas = [];
         for (let ini = 0; ini < 100000; ini += TAM) {
@@ -863,7 +878,7 @@
     async function refrescar(token) {
         if (!supabaseClient) return;
         const tok = (token === undefined) ? loadToken : token;
-        if (buscandoToken === tok) return;           // já existe uma busca em andamento para este dia
+        if (buscandoToken === tok) return;
         buscandoToken = tok;
         const t0 = Date.now();
         const dia = dataAtual;
@@ -874,8 +889,6 @@
             if (tok !== loadToken || dia !== dataAtual) return;
             const vistos = new Set();
             data.forEach(row => { const r = aplicarLinhaRemota(row, t0); if (r) { vistos.add(r.uid); r.faltou = 0; } });
-            // Linha só some daqui se o banco confirmar a ausência em 2 buscas seguidas
-            // e a busca trouxe dados (resposta vazia/parcial nunca apaga nada).
             if (data.length > 0) {
                 Array.from(recs.values()).forEach(r => {
                     if (r.saved && !vistos.has(r.uid) && !r.inflight && !Object.keys(r.dirty).length && r.touched < t0) {
@@ -894,8 +907,7 @@
             if (tok !== loadToken) return;
             tentouFetch = true;
             ultimoFetchOk = false;
-            console.warn('Falha ao buscar dados', e);
-            setAviso('leitura', `Não foi possível ler o banco: ${(e && e.message) || e}. Os dados continuam salvos; exibindo a última cópia deste aparelho e tentando de novo.`, 'erro');
+            setAviso('leitura', `Não foi possível ler o banco: ${(e && e.message) || e}.`, 'erro');
         } finally {
             if (buscandoToken === tok) buscandoToken = -1;
             if (tok === loadToken) atualizarStatusConexao();
@@ -912,8 +924,17 @@
         try {
             const ch = supabaseClient.channel(`faltas-${dataAtual}-${clientId}`);
             canal = ch;
+            
+            // Ouvir alterações da tabela em tempo real
             ch.on('postgres_changes', { event: '*', schema: 'public', table: TABELA, filter: `data_operacao=eq.${dataAtual}` },
                 payload => { if (token === loadToken && canal === ch) aoEventoRemoto(payload); })
+            
+            // Ouvir notificações broadcast em tempo real entre usuários
+              .on('broadcast', { event: 'notificacao' }, payload => {
+                if (payload && payload.payload && payload.payload.mensagem) {
+                    mostrarToast(payload.payload.mensagem);
+                }
+              })
               .subscribe((status, err) => {
                 if (token !== loadToken || canal !== ch) return;
                 if (status === 'SUBSCRIBED') {
@@ -924,8 +945,7 @@
                     reenviarPendentes();
                 } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
                     rtOk = false;
-                    setAviso('rt', 'Tempo real instantâneo indisponível' + (err && err.message ? ` (${err.message})` : '') +
-                        ' — a tela segue atualizando sozinha a cada poucos segundos. Para atualização instantânea, execute o migracao_tempo_real.sql (liga o Realtime na tabela).', 'aviso');
+                    setAviso('rt', 'Tempo real indisponível — atualizando automaticamente.', 'aviso');
                     atualizarStatusConexao();
                     clearTimeout(reinscreverTimer);
                     reinscreverTimer = setTimeout(() => {
@@ -935,11 +955,9 @@
             });
         } catch (e) {
             rtOk = false;
-            console.warn('Falha ao abrir o canal Realtime', e);
         }
     }
 
-    /* ---- Cópia local do dia: a tela nunca fica vazia se o banco ficar inacessível ---- */
     const chaveCache = () => `grendene_cache_v2_${dataAtual}`;
     function agendarCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(salvarCache, 1500); }
     function salvarCache() {
@@ -951,7 +969,7 @@
                         origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, sortKey: r.sortKey });
                 }
             });
-            if (lista.length) localStorage.setItem(chaveCache(), JSON.stringify(lista));   // nunca grava "vazio" por cima
+            if (lista.length) localStorage.setItem(chaveCache(), JSON.stringify(lista));
         } catch (e) {}
     }
     function restaurarCache() {
@@ -970,8 +988,8 @@
         clearTimeout(reinscreverTimer);
         desinscrever();
         recs.clear(); idIndex.clear(); tombstones.clear(); flashSet.clear();
-        restaurarCache();        // mostra na hora o que já tínhamos deste dia
-        restaurarPendentes();    // e o que ainda não foi enviado
+        restaurarCache();
+        restaurarPendentes();
         agendarRender();
         atualizarStatusConexao();
         if (!supabaseClient) return;
@@ -982,8 +1000,6 @@
         agendarPoll();
     }
 
-    // Atualização garantida entre telas: mesmo sem Realtime, consulta o banco sozinha.
-    // (6 s com Realtime ativo como rede de segurança; 2,5 s quando só há consulta.)
     function agendarPoll() {
         clearTimeout(pollTimer);
         pollTimer = setTimeout(async () => {
@@ -995,7 +1011,6 @@
     window.addEventListener('online', () => { refrescar(loadToken); reenviarPendentes(); });
     window.addEventListener('offline', () => { ultimoFetchOk = false; atualizarStatusConexao(); });
 
-    /* ------------------------------ SINCRONIA COM OCORRÊNCIAS ------------------------------ */
     let ocTimer = null, ocUltimo = '';
     function agendarSyncOcorrencias() {
         if (!diaCarregado) return;
@@ -1028,9 +1043,6 @@
         } catch (err) { console.warn('Erro ao sincronizar ocorrências:', err); }
     }
 
-    /* ------------------------------ CRUZAMENTO DE SSCC ------------------------------ */
-    // O SSCC do banco "bate" com o digitado só se for IGUAL depois de normalizado
-    // (ex.: 21 dígitos guardados com 1 dígito a mais). Nunca por "contém".
     const mesmoSSCC = (guardado, codigo) => {
         const g = String(guardado == null ? '' : guardado).trim();
         return g !== '' && (g === codigo || tratarSSCC(g) === codigo);
@@ -1041,7 +1053,6 @@
         if (!codigo || !supabaseClient) return;
         let msg = '';
         try {
-            // 1) Reposição: busca exata; se não achar, tolera só um prefixo extra no valor guardado.
             let achado = null;
             const exato = await supabaseClient.from('registros_sscc').select('*').eq('sscc', codigo).limit(5);
             if (!exato.error && exato.data) achado = exato.data.find(x => mesmoSSCC(x.sscc, codigo)) || null;
@@ -1052,7 +1063,6 @@
             if (achado) {
                 msg = `Caixa localizada em Reposição: ${achado.categoria || 'Reposição'}${achado.rastro ? ` (${achado.rastro})` : ''}`;
             }
-            // 2) Rasgadas de HOJE já carregadas na tela (todos os portões)
             if (!msg) {
                 for (const r of recs.values()) {
                     if (r.kind === 'rasgada' && r.uid !== rec.uid && r.data === dataAtual && r.sscc === codigo) {
@@ -1061,13 +1071,12 @@
                     }
                 }
             }
-            // 3) Rasgadas de HOJE no banco (outras telas que ainda não chegaram aqui) — nunca de outros dias
             if (!msg) {
                 const rd = await supabaseClient.from(TABELA).select('portao,sscc').eq('sscc', codigo)
                     .eq('data_operacao', dataAtual).like('observacao', 'Rasgada (%').limit(1);
                 if (!rd.error && rd.data && rd.data[0] && rd.data[0].sscc === codigo) msg = `ALERTA: Caixa localizada em Rasgadas (Portão ${rd.data[0].portao})`;
             }
-        } catch (e) { console.warn('Erro no cruzamento', e); return; }
+        } catch (e) { return; }
 
         if (!msg || rec.sscc !== codigo || !recs.has(rec.uid)) return;
         if (!rec.obs.includes(msg)) {
@@ -1080,7 +1089,6 @@
     }
     function fecharAlertaIntegracao() { $('modal-alerta-integracao').classList.add('hidden'); }
 
-    /* ------------------------------ RECONCILIAÇÃO DO DOM (por chave) ------------------------------ */
     function reconciliar(pai, itens, chave, criar, atualizar) {
         const desejadas = new Set(itens.map(chave));
         const existentes = new Map();
@@ -1142,7 +1150,6 @@
         return 'bg-blue-600 text-white';
     }
 
-    /* ---------- Linha de FALTA ---------- */
     function criarLinhaFalta(rec) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -1168,7 +1175,6 @@
         aplicarFlash(tr, rec.uid);
     }
 
-    /* ---------- Agrupamento por ORDEM (faltas + rasgadas juntas) ---------- */
     function montarBlocos(p) {
         const grupos = new Map();
         const g = k => { if (!grupos.has(k)) grupos.set(k, { key: k, itens: [], rasg: [] }); return grupos.get(k); };
@@ -1182,7 +1188,6 @@
         return blocos;
     }
 
-    // Opções do seletor "Ordem" das linhas de rasgada (todas as ordens do portão + "sem ordem").
     let opcoesOrdem = [], sigOrdens = '';
     function calcularOpcoesOrdem(blocos) {
         const ops = blocos.filter(b => b.key !== SEM_ORDEM).map(b => ({ v: b.key, l: `Ordem ${b.key}` }));
@@ -1191,7 +1196,6 @@
         sigOrdens = ops.map(o => o.v).join('\u0001');
     }
 
-    /* ---------- Bloco de ORDEM ---------- */
     function criarBloco(b) {
         const div = document.createElement('div');
         div.className = 'bloco ui-card border rounded-lg overflow-hidden shadow-sm';
@@ -1254,7 +1258,6 @@
     function renderBlocos() {
         const container = $('blocos-ordens-container');
         let doPortao = Array.from(recs.values()).filter(r => r.portao === portaoAtual);
-        // Linha-modelo vazia (placeholder): só existe quando o portão não tem nenhum registro real.
         const reais = doPortao.filter(r => !r.placeholder);
         if (reais.length) {
             doPortao.filter(r => r.placeholder && !r.sscc.trim() && !Object.keys(r.dirty).length && !r.inflight).forEach(removerLocal);
@@ -1266,7 +1269,10 @@
         const nRasg = doPortao.length - nFaltas;
         $('contador-linhas-portao').innerText = `${nFaltas} registo(s)` + (nRasg ? ` + ${nRasg} rasgada(s)` : '');
 
-        const filtro = $('select-filtro-ordem').value || 'TODAS';
+        const filtro = filtrosPortoes[portaoAtual] || 'TODAS';
+        const sel = $('select-filtro-ordem');
+        if (sel.value !== filtro) sel.value = filtro;
+
         let blocos = montarBlocos(portaoAtual);
         calcularOpcoesOrdem(blocos);
         if (filtro !== 'TODAS') blocos = blocos.filter(b => b.key === filtro);
@@ -1284,7 +1290,7 @@
         const lista = ['TODAS', ...ords];
         const assinatura = lista.join('\u0001');
         if (sel.dataset.sig === assinatura) return;
-        const atual = sel.value;
+        const atual = filtrosPortoes[portaoAtual] || 'TODAS';
         sel.innerHTML = '';
         lista.forEach(o => {
             const op = document.createElement('option');
@@ -1292,10 +1298,15 @@
             sel.appendChild(op);
         });
         sel.value = lista.includes(atual) ? atual : 'TODAS';
+        filtrosPortoes[portaoAtual] = sel.value;
         sel.dataset.sig = assinatura;
     }
 
-    /* ---------- Linha de RASGADA (fica dentro do bloco da sua ordem) ---------- */
+    function mudarFiltroOrdem(valor) {
+        filtrosPortoes[portaoAtual] = valor;
+        agendarRender();
+    }
+
     function criarLinhaRasgada(rec) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -1357,7 +1368,6 @@
         $('contador-total-geral').innerText = `${total} itens gerais`;
     }
 
-    /* ---------- KPIs / badges / banner ---------- */
     function atualizarKPIs() {
         let total = 0, entregues = 0, pendentes = 0, rasgadas = 0, noApp = 0;
         recs.forEach(r => {
@@ -1389,7 +1399,6 @@
         else banner.classList.add('hidden');
     }
 
-    /* ---------- Render agendado (1x por frame) ---------- */
     let rafId = 0;
     function agendarRender() { if (rafId) return; rafId = requestAnimationFrame(() => { rafId = 0; renderTudo(); }); }
     function renderTudo() {
@@ -1411,7 +1420,6 @@
         agendarCache();
     }
 
-    /* ------------------------------ EVENTOS DA TABELA (delegação) ------------------------------ */
     function onCampoAlterado(el) {
         const rec = recs.get(el.dataset.uid);
         if (!rec) return;
@@ -1455,7 +1463,6 @@
         });
     }
 
-    /* ------------------------------ AÇÕES DE ORDEM ------------------------------ */
     function abrirModalNovaOrdem() {
         $('input-modal-num-ordem').value = '';
         $('select-modal-cor-ordem').value = 'azul';
@@ -1467,6 +1474,7 @@
         if (!num) { alert('Por favor, digite o número da Ordem.'); return; }
         const rec = addRec(novaRec({ portao: portaoAtual, ordem: num, cor: $('select-modal-cor-ordem').value }));
         focoUid = rec.uid;
+        enviarNotificacao(`criou a nova ordem ${num} no portão ${portaoAtual}`);
         fecharModalNovaOrdem();
         agendarRender();
     }
@@ -1483,7 +1491,7 @@
         const v = novoValor.trim();
         if (v === (ordemAntiga === SEM_ORDEM ? '' : ordemAntiga)) return;
         recs.forEach(r => {
-            if (r.portao === portaoAtual && chaveOrdem(r) === ordemAntiga) {   // faltas E rasgadas da ordem
+            if (r.portao === portaoAtual && chaveOrdem(r) === ordemAntiga) {
                 r.ordem = v;
                 marcarSujo(r, ['ordem']);
             }
@@ -1491,14 +1499,14 @@
         agendarRender();
     }
     function removerBlocoOrdem(ordemKey) {
-        if (!confirm(`Deseja remover todos os registros da ordem "${ordemKey}" deste portão (faltas e caixas rasgadas)?`)) return;
+        if (!confirm(`Deseja remover todos os registros da ordem "${ordemKey}" deste portão?`)) return;
         Array.from(recs.values()).forEach(r => {
             if (r.portao === portaoAtual && chaveOrdem(r) === ordemKey) removerRegistro(r);
         });
+        enviarNotificacao(`removeu a ordem ${ordemKey} do portão ${portaoAtual}`);
         agendarRender();
     }
 
-    /* ------------------------------ RASGADA (modal) ------------------------------ */
     function popularSelectPortoesModal() {
         const select = $('rasgada-portao');
         select.innerHTML = '';
@@ -1533,7 +1541,7 @@
         $('rasgada-obs').value = '';
         let preferida;
         if (portaoAtual !== 'todos') {
-            const f = $('select-filtro-ordem').value;
+            const f = filtrosPortoes[portaoAtual];
             if (f && f !== 'TODAS') preferida = (f === SEM_ORDEM) ? '' : f;
         }
         popularOrdensModalRasgada(preferida);
@@ -1555,11 +1563,10 @@
         tocarSomSucesso();
         marcarSujo(rec, CAMPOS);
         fecharModalRasgada();
-        $('select-filtro-ordem').value = 'TODAS';   // garante que o bloco da ordem apareça
+        filtrosPortoes[portaoAlvo] = 'TODAS';
         selecionarPortao(portaoAlvo);
     }
 
-    /* ------------------------------ NAVEGAÇÃO ------------------------------ */
     function gerarAbasPortoes() {
         const container = $('container-abas-portoes');
         container.innerHTML = '';
@@ -1589,12 +1596,11 @@
             $('wrapper-todos-portoes').classList.add('hidden');
             $('wrapper-conteudo-dinamico').classList.remove('hidden');
             $('titulo-portao-atual').innerHTML = `<i class="fa-solid fa-truck text-blue-500"></i> Portão ${p} - Faltas`;
-            $('blocos-ordens-container').innerHTML = '';   // troca de portão: monta do zero (uma vez)
+            $('blocos-ordens-container').innerHTML = '';
         }
         renderTudo();
     }
 
-    /* ------------------------------ CABEÇALHO ------------------------------ */
     function inicializarDataHoje() {
         dataAtual = hojeLocal();
         $('input-data-controle').value = dataAtual;
@@ -1624,7 +1630,6 @@
         $('icone-tema').className = 'fa-solid fa-sun';
     }
 
-    /* ------------------------------ SEM EXTERNA ------------------------------ */
     function abrirModalSemExterna() {
         $('busca-produto').value = ''; $('busca-cor').value = '';
         $('resultado-busca-sem-externa').innerHTML = '<p class="text-center opacity-50 py-4">Insira o produto ou cor e clique em buscar.</p>';
@@ -1672,7 +1677,6 @@
         }
     }
 
-    /* ------------------------------ SCANNER ------------------------------ */
     function abrirModalScannerParaCampo(campo) {
         campoAlvoScanner = typeof campo === 'string' ? $(campo) : campo;
         $('modal-scanner').classList.remove('hidden');
@@ -1707,7 +1711,6 @@
         } catch (err) {}
     }
 
-    /* ------------------------------ SONS ------------------------------ */
     let audioCtx = null;
     function tocarSequencia(freqs, { tipo = 'sine', passo = 0.1, dur = 0.3, vol = 0.15 } = {}) {
         try {
@@ -1728,7 +1731,6 @@
     const tocarSomConquistaAnimada = () => tocarSequencia([523.25, 659.25, 783.99, 1046.5], { tipo: 'triangle', passo: 0.08, dur: 0.25 });
     const tocarSomTrocaData = () => tocarSequencia([440, 554.37], { passo: 0.12, dur: 0.25, vol: 0.1 });
 
-    /* ------------------------------ EXCEL ------------------------------ */
     function exportarExcel() {
         const wb = XLSX.utils.book_new();
         let temDados = false;
@@ -1747,7 +1749,6 @@
         XLSX.writeFile(wb, `Controle_Carregamento_${dataAtual}.xlsx`);
     }
 
-    /* ------------------------------ INÍCIO ------------------------------ */
     document.addEventListener('DOMContentLoaded', async () => {
         try {
             const r = localStorage.getItem('grendene_resp'); if (r) { responsavelAtual = r; $('select-responsavel').value = r; }
