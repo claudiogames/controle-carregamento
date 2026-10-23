@@ -447,7 +447,7 @@
     const idIndex = new Map();
     const tombstones = new Set();
     const flashSet = new Set();
-    const filtrosPortoes = {}; // Guarda o filtro selecionado por portão
+    const filtrosPortoes = {};
 
     let portaoAtual = 7;
     let turnoAtual = 'Turno 1';
@@ -492,7 +492,7 @@
     const comparaRec = (a, b) => (a.sortKey - b.sortKey) || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0);
     const $ = id => document.getElementById(id);
 
-    // SISTEMA DE NOTIFICAÇÕES TOAST (EM TEMPO REAL)
+    // NOTIFICAÇÕES TOAST EM TEMPO REAL
     function mostrarToast(mensagem) {
         const container = $('toast-container');
         if (!container) return;
@@ -523,7 +523,7 @@
                 canal.send({
                     type: 'broadcast',
                     event: 'notificacao',
-                    payload: { mensagem: msg }
+                    payload: { mensagem: msg, remetente: clientId }
                 });
             } catch (e) {}
         }
@@ -922,17 +922,21 @@
     function inscrever(token) {
         if (!supabaseClient) return;
         try {
-            const ch = supabaseClient.channel(`faltas-${dataAtual}-${clientId}`);
+            const ch = supabaseClient.channel(`faltas-${dataAtual}`, {
+                config: { broadcast: { self: false } }
+            });
             canal = ch;
             
-            // Ouvir alterações da tabela em tempo real
+            // Ouvir alterações da tabela do banco de dados em tempo real
             ch.on('postgres_changes', { event: '*', schema: 'public', table: TABELA, filter: `data_operacao=eq.${dataAtual}` },
                 payload => { if (token === loadToken && canal === ch) aoEventoRemoto(payload); })
             
-            // Ouvir notificações broadcast em tempo real entre usuários
+            // Ouvir broadcasts enviadas por outras telas
               .on('broadcast', { event: 'notificacao' }, payload => {
                 if (payload && payload.payload && payload.payload.mensagem) {
-                    mostrarToast(payload.payload.mensagem);
+                    if (payload.payload.remetente !== clientId) {
+                        mostrarToast(payload.payload.mensagem);
+                    }
                 }
               })
               .subscribe((status, err) => {
