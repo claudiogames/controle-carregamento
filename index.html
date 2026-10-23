@@ -17,7 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s, color 0.3s; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s, color 0.3s; overflow-x: hidden; }
 
         body.light { background-color: #f3f4f6; color: #1f2937; }
         body.light .ui-card { background-color: #ffffff; border-color: #e5e7eb; color: #1f2937; }
@@ -88,6 +88,44 @@
         @keyframes flashRemoto { 0% { background-color: rgba(250, 204, 21, 0.55); } 100% { background-color: rgba(250, 204, 21, 0); } }
         tr.flash-remoto td { animation: flashRemoto 1.6s ease-out; }
 
+        /* ALERTA CAIXA PARADA (>30 MINUTOS) */
+        @keyframes caixaParadaAlerta {
+            0%, 100% { border-color: rgba(245, 158, 11, 1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+            50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25); }
+        }
+        tr.caixa-parada-alerta {
+            animation: caixaParadaAlerta 2s infinite ease-in-out;
+            background-color: rgba(245, 158, 11, 0.08) !important;
+        }
+
+        /* ORDEM INTERROMPIDA (VERMELHO) */
+        @keyframes blocoInterrompida {
+            0%, 100% { border-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+            50% { border-color: #f87171; box-shadow: 0 0 18px rgba(248, 113, 113, 0.6); }
+        }
+        .bloco-interrompida-maxima {
+            animation: blocoInterrompida 1.8s infinite ease-in-out !important;
+            border-width: 2px !important;
+            border-style: dashed !important;
+        }
+
+        /* ORDEM FINALIZADA / CAMINHÃO SAINDO DA DOCA */
+        .bloco-finalizado {
+            border-color: #22c55e !important;
+            background-color: rgba(34, 197, 94, 0.04) !important;
+            opacity: 0.85;
+        }
+
+        @keyframes truckDrive {
+            0% { transform: translateX(-120vw); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateX(120vw); opacity: 0; }
+        }
+        .animar-caminhao-doca {
+            animation: truckDrive 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
         @keyframes caixaQuicando {
             0% { transform: translateY(-120px) scale(0.9); opacity: 0; }
             40% { transform: translateY(0px) scale(1, 0.85); opacity: 1; }
@@ -112,6 +150,19 @@
 
     <!-- CONTENEDOR DE NOTIFICAÇÕES TOAST EM TEMPO REAL -->
     <div id="toast-container" class="fixed top-4 right-4 z-[999999] flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- ANIMAÇÃO DE CAMINHÃO SAINDO DA DOCA (GLOBAL) -->
+    <div id="truck-animation-overlay" class="fixed inset-0 pointer-events-none z-[9999999] hidden flex items-center justify-center overflow-hidden bg-black/40 backdrop-blur-[2px]">
+        <div class="absolute flex flex-col items-center animar-caminhao-doca">
+            <div class="bg-emerald-600 text-white px-8 py-4 rounded-2xl shadow-2xl font-black text-xl uppercase tracking-wider flex items-center gap-4 border-2 border-emerald-300">
+                <i class="fa-solid fa-truck-moving text-3xl animate-bounce"></i>
+                <div class="flex flex-col">
+                    <span id="truck-overlay-title">Ordem Finalizada!</span>
+                    <span class="text-xs font-mono font-normal opacity-90">Caminhão liberado e saindo da doca 🚚💨</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- SPLASH -->
     <div id="splash-screen" class="fixed inset-0 bg-[#0d1117] z-[99999] flex flex-col items-center justify-center transition-opacity duration-500">
@@ -358,9 +409,14 @@
             </div>
 
             <div class="p-2.5 border-b flex flex-wrap justify-between items-center gap-2 opacity-90 bg-slate-100 dark:bg-zinc-900">
-                <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" id="titulo-portao-atual">
-                    <i class="fa-solid fa-truck text-blue-500"></i> Portão 7 - Faltas
-                </span>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" id="titulo-portao-atual">
+                        <i class="fa-solid fa-truck text-blue-500"></i> Portão 7 - Faltas
+                    </span>
+                    <!-- SINALIZAR CUIDADOS COM ÍCONE 👤 -->
+                    <span id="indicador-cuidados" class="hidden text-[11px] font-normal text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30"></span>
+                    <button onclick="toggleCuidadosPortao()" id="btn-cuidados" class="text-[10px] opacity-40 hover:opacity-100 underline cursor-pointer font-normal" title="Sinalizar que este portão está sob sua responsabilidade">Sinalizar Cuidados</button>
+                </div>
                 <div class="flex items-center gap-1.5">
                     <span class="text-[11px] font-bold opacity-75"><i class="fa-solid fa-filter text-blue-500"></i> Filtrar Ordem:</span>
                     <select id="select-filtro-ordem" onchange="mudarFiltroOrdem(this.value)" class="ui-card border rounded px-2 py-1 text-xs font-mono font-bold cursor-pointer">
@@ -447,6 +503,9 @@
     const idIndex = new Map();
     const tombstones = new Set();
     const flashSet = new Set();
+    const ordensInterrompidas = new Set();
+    const ordensFinalizadas = new Set();
+    const portoesCuidados = {};
     const filtrosPortoes = {};
 
     let portaoAtual = 7;
@@ -529,6 +588,45 @@
         }
     }
 
+    function broadcastCuidados() {
+        if (canal && supabaseClient) {
+            try {
+                canal.send({
+                    type: 'broadcast',
+                    event: 'cuidados_portao',
+                    payload: { portoes: portoesCuidados, remetente: clientId }
+                });
+            } catch (e) {}
+        }
+    }
+
+    function toggleCuidadosPortao() {
+        if (portaoAtual === 'todos') return;
+        const resp = responsavelAtual || 'Responsável';
+        if (portoesCuidados[portaoAtual]) {
+            delete portoesCuidados[portaoAtual];
+            enviarNotificacao(`removeu o sinal de cuidados do portão ${portaoAtual}`);
+        } else {
+            portoesCuidados[portaoAtual] = resp;
+            enviarNotificacao(`assumiu os cuidados do portão ${portaoAtual}`);
+        }
+        broadcastCuidados();
+        renderTudo();
+    }
+
+    function dispararAnimacaoCaminhao(ordemKey) {
+        const overlay = $('truck-animation-overlay');
+        const title = $('truck-overlay-title');
+        if (!overlay || !title) return;
+        title.textContent = `Ordem ${ordemKey} Finalizada!`;
+        overlay.classList.remove('hidden');
+        tocarSomCaminhaoRealista();
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 3600);
+    }
+
     function novaRec(o) {
         const uid = o.uid || novoUid();
         return {
@@ -537,7 +635,7 @@
             sscc: o.sscc || '', status: o.status || 'Pendente', origem: o.origem || 'CD',
             ordem: o.ordem || '', cor: o.cor || 'azul', noApp: o.noApp || 'Não', obs: o.obs || '',
             saved: !!o.saved, dirty: o.dirty || {}, inflight: false, again: false, deleted: false,
-            touched: o.touched || 0,
+            touched: o.touched || Date.now(),
             sortKey: (o.sortKey !== undefined && o.sortKey !== null) ? o.sortKey : sortKeyDoUid(uid)
         };
     }
@@ -552,6 +650,7 @@
     }
 
     function marcarSujo(rec, campos) {
+        rec.touched = Date.now();
         if (!rec.saved) {
             if (!rec.sscc.trim()) { persistirPendentes(); return; }
             CAMPOS.forEach(f => rec.dirty[f] = rec[f]);
@@ -668,7 +767,7 @@
                         rec.again = true;
                         continue;
                     }
-                    if (linhas[0] && linhas[0].id) { rec.id = linhas[0].id; idIndex.set(rec.id, rec.uid); }
+                    if (linhas[0] && linhas[0].id) { rec.id = linhas[0].id; idIndex.set(linhas[0].id, rec.uid); }
                 }
                 for (const f in sent) { if (rec.dirty[f] === sent[f]) delete rec.dirty[f]; }
                 rec.touched = Date.now();
@@ -815,7 +914,7 @@
             rec = addRec(novaRec({
                 uid, id: row.id, data: row.data_operacao, portao: row.portao,
                 kind: ehRasgadaObs(vals.obs) ? 'rasgada' : 'falta', ...vals,
-                saved: true, touched: Date.now(), sortKey: sk
+                saved: true, touched: Date.parse(row.created_at) || Date.now(), sortKey: sk
             }));
             flashSet.add(rec.uid);
             return rec;
@@ -823,7 +922,7 @@
         if (fetchStart && rec.touched > fetchStart) return rec;
         rec.id = row.id; idIndex.set(row.id, rec.uid);
         rec.saved = true;
-        rec.touched = Date.now();
+        rec.touched = Date.parse(row.created_at) || Date.now();
         let mudou = false;
         for (const f of CAMPOS) {
             if (rec.dirty[f] !== undefined) continue;
@@ -924,7 +1023,6 @@
         if (ce && supabaseClient) { try { supabaseClient.removeChannel(ce); } catch (e) {} }
     }
 
-    // ESCUTA SEGURA DE REGISTROS DO APP DE CONTROLE DE ETIQUETAS
     function inscreverCanalEtiquetas() {
         if (!supabaseClient) return;
         try {
@@ -939,9 +1037,7 @@
                 mostrarToast(`caixa "${sscc}" foi disvinculada do "${origem}" e registrada no sistema`);
             })
             .subscribe();
-        } catch (e) {
-            // Falha silenciosa para nunca quebrar a aplicação principal
-        }
+        } catch (e) {}
     }
 
     function inscrever(token) {
@@ -960,6 +1056,21 @@
                     if (payload.payload.remetente !== clientId) {
                         mostrarToast(payload.payload.mensagem);
                     }
+                }
+              })
+              .on('broadcast', { event: 'cuidados_portao' }, payload => {
+                if (payload && payload.payload && payload.payload.portoes) {
+                    Object.assign(portoesCuidados, payload.payload.portoes);
+                    renderTudo();
+                }
+              })
+              .on('broadcast', { event: 'ordem_finalizada' }, payload => {
+                if (payload && payload.payload) {
+                    const { ordem, responsavel } = payload.payload;
+                    ordensFinalizadas.add(ordem);
+                    dispararAnimacaoCaminhao(ordem);
+                    mostrarToast(`${responsavel} finalizou a ordem ${ordem} e o caminhão saiu da doca! 🚚`);
+                    agendarRender();
                 }
               })
               .subscribe((status, err) => {
@@ -981,7 +1092,6 @@
                 }
             });
 
-            // Inscreve também no canal do app de etiquetas de forma independente
             inscreverCanalEtiquetas();
         } catch (e) {
             rtOk = false;
@@ -1180,11 +1290,23 @@
         return 'bg-blue-600 text-white';
     }
 
+    // VERIFICA SE A CAIXA ESTÁ PARADA HÁ MAIS DE 30 MINUTOS
+    function ehCaixaParada(rec) {
+        if (rec.status !== 'Em andamento' && rec.status !== 'Requisitada') return false;
+        const tempoDecorridoMin = (Date.now() - (rec.touched || Date.now())) / (1000 * 60);
+        return tempoDecorridoMin >= 30;
+    }
+
     function criarLinhaFalta(rec) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="text-center opacity-60 font-mono text-[11px]" data-label="#"></td>
-            <td class="td-sscc-container" data-label="SSCC"><input type="text" data-f="sscc" autocomplete="off" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold"></td>
+            <td class="td-sscc-container" data-label="SSCC">
+                <div class="flex items-center gap-1">
+                    <input type="text" data-f="sscc" autocomplete="off" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                    <span data-role="badge-parada" class="hidden text-[9px] font-bold px-1 rounded bg-amber-500 text-black shrink-0 animate-pulse" title="Caixa parada há +30 minutos!">⏱️ +30m</span>
+                </div>
+            </td>
             <td data-label="Status"><select data-f="status" class="excel-select">${optsStatusHTML(STATUS_FALTA)}</select></td>
             <td data-label="Origem"><select data-f="origem" class="excel-select border">${optsHTML(ORIGENS)}</select></td>
             <td data-label="No App?"><select data-f="noApp" class="excel-select"><option value="Não">Não</option><option value="Sim">Sim</option></select></td>
@@ -1202,6 +1324,12 @@
         const ap = tr.querySelector('[data-f="noApp"]'); setSelectValor(ap, rec.noApp);
         ap.className = 'excel-select ' + (rec.noApp === 'Sim' ? 'app-sim' : 'app-nao');
         setInputValor(tr.querySelector('[data-f="obs"]'), rec.obs);
+        
+        const ehParada = ehCaixaParada(rec);
+        tr.classList.toggle('caixa-parada-alerta', ehParada);
+        const badgeParada = tr.querySelector('[data-role="badge-parada"]');
+        if (badgeParada) badgeParada.classList.toggle('hidden', !ehParada);
+
         aplicarFlash(tr, rec.uid);
     }
 
@@ -1233,6 +1361,8 @@
             <div class="bg-blue-50/50 dark:bg-zinc-900/80 p-2.5 border-b flex flex-wrap justify-between items-center gap-2">
                 <div class="flex items-center gap-2">
                     <span data-role="badge" class="text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-sm uppercase tracking-wide"></span>
+                    <span data-role="badge-interrompida" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded bg-red-600 text-white uppercase tracking-wider animate-pulse">⏸️ ORDEM INTERROMPIDA</span>
+                    <span data-role="badge-finalizada" class="hidden text-[10px] font-extrabold px-2.5 py-0.5 rounded bg-emerald-600 text-white uppercase tracking-wider">🚚 ORDEM FINALIZADA</span>
                     <div class="flex items-center gap-1.5">
                         <span class="text-xs font-bold opacity-75">Nº Ordem:</span>
                         <input type="text" data-role="ordem-input" autocomplete="off" placeholder="Digite a ordem..." class="ui-card border rounded px-2 py-0.5 font-mono text-xs font-bold w-36">
@@ -1240,6 +1370,8 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <span data-role="count" class="text-[11px] opacity-75 font-mono"></span>
+                    <button data-action="toggle-finalizada" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1" title="Finalizar Ordem e Tirar Caminhão da Doca"><i class="fa-solid fa-truck-fast"></i> Finalizar</button>
+                    <button data-action="toggle-interrompida" class="bg-red-600/80 hover:bg-red-600 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1" title="Marcar Ordem Interrompida"><i class="fa-solid fa-ban"></i> Interrompida</button>
                     <button data-action="add-line" class="bg-gray-700 hover:bg-gray-800 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1"><i class="fa-solid fa-plus"></i> Linha</button>
                     <button data-action="del-block" class="bg-red-600/80 hover:bg-red-600 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer" title="Remover Bloco"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
@@ -1271,10 +1403,62 @@
             </div>`;
         return div;
     }
+
+    function toggleOrdemInterrompida(ordemKey) {
+        if (ordensInterrompidas.has(ordemKey)) {
+            ordensInterrompidas.delete(ordemKey);
+            enviarNotificacao(`removeu o status de interrompida da ordem ${ordemKey}`);
+        } else {
+            ordensInterrompidas.add(ordemKey);
+            enviarNotificacao(`marcou a ordem ${ordemKey} como INTERROMPIDA!`);
+        }
+        agendarRender();
+    }
+
+    function toggleOrdemFinalizada(ordemKey) {
+        if (ordensFinalizadas.has(ordemKey)) {
+            ordensFinalizadas.delete(ordemKey);
+            enviarNotificacao(`reabriu a ordem ${ordemKey} na doca`);
+        } else {
+            ordensFinalizadas.add(ordemKey);
+            dispararAnimacaoCaminhao(ordemKey);
+            enviarNotificacao(`finalizou a ordem ${ordemKey}! Caminhão liberado da doca 🚚`);
+            if (canal && supabaseClient) {
+                try {
+                    canal.send({
+                        type: 'broadcast',
+                        event: 'ordem_finalizada',
+                        payload: { ordem: ordemKey, responsavel: responsavelAtual || 'Alguém' }
+                    });
+                } catch (e) {}
+            }
+        }
+        agendarRender();
+    }
+
     function atualizarBloco(el, b, idx) {
         const badge = el.querySelector('[data-role="badge"]');
         badge.className = `${getClassCorBadge(b.cor)} text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-sm uppercase tracking-wide`;
         badge.textContent = `Ordem #${idx + 1}`;
+        
+        const ehInterrompida = ordensInterrompidas.has(b.key);
+        const ehFinalizada = ordensFinalizadas.has(b.key);
+
+        el.classList.toggle('bloco-interrompida-maxima', ehInterrompida && !ehFinalizada);
+        el.classList.toggle('bloco-finalizado', ehFinalizada);
+
+        const badgeInterrompida = el.querySelector('[data-role="badge-interrompida"]');
+        if (badgeInterrompida) badgeInterrompida.classList.toggle('hidden', !ehInterrompida || ehFinalizada);
+
+        const badgeFinalizada = el.querySelector('[data-role="badge-finalizada"]');
+        if (badgeFinalizada) badgeFinalizada.classList.toggle('hidden', !ehFinalizada);
+
+        const btnFinalizar = el.querySelector('[data-action="toggle-finalizada"]');
+        if (btnFinalizar) {
+            btnFinalizar.innerHTML = ehFinalizada ? '<i class="fa-solid fa-rotate-left"></i> Reabrir' : '<i class="fa-solid fa-truck-fast"></i> Finalizar';
+            btnFinalizar.className = ehFinalizada ? 'bg-slate-600 hover:bg-slate-500 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1' : 'bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1';
+        }
+
         setInputValor(el.querySelector('[data-role="ordem-input"]'), b.key === SEM_ORDEM ? '' : b.key);
         el.querySelector('[data-role="count"]').textContent =
             `${b.itens.length} item(ns)` + (b.rasg.length ? ` • ${b.rasg.length} rasgada(s)` : '');
@@ -1435,11 +1619,33 @@
         atualizarKPIs();
         atualizarBadgesAbas();
         atualizarIndicadorSync();
-        if (portaoAtual === 'todos') renderPanorama();
-        else {
+        if (portaoAtual === 'todos') {
+            $('wrapper-todos-portoes').classList.remove('hidden');
+            $('wrapper-conteudo-dinamico').classList.add('hidden');
+            renderPanorama();
+        } else {
+            $('wrapper-todos-portoes').classList.add('hidden');
+            $('wrapper-conteudo-dinamico').classList.remove('hidden');
             atualizarFiltroOrdem();
             renderBlocos();
             verificarBanner();
+
+            const indicador = $('indicador-cuidados');
+            const btnCuidados = $('btn-cuidados');
+            if (indicador && btnCuidados) {
+                const respCuidados = portoesCuidados[portaoAtual];
+                if (respCuidados) {
+                    indicador.textContent = `👤 Sob cuidados de ${respCuidados}`;
+                    indicador.classList.remove('hidden');
+                    btnCuidados.textContent = '(Remover)';
+                    btnCuidados.classList.add('opacity-80', 'text-amber-500');
+                } else {
+                    indicador.classList.add('hidden');
+                    btnCuidados.textContent = 'Sinalizar Cuidados';
+                    btnCuidados.classList.remove('opacity-80', 'text-amber-500');
+                }
+            }
+
             if (focoUid) {
                 const el = document.querySelector(`[data-k="${CSS.escape(focoUid)}"] [data-f="sscc"]`);
                 if (el) el.focus();
@@ -1496,6 +1702,10 @@
                 adicionarLinhaEmOrdem(btn.closest('.bloco').dataset.k);
             } else if (acao === 'del-block') {
                 removerBlocoOrdem(btn.closest('.bloco').dataset.k);
+            } else if (acao === 'toggle-interrompida') {
+                toggleOrdemInterrompida(btn.closest('.bloco').dataset.k);
+            } else if (acao === 'toggle-finalizada') {
+                toggleOrdemFinalizada(btn.closest('.bloco').dataset.k);
             }
         });
     }
@@ -1764,6 +1974,79 @@
             });
         } catch (e) {}
     }
+
+    // EFEITO SONORO REALISTA DE CAMINHÃO (Buzina de Ar + Motor Diesel + Escape/Ar comprimido)
+    function tocarSomCaminhaoRealista() {
+        try {
+            audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+
+            // 1. Buzina de Ar do Caminhão (Air Horn)
+            [350, 410].forEach(freq => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(freq, now);
+                
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+                gain.gain.setValueAtTime(0.2, now + 0.35);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            });
+
+            // 2. Ronco do Motor Acelerando (Engine Rev & Rumble)
+            const engineOsc = audioCtx.createOscillator();
+            const engineGain = audioCtx.createGain();
+            engineOsc.type = 'sawtooth';
+            engineOsc.frequency.setValueAtTime(55, now + 0.4);
+            engineOsc.frequency.linearRampToValueAtTime(130, now + 1.0);
+            engineOsc.frequency.linearRampToValueAtTime(85, now + 2.4);
+
+            engineGain.gain.setValueAtTime(0, now + 0.4);
+            engineGain.gain.linearRampToValueAtTime(0.22, now + 0.6);
+            engineGain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+
+            engineOsc.connect(engineGain);
+            engineGain.connect(audioCtx.destination);
+            engineOsc.start(now + 0.4);
+            engineOsc.stop(now + 2.5);
+
+            // 3. Ruído de Ar Comprimido / Escape saindo (Air Hiss)
+            const bufferSize = audioCtx.sampleRate * 1.2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(900, now + 1.8);
+            filter.Q.setValueAtTime(4, now + 1.8);
+
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0, now + 1.8);
+            noiseGain.gain.linearRampToValueAtTime(0.25, now + 1.9);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+
+            noise.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noise.start(now + 1.8);
+            noise.stop(now + 2.8);
+
+        } catch (e) {
+            console.warn('Erro ao tocar áudio:', e);
+        }
+    }
+
     const tocarSomSucesso = () => tocarSequencia([587.33, 880], { passo: 0.1, dur: 0.2 });
     const tocarSomConquistaAnimada = () => tocarSequencia([523.25, 659.25, 783.99, 1046.5], { tipo: 'triangle', passo: 0.08, dur: 0.25 });
     const tocarSomTrocaData = () => tocarSequencia([440, 554.37], { passo: 0.12, dur: 0.25, vol: 0.1 });
