@@ -455,7 +455,7 @@
     let dataAtual = '';
     let loadToken = 0;
     let diaCarregado = false;
-    let canal = null;
+    let canal = null, canalEtiquetas = null;
     let focoUid = null;
     let html5QrcodeScanner = null;
     let campoAlvoScanner = null;
@@ -918,7 +918,32 @@
         const c = canal;
         canal = null;
         if (c && supabaseClient) { try { supabaseClient.removeChannel(c); } catch (e) {} }
+        
+        const ce = canalEtiquetas;
+        canalEtiquetas = null;
+        if (ce && supabaseClient) { try { supabaseClient.removeChannel(ce); } catch (e) {} }
     }
+
+    // ESCUTA SEGURA DE REGISTROS DO APP DE CONTROLE DE ETIQUETAS
+    function inscreverCanalEtiquetas() {
+        if (!supabaseClient) return;
+        try {
+            canalEtiquetas = supabaseClient.channel('etiquetas-global-realtime', {
+                config: { broadcast: { self: false } }
+            })
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'controle_etiquetas' }, payload => {
+                const row = payload.new;
+                if (!row) return;
+                const sscc = row.sscc || row.codigo || row.etiqueta || 'desconhecida';
+                const origem = row.origem || row.local || row.tipo_desvinculo || row.status_origem || 'sorter';
+                mostrarToast(`caixa "${sscc}" foi disvinculada do "${origem}" e registrada no sistema`);
+            })
+            .subscribe();
+        } catch (e) {
+            // Falha silenciosa para nunca quebrar a aplicação principal
+        }
+    }
+
     function inscrever(token) {
         if (!supabaseClient) return;
         try {
@@ -955,6 +980,9 @@
                     }, 15000);
                 }
             });
+
+            // Inscreve também no canal do app de etiquetas de forma independente
+            inscreverCanalEtiquetas();
         } catch (e) {
             rtOk = false;
         }
@@ -1431,7 +1459,6 @@
         else if (f === 'tipo') { f = 'obs'; v = `Rasgada (${v}): ${restoDaObs(rec.obs)}`; }
         if (rec[f] === v) return;
 
-        // Notifica em tempo real a alteração de status
         if (f === 'status') {
             const rotulo = rotuloStatus(v);
             const idCaixa = rec.sscc.trim() ? `da caixa ${rec.sscc}` : 'de uma caixa';
