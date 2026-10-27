@@ -41,13 +41,13 @@
         }
 
         .excel-select {
-            width: 100% !important; min-width: 105px !important; border: none !important; outline: none !important;
+            width: 100% !important; min-width: 95px !important; border: none !important; outline: none !important;
             font-size: 12px !important; padding: 3px 6px !important; border-radius: 4px !important; cursor: pointer !important;
             box-sizing: border-box !important; font-weight: 700 !important; display: block !important;
             height: 28px !important; line-height: 20px !important;
         }
 
-        .td-sscc-container { position: relative; width: 160px; max-width: 180px; }
+        .td-sscc-container { position: relative; width: 150px; max-width: 170px; }
         .excel-input-sscc { width: 100%; transition: border-color 0.15s ease, background-color 0.15s ease; }
         .excel-input-sscc:focus { border: 2px solid #2563eb !important; background-color: rgba(37, 99, 235, 0.05) !important; border-radius: 6px; }
         body.dark .excel-input-sscc:focus { border: 2px solid #3b82f6 !important; background-color: rgba(59, 130, 246, 0.1) !important; }
@@ -60,23 +60,24 @@
             .excel-table td::before { content: attr(data-label); font-weight: bold; font-size: 11px; text-transform: uppercase; opacity: 0.7; margin-right: 8px; }
             .excel-table td:first-child { display: none; }
             .excel-input { text-align: right; }
-            .excel-select { text-align: right !important; width: auto !important; min-width: 140px !important; }
+            .excel-select { text-align: right !important; width: auto !important; min-width: 120px !important; }
             .td-sscc-container { width: 100%; max-width: 100%; }
         }
 
         .status-pendente { background-color: #ef4444 !important; color: #ffffff !important; }
         .status-em-andamento { background-color: #eab308 !important; color: #000000 !important; }
-        .status-requisitada { background-color: #f97316 !important; color: #ffffff !important; }
         .status-apareceu-no-portao { background-color: #06b6d4 !important; color: #ffffff !important; }
         .status-entregue-no-portao { background-color: #22c55e !important; color: #ffffff !important; }
 
         .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; }
-        .status-rasgada-requisitada { background-color: #c2410c !important; color: #ffffff !important; }
         .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; }
         .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; }
 
         .app-nao { background-color: #ef4444 !important; color: #ffffff !important; }
         .app-sim { background-color: #22c55e !important; color: #ffffff !important; }
+
+        .requisitada-nao { background-color: #6b7280 !important; color: #ffffff !important; }
+        .requisitada-sim { background-color: #f97316 !important; color: #ffffff !important; }
 
         .excel-select option { background-color: #ffffff; color: #1f2937; }
         body.dark .excel-select option { background-color: #161b22; color: #c9d1d9; }
@@ -372,7 +373,7 @@
     <div id="aviso-sistema" class="hidden mb-3 p-2.5 rounded-lg text-xs font-bold border"></div>
 
     <!-- KPIs -->
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
+    <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
         <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold opacity-75 uppercase block">Total Faltas</span>
             <div class="text-base sm:text-lg font-black font-mono" id="kpi-total-faltas">0</div>
@@ -384,6 +385,10 @@
         <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold text-red-500 uppercase block">Pendentes</span>
             <div class="text-base sm:text-lg font-black font-mono text-red-500" id="kpi-pendentes">0</div>
+        </div>
+        <div class="ui-card border p-2 rounded-lg shadow-sm">
+            <span class="text-[9px] font-bold text-orange-500 uppercase block">Requisitadas</span>
+            <div class="text-base sm:text-lg font-black font-mono text-orange-500" id="kpi-requisitadas">0</div>
         </div>
         <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold text-amber-500 uppercase block">Rasgadas</span>
@@ -447,8 +452,9 @@
                             <th class="w-24">Portão</th>
                             <th class="w-48">Código SSCC</th>
                             <th class="w-36">Categoria</th>
-                            <th class="w-36">Status</th>
-                            <th class="w-36">Origem</th>
+                            <th class="w-32">Status</th>
+                            <th class="w-28">Requisitada?</th>
+                            <th class="w-32">Origem</th>
                             <th class="w-28">Ordem</th>
                             <th class="w-20">No App?</th>
                             <th>Observação</th>
@@ -477,12 +483,12 @@
     const TABELA = 'controle_faltas_portao';
     const PORTAO_MIN = 7, PORTAO_MAX = 26;
     const ORIGENS = ['CD', 'Fábrica 1', 'Fábrica 2', 'Fábrica 3', 'Fábrica 5', 'Fábrica 6', 'Fábrica 7'];
-    const STATUS_FALTA = ['Pendente', 'Em andamento', 'Requisitada', 'Apareceu no Portão', 'Entregue no Portão'];
+    const STATUS_FALTA = ['Pendente', 'Em andamento', 'Apareceu no Portão', 'Entregue no Portão'];
     const ROTULO_STATUS = { 'Entregue no Portão': 'Ok' };
     const rotuloStatus = v => ROTULO_STATUS[v] || v;
     const optsStatusHTML = lista => lista.map(o => `<option value="${o}">${rotuloStatus(o)}</option>`).join('');
-    const CAMPOS = ['sscc', 'status', 'origem', 'ordem', 'cor', 'noApp', 'obs'];
-    const COLUNA = { sscc: 'sscc', status: 'status', origem: 'origem', ordem: 'ordem', cor: 'prioridade_cor', noApp: 'no_app', obs: 'observacao' };
+    const CAMPOS = ['sscc', 'status', 'requisitada', 'origem', 'ordem', 'cor', 'noApp', 'obs'];
+    const COLUNA = { sscc: 'sscc', status: 'status', requisitada: 'requisitada', origem: 'origem', ordem: 'ordem', cor: 'prioridade_cor', noApp: 'no_app', obs: 'observacao' };
     const SEM_ORDEM = 'SEM ORDEM DEFINIDA';
     const clientId = Math.random().toString(36).slice(2, 8);
 
@@ -632,7 +638,7 @@
         return {
             uid, id: o.id || null, data: o.data || dataAtual,
             portao: Number(o.portao), kind: o.kind || 'falta',
-            sscc: o.sscc || '', status: o.status || 'Pendente', origem: o.origem || 'CD',
+            sscc: o.sscc || '', status: o.status || 'Pendente', requisitada: o.requisitada || 'Não', origem: o.origem || 'CD',
             ordem: o.ordem || '', cor: o.cor || 'azul', noApp: o.noApp || 'Não', obs: o.obs || '',
             saved: !!o.saved, dirty: o.dirty || {}, inflight: false, again: false, deleted: false,
             touched: o.touched || Date.now(),
@@ -667,6 +673,7 @@
             portao: rec.portao,
             sscc: rec.sscc,
             status: rec.status,
+            requisitada: rec.requisitada,
             origem: rec.origem,
             ordem: rec.ordem,
             prioridade_cor: rec.cor,
@@ -828,7 +835,7 @@
                 if (r.data !== dataAtual) return;
                 if ((!r.saved && r.sscc.trim()) || Object.keys(r.dirty).length) {
                     pend.push({ uid: r.uid, id: r.id, data: r.data, portao: r.portao, kind: r.kind, sscc: r.sscc, status: r.status,
-                        origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, saved: r.saved, dirty: r.dirty, sortKey: r.sortKey });
+                        requisitada: r.requisitada, origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, saved: r.saved, dirty: r.dirty, sortKey: r.sortKey });
                 }
             });
             if (pend.length) localStorage.setItem(chavePend(), JSON.stringify(pend));
@@ -900,7 +907,7 @@
         const uidLocal = (row.uid && recs.has(row.uid)) ? row.uid : idIndex.get(row.id);
         let rec = uidLocal ? recs.get(uidLocal) : null;
         const vals = {
-            sscc: row.sscc || '', status: row.status || 'Pendente', origem: row.origem || 'CD',
+            sscc: row.sscc || '', status: row.status || 'Pendente', requisitada: row.requisitada || 'Não', origem: row.origem || 'CD',
             ordem: row.ordem || '', cor: row.prioridade_cor || 'azul', noApp: row.no_app || 'Não', obs: row.observacao || ''
         };
         if (!rec && (semUid || !row.uid)) {
@@ -1106,7 +1113,7 @@
             recs.forEach(r => {
                 if (r.saved && r.data === dataAtual) {
                     lista.push({ uid: r.uid, id: r.id, data: r.data, portao: r.portao, kind: r.kind, sscc: r.sscc, status: r.status,
-                        origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, sortKey: r.sortKey });
+                        requisitada: r.requisitada, origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, sortKey: r.sortKey });
                 }
             });
             if (lista.length) localStorage.setItem(chaveCache(), JSON.stringify(lista));
@@ -1273,13 +1280,11 @@
     function getClassStatus(status) {
         const s = (status || '').toLowerCase().trim();
         if (s.includes('andamento')) return 'status-em-andamento';
-        if (s.includes('requisitada')) return 'status-requisitada';
         if (s.includes('apareceu')) return 'status-apareceu-no-portao';
         if (s.includes('entregue')) return 'status-entregue-no-portao';
         return 'status-pendente';
     }
     function getClassStatusRasgada(status) {
-        if (status === 'Requisitada') return 'status-rasgada-requisitada';
         if (status === 'Restaurada') return 'status-rasgada-restaurada';
         if (status === 'Entregue no Portão') return 'status-rasgada-entregue';
         return 'status-rasgada-pendente';
@@ -1292,7 +1297,7 @@
 
     // VERIFICA SE A CAIXA ESTÁ PARADA HÁ MAIS DE 30 MINUTOS
     function ehCaixaParada(rec) {
-        if (rec.status !== 'Em andamento' && rec.status !== 'Requisitada') return false;
+        if (rec.status !== 'Em andamento') return false;
         const tempoDecorridoMin = (Date.now() - (rec.touched || Date.now())) / (1000 * 60);
         return tempoDecorridoMin >= 30;
     }
@@ -1308,6 +1313,7 @@
                 </div>
             </td>
             <td data-label="Status"><select data-f="status" class="excel-select">${optsStatusHTML(STATUS_FALTA)}</select></td>
+            <td data-label="Requisitada?"><select data-f="requisitada" class="excel-select"><option value="Não">Não</option><option value="Sim">Sim</option></select></td>
             <td data-label="Origem"><select data-f="origem" class="excel-select border">${optsHTML(ORIGENS)}</select></td>
             <td data-label="No App?"><select data-f="noApp" class="excel-select"><option value="Não">Não</option><option value="Sim">Sim</option></select></td>
             <td data-label="Observação"><input type="text" data-f="obs" autocomplete="off" placeholder="Observação..." class="excel-input"></td>
@@ -1320,6 +1326,10 @@
         setInputValor(tr.querySelector('[data-f="sscc"]'), rec.sscc);
         const st = tr.querySelector('[data-f="status"]'); setSelectValor(st, rec.status);
         st.className = 'excel-select ' + getClassStatus(rec.status);
+        
+        const req = tr.querySelector('[data-f="requisitada"]'); setSelectValor(req, rec.requisitada);
+        req.className = 'excel-select ' + (rec.requisitada === 'Sim' ? 'requisitada-sim' : 'requisitada-nao');
+
         setSelectValor(tr.querySelector('[data-f="origem"]'), rec.origem);
         const ap = tr.querySelector('[data-f="noApp"]'); setSelectValor(ap, rec.noApp);
         ap.className = 'excel-select ' + (rec.noApp === 'Sim' ? 'app-sim' : 'app-nao');
@@ -1379,8 +1389,8 @@
             <div data-role="wrap-faltas" class="overflow-x-auto">
                 <table class="excel-table">
                     <thead><tr>
-                        <th class="w-6 text-center">#</th><th style="width:155px;">Código SSCC</th><th style="width:135px;">Status</th>
-                        <th style="width:110px;">Origem</th><th style="width:80px;">No App?</th><th>Observação</th><th class="w-8 text-center">Ação</th>
+                        <th class="w-6 text-center">#</th><th style="width:145px;">Código SSCC</th><th style="width:125px;">Status</th>
+                        <th style="width:105px;">Requisitada?</th><th style="width:110px;">Origem</th><th style="width:80px;">No App?</th><th>Observação</th><th class="w-8 text-center">Ação</th>
                     </tr></thead>
                     <tbody data-role="tbody"></tbody>
                 </table>
@@ -1531,7 +1541,7 @@
             </div></td>
             <td data-label="Tipo"><select data-f="tipo" class="excel-select font-bold"><option value="Lida">Rasgada (Lida)</option><option value="Nao Lida">Rasgada (Não Lida)</option></select></td>
             <td data-label="Status"><select data-f="status" class="excel-select">
-                <option value="Pendente">Pendente</option><option value="Requisitada">Requisitada</option>
+                <option value="Pendente">Pendente</option>
                 <option value="Restaurada">Restaurada</option><option value="Entregue no Portão">Ok</option></select></td>
             <td data-label="Origem"><select data-f="origem" class="excel-select border">${optsHTML(ORIGENS)}</select></td>
             <td data-label="Ordem"><select data-f="ordem" class="excel-select font-mono"></select></td>
@@ -1573,7 +1583,7 @@
                 [`Portão ${r.portao}`, 'font-bold ' + (rasg ? 'text-amber-500' : 'text-blue-500')],
                 [r.sscc, 'font-mono font-bold'],
                 [rasg ? `Rasgada (${tipoDaObs(r.obs)})` : 'Falta Normal', ''],
-                [rotuloStatus(r.status), ''], [r.origem, ''], [r.ordem, ''],
+                [rotuloStatus(r.status), ''], [r.requisitada || 'Não', ''], [r.origem, ''], [r.ordem, ''],
                 [rasg ? 'Sim' : r.noApp, ''], [rasg ? restoDaObs(r.obs) : r.obs, '']
             ];
             cel.forEach(([txt, cls]) => { const td = document.createElement('td'); td.textContent = txt; if (cls) td.className = cls; tr.appendChild(td); });
@@ -1583,17 +1593,19 @@
     }
 
     function atualizarKPIs() {
-        let total = 0, entregues = 0, pendentes = 0, rasgadas = 0, noApp = 0;
+        let total = 0, entregues = 0, pendentes = 0, requisitadas = 0, rasgadas = 0, noApp = 0;
         recs.forEach(r => {
             if (r.kind === 'rasgada') rasgadas++;
             if (!r.sscc.trim()) return;
             total++;
             if (r.status === 'Entregue no Portão') entregues++; else pendentes++;
+            if (r.requisitada === 'Sim') requisitadas++;
             if (r.kind === 'falta' && r.noApp === 'Sim') noApp++;
         });
         $('kpi-total-faltas').innerText = total;
         $('kpi-entregues').innerText = entregues;
         $('kpi-pendentes').innerText = pendentes;
+        $('kpi-requisitadas').innerText = requisitadas;
         $('kpi-rasgadas').innerText = rasgadas;
         $('kpi-no-app').innerText = noApp;
     }
@@ -2058,11 +2070,11 @@
             const lista = Array.from(recs.values()).filter(r => r.portao === i && r.sscc.trim()).sort(comparaRec);
             if (!lista.length) continue;
             temDados = true;
-            const linhas = [{ 'SSCC': `Portão ${i} (${dataAtual})`, 'Status': '', 'Origem': '', 'Ordem': '', 'Prioridade': '', 'No App?': '', 'Observação': '' }];
-            lista.filter(r => r.kind === 'falta').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': rotuloStatus(r.status), 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': r.cor, 'No App?': r.noApp, 'Observação': r.obs }));
-            lista.filter(r => r.kind === 'rasgada').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': `${rotuloStatus(r.status)} (Rasgada ${tipoDaObs(r.obs)})`, 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': 'vermelho', 'No App?': 'Sim', 'Observação': r.obs }));
+            const linhas = [{ 'SSCC': `Portão ${i} (${dataAtual})`, 'Status': '', 'Requisitada?': '', 'Origem': '', 'Ordem': '', 'Prioridade': '', 'No App?': '', 'Observação': '' }];
+            lista.filter(r => r.kind === 'falta').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': rotuloStatus(r.status), 'Requisitada?': r.requisitada || 'Não', 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': r.cor, 'No App?': r.noApp, 'Observação': r.obs }));
+            lista.filter(r => r.kind === 'rasgada').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': `${rotuloStatus(r.status)} (Rasgada ${tipoDaObs(r.obs)})`, 'Requisitada?': 'Sim', 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': 'vermelho', 'No App?': 'Sim', 'Observação': r.obs }));
             const ws = XLSX.utils.json_to_sheet(linhas);
-            ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
+            ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 15 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
             XLSX.utils.book_append_sheet(wb, ws, `Portão ${i}`);
         }
         if (!temDados) { alert('Nenhum dado encontrado para exportar.'); return; }
