@@ -33,7 +33,7 @@
 
         .excel-table { border-collapse: collapse; width: 100%; font-size: 13px; table-layout: auto; }
         .excel-table th { padding: 6px 4px; text-align: left; font-weight: 700; white-space: nowrap; }
-        .excel-table td { padding: 3px 2px; position: relative; vertical-align: middle; }
+        .excel-table td { padding: 4px 2px; position: relative; vertical-align: middle; }
 
         .excel-input {
             width: 100%; border: none; outline: none; background: transparent;
@@ -47,7 +47,7 @@
             height: 28px !important; line-height: 20px !important;
         }
 
-        .td-sscc-container { position: relative; width: 150px; max-width: 170px; }
+        .td-sscc-container { position: relative; width: 160px; max-width: 180px; }
         .excel-input-sscc { width: 100%; transition: border-color 0.15s ease, background-color 0.15s ease; }
         .excel-input-sscc:focus { border: 2px solid #2563eb !important; background-color: rgba(37, 99, 235, 0.05) !important; border-radius: 6px; }
         body.dark .excel-input-sscc:focus { border: 2px solid #3b82f6 !important; background-color: rgba(59, 130, 246, 0.1) !important; }
@@ -69,10 +69,6 @@
         .status-apareceu-no-portao { background-color: #06b6d4 !important; color: #ffffff !important; }
         .status-entregue-no-portao { background-color: #22c55e !important; color: #ffffff !important; }
 
-        .status-rasgada-pendente { background-color: #b91c1c !important; color: #ffffff !important; }
-        .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; }
-        .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; }
-
         .app-nao { background-color: #ef4444 !important; color: #ffffff !important; }
         .app-sim { background-color: #22c55e !important; color: #ffffff !important; }
 
@@ -89,7 +85,6 @@
         @keyframes flashRemoto { 0% { background-color: rgba(250, 204, 21, 0.55); } 100% { background-color: rgba(250, 204, 21, 0); } }
         tr.flash-remoto td { animation: flashRemoto 1.6s ease-out; }
 
-        /* ALERTA CAIXA PARADA (>30 MINUTOS) */
         @keyframes caixaParadaAlerta {
             0%, 100% { border-color: rgba(245, 158, 11, 1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
             50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25); }
@@ -99,7 +94,6 @@
             background-color: rgba(245, 158, 11, 0.08) !important;
         }
 
-        /* ORDEM INTERROMPIDA (VERMELHO) */
         @keyframes blocoInterrompida {
             0%, 100% { border-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
             50% { border-color: #f87171; box-shadow: 0 0 18px rgba(248, 113, 113, 0.6); }
@@ -110,7 +104,6 @@
             border-style: dashed !important;
         }
 
-        /* ORDEM FINALIZADA / CAMINHÃO SAINDO DA DOCA */
         .bloco-finalizado {
             border-color: #22c55e !important;
             background-color: rgba(34, 197, 94, 0.04) !important;
@@ -123,9 +116,7 @@
             90% { opacity: 1; }
             100% { transform: translateX(120vw); opacity: 0; }
         }
-        .animar-caminhao-doca {
-            animation: truckDrive 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-        }
+        .animar-caminhao-doca { animation: truckDrive 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
 
         @keyframes caixaQuicando {
             0% { transform: translateY(-120px) scale(0.9); opacity: 0; }
@@ -149,10 +140,8 @@
 </head>
 <body class="light p-2 sm:p-3 pb-16">
 
-    <!-- CONTENEDOR DE NOTIFICAÇÕES TOAST EM TEMPO REAL -->
     <div id="toast-container" class="fixed top-4 right-4 z-[999999] flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
-    <!-- ANIMAÇÃO DE CAMINHÃO SAINDO DA DOCA (GLOBAL) -->
     <div id="truck-animation-overlay" class="fixed inset-0 pointer-events-none z-[9999999] hidden flex items-center justify-center overflow-hidden bg-black/40 backdrop-blur-[2px]">
         <div class="absolute flex flex-col items-center animar-caminhao-doca">
             <div class="bg-emerald-600 text-white px-8 py-4 rounded-2xl shadow-2xl font-black text-xl uppercase tracking-wider flex items-center gap-4 border-2 border-emerald-300">
@@ -185,18 +174,6 @@
             }, 1400);
         });
     </script>
-
-    <!-- MODAL ALERTA DE LOCALIZAÇÃO -->
-    <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
-        <div class="ui-card rounded-xl max-w-sm w-full p-5 text-center shadow-2xl border border-amber-500 my-auto">
-            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl animate-bounce">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <h2 class="text-sm font-bold mb-1 text-amber-500 uppercase">LOCALIZAÇÃO</h2>
-            <p id="texto-alerta-integracao" class="text-xs opacity-90 mb-5 font-mono break-words">A caixa informada foi localizada...</p>
-            <button onclick="fecharAlertaIntegracao()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-xs cursor-pointer shadow">Entendido / Fechar</button>
-        </div>
-    </div>
 
     <!-- MODAL NOVA ORDEM -->
     <div id="modal-nova-ordem" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4">
@@ -418,7 +395,6 @@
                     <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" id="titulo-portao-atual">
                         <i class="fa-solid fa-truck text-blue-500"></i> Portão 7 - Faltas
                     </span>
-                    <!-- SINALIZAR CUIDADOS COM ÍCONE 👤 -->
                     <span id="indicador-cuidados" class="hidden text-[11px] font-normal text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30"></span>
                     <button onclick="toggleCuidadosPortao()" id="btn-cuidados" class="text-[10px] opacity-40 hover:opacity-100 underline cursor-pointer font-normal" title="Sinalizar que este portão está sob sua responsabilidade">Sinalizar Cuidados</button>
                 </div>
@@ -449,13 +425,16 @@
                 <table class="excel-table">
                     <thead>
                         <tr>
-                            <th class="w-24">Portão</th>
-                            <th class="w-48">Código SSCC</th>
-                            <th class="w-36">Categoria</th>
-                            <th class="w-32">Status</th>
-                            <th class="w-28">Requisitada?</th>
-                            <th class="w-32">Origem</th>
-                            <th class="w-28">Ordem</th>
+                            <th class="w-20">Portão</th>
+                            <th class="w-40">SSCC</th>
+                            <th class="w-28">Produto</th>
+                            <th class="w-24">Cor</th>
+                            <th class="w-24">Grade</th>
+                            <th class="w-32">Categoria</th>
+                            <th class="w-28">Status</th>
+                            <th class="w-24">Requisitada?</th>
+                            <th class="w-28">Origem</th>
+                            <th class="w-24">Ordem</th>
                             <th class="w-20">No App?</th>
                             <th>Observação</th>
                         </tr>
@@ -491,6 +470,24 @@
     const COLUNA = { sscc: 'sscc', status: 'status', requisitada: 'requisitada', origem: 'origem', ordem: 'ordem', cor: 'prioridade_cor', noApp: 'no_app', obs: 'observacao' };
     const SEM_ORDEM = 'SEM ORDEM DEFINIDA';
     const clientId = Math.random().toString(36).slice(2, 8);
+
+    // URL RAW DO GITHUB PARA BUSCAR O JSON DE DADOS
+    const GITHUB_JSON_URL = "https://raw.githubusercontent.com/claudiogames/controle-carregamento/refs/heads/main/dados.json";
+    let cacheDadosGithub = null;
+
+    async function carregarDadosGithub() {
+        if (cacheDadosGithub) return cacheDadosGithub;
+        try {
+            const resp = await fetch(GITHUB_JSON_URL);
+            if (!resp.ok) throw new Error('Falha ao buscar dados do GitHub');
+            const data = await resp.json();
+            cacheDadosGithub = Array.isArray(data) ? data : (data.registros || data.dados || []);
+            return cacheDadosGithub;
+        } catch (e) {
+            console.warn('Erro ao carregar JSON do GitHub:', e);
+            return [];
+        }
+    }
 
     let supabaseClient = null, supabaseClientSecundario = null;
     try {
@@ -557,7 +554,6 @@
     const comparaRec = (a, b) => (a.sortKey - b.sortKey) || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0);
     const $ = id => document.getElementById(id);
 
-    // NOTIFICAÇÕES TOAST EM TEMPO REAL
     function mostrarToast(mensagem) {
         const container = $('toast-container');
         if (!container) return;
@@ -1195,46 +1191,60 @@
         return g !== '' && (g === codigo || tratarSSCC(g) === codigo);
     };
 
+    // CONSULTAR PRODUTO, COR E GRADE NO GITHUB JSON COM AS CHAVES CORRETAS (Caixa, Produto, Cor, Tam/Grade)
+    async function consultarDetalhesSSCC(codigo) {
+        if (!codigo) return null;
+        const dados = await carregarDadosGithub();
+        if (!dados || !dados.length) return null;
+        const encontrada = dados.find(item => {
+            const s = String(item.Caixa || item.caixa || item.sscc || item.codigo || item.etiqueta || '').trim();
+            return mesmoSSCC(s, codigo);
+        });
+        return encontrada || null;
+    }
+
     async function cruzarSSCC(rec) {
         const codigo = rec.sscc;
-        if (!codigo || !supabaseClient) return;
+        if (!codigo) return;
+        
+        const infoGithub = await consultarDetalhesSSCC(codigo);
+        if (infoGithub) {
+            const prod = infoGithub.Produto || infoGithub.produto || infoGithub.item || 'N/A';
+            const cor = infoGithub.Cor || infoGithub.cor || 'N/A';
+            const grade = infoGithub["Tam/Grade"] || infoGithub.tam_grade || infoGithub.grade || infoGithub.tamanho || infoGithub.tam || 'N/A';
+            
+            const elProd = document.querySelector(`[data-prod-uid="${rec.uid}"]`);
+            const elCor = document.querySelector(`[data-cor-uid="${rec.uid}"]`);
+            const elGrade = document.querySelector(`[data-grade-uid="${rec.uid}"]`);
+            
+            if (elProd) elProd.textContent = prod;
+            if (elCor) elCor.textContent = cor;
+            if (elGrade) elGrade.textContent = grade;
+        }
+
         let msg = '';
         try {
             let achado = null;
-            const exato = await supabaseClient.from('registros_sscc').select('*').eq('sscc', codigo).limit(5);
-            if (!exato.error && exato.data) achado = exato.data.find(x => mesmoSSCC(x.sscc, codigo)) || null;
-            if (!achado && codigo.length >= 15) {
-                const fim = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigo}`).limit(10);
-                if (!fim.error && fim.data) achado = fim.data.find(x => mesmoSSCC(x.sscc, codigo)) || null;
-            }
-            if (achado) {
-                msg = `Caixa localizada em Reposição: ${achado.categoria || 'Reposição'}${achado.rastro ? ` (${achado.rastro})` : ''}`;
-            }
-            if (!msg) {
-                for (const r of recs.values()) {
-                    if (r.kind === 'rasgada' && r.uid !== rec.uid && r.data === dataAtual && r.sscc === codigo) {
-                        msg = `ALERTA: Caixa localizada em Rasgadas (Portão ${r.portao} - Tipo: ${tipoDaObs(r.obs)})`;
-                        break;
-                    }
+            if (supabaseClient) {
+                const exato = await supabaseClient.from('registros_sscc').select('*').eq('sscc', codigo).limit(5);
+                if (!exato.error && exato.data) achado = exato.data.find(x => mesmoSSCC(x.sscc, codigo)) || null;
+                if (!achado && codigo.length >= 15) {
+                    const fim = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigo}`).limit(10);
+                    if (!fim.error && fim.data) achado = fim.data.find(x => mesmoSSCC(x.sscc, codigo)) || null;
                 }
             }
-            if (!msg) {
-                const rd = await supabaseClient.from(TABELA).select('portao,sscc').eq('sscc', codigo)
-                    .eq('data_operacao', dataAtual).like('observacao', 'Rasgada (%').limit(1);
-                if (!rd.error && rd.data && rd.data[0] && rd.data[0].sscc === codigo) msg = `ALERTA: Caixa localizada em Rasgadas (Portão ${rd.data[0].portao})`;
+            if (achado) {
+                msg = `Reposição: ${achado.categoria || 'Reposição'}${achado.rastro ? ` (${achado.rastro})` : ''}`;
             }
-        } catch (e) { return; }
+        } catch (e) {}
 
         if (!msg || rec.sscc !== codigo || !recs.has(rec.uid)) return;
         if (!rec.obs.includes(msg)) {
             rec.obs = `[${msg}]`;
             marcarSujo(rec, ['obs']);
             agendarRender();
-            $('texto-alerta-integracao').innerText = msg;
-            $('modal-alerta-integracao').classList.remove('hidden');
         }
     }
-    function fecharAlertaIntegracao() { $('modal-alerta-integracao').classList.add('hidden'); }
 
     function reconciliar(pai, itens, chave, criar, atualizar) {
         const desejadas = new Set(itens.map(chave));
@@ -1295,7 +1305,6 @@
         return 'bg-blue-600 text-white';
     }
 
-    // VERIFICA SE A CAIXA ESTÁ PARADA HÁ MAIS DE 30 MINUTOS
     function ehCaixaParada(rec) {
         if (rec.status !== 'Em andamento') return false;
         const tempoDecorridoMin = (Date.now() - (rec.touched || Date.now())) / (1000 * 60);
@@ -1312,6 +1321,9 @@
                     <span data-role="badge-parada" class="hidden text-[9px] font-bold px-1 rounded bg-amber-500 text-black shrink-0 animate-pulse" title="Caixa parada há +30 minutos!">⏱️ +30m</span>
                 </div>
             </td>
+            <td class="font-mono text-[12px] font-bold text-blue-600" data-label="Produto" data-prod-uid="${rec.uid}">-</td>
+            <td class="font-mono text-[12px] font-bold text-amber-500" data-label="Cor" data-cor-uid="${rec.uid}">-</td>
+            <td class="font-mono text-[12px] font-bold text-emerald-600" data-label="Grade" data-grade-uid="${rec.uid}">-</td>
             <td data-label="Status"><select data-f="status" class="excel-select">${optsStatusHTML(STATUS_FALTA)}</select></td>
             <td data-label="Requisitada?"><select data-f="requisitada" class="excel-select"><option value="Não">Não</option><option value="Sim">Sim</option></select></td>
             <td data-label="Origem"><select data-f="origem" class="excel-select border">${optsHTML(ORIGENS)}</select></td>
@@ -1321,9 +1333,15 @@
         tr.querySelectorAll('[data-f],[data-action]').forEach(e => e.dataset.uid = rec.uid);
         return tr;
     }
+
     function atualizarLinhaFalta(tr, rec, i) {
         tr.children[0].textContent = i + 1;
         setInputValor(tr.querySelector('[data-f="sscc"]'), rec.sscc);
+        
+        if (rec.sscc && rec.sscc.trim() !== '') {
+            cruzarSSCC(rec);
+        }
+
         const st = tr.querySelector('[data-f="status"]'); setSelectValor(st, rec.status);
         st.className = 'excel-select ' + getClassStatus(rec.status);
         
@@ -1389,8 +1407,17 @@
             <div data-role="wrap-faltas" class="overflow-x-auto">
                 <table class="excel-table">
                     <thead><tr>
-                        <th class="w-6 text-center">#</th><th style="width:145px;">Código SSCC</th><th style="width:125px;">Status</th>
-                        <th style="width:105px;">Requisitada?</th><th style="width:110px;">Origem</th><th style="width:80px;">No App?</th><th>Observação</th><th class="w-8 text-center">Ação</th>
+                        <th class="w-6 text-center">#</th>
+                        <th style="width:160px;">Código SSCC</th>
+                        <th style="width:110px;">Produto</th>
+                        <th style="width:90px;">Cor</th>
+                        <th style="width:90px;">Grade</th>
+                        <th style="width:120px;">Status</th>
+                        <th style="width:100px;">Requisitada?</th>
+                        <th style="width:110px;">Origem</th>
+                        <th style="width:80px;">No App?</th>
+                        <th>Observação</th>
+                        <th class="w-8 text-center">Ação</th>
                     </tr></thead>
                     <tbody data-role="tbody"></tbody>
                 </table>
@@ -1575,13 +1602,27 @@
         tbody.innerHTML = '';
         let total = 0;
         const lista = Array.from(recs.values()).filter(r => r.sscc.trim()).sort((a, b) => (a.portao - b.portao) || comparaRec(a, b));
-        lista.forEach(r => {
+        lista.forEach(async r => {
             total++;
             const tr = document.createElement('tr');
             const rasg = r.kind === 'rasgada';
+            
+            let prod = '-', cor = '-', grade = '-';
+            if (r.sscc) {
+                const info = await consultarDetalhesSSCC(r.sscc);
+                if (info) {
+                    prod = info.Produto || info.produto || info.item || 'N/A';
+                    cor = info.Cor || info.cor || 'N/A';
+                    grade = info["Tam/Grade"] || info.tam_grade || info.grade || info.tamanho || info.tam || 'N/A';
+                }
+            }
+
             const cel = [
                 [`Portão ${r.portao}`, 'font-bold ' + (rasg ? 'text-amber-500' : 'text-blue-500')],
                 [r.sscc, 'font-mono font-bold'],
+                [prod, 'font-mono text-blue-600 font-bold'],
+                [cor, 'font-mono text-amber-500 font-bold'],
+                [grade, 'font-mono text-emerald-600 font-bold'],
                 [rasg ? `Rasgada (${tipoDaObs(r.obs)})` : 'Falta Normal', ''],
                 [rotuloStatus(r.status), ''], [r.requisitada || 'Não', ''], [r.origem, ''], [r.ordem, ''],
                 [rasg ? 'Sim' : r.noApp, ''], [rasg ? restoDaObs(r.obs) : r.obs, '']
@@ -1987,13 +2028,11 @@
         } catch (e) {}
     }
 
-    // EFEITO SONORO REALISTA DE CAMINHÃO (Buzina de Ar + Motor Diesel + Escape/Ar comprimido)
     function tocarSomCaminhaoRealista() {
         try {
             audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
             const now = audioCtx.currentTime;
 
-            // 1. Buzina de Ar do Caminhão (Air Horn)
             [350, 410].forEach(freq => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
@@ -2011,7 +2050,6 @@
                 osc.stop(now + 0.5);
             });
 
-            // 2. Ronco do Motor Acelerando (Engine Rev & Rumble)
             const engineOsc = audioCtx.createOscillator();
             const engineGain = audioCtx.createGain();
             engineOsc.type = 'sawtooth';
@@ -2028,7 +2066,6 @@
             engineOsc.start(now + 0.4);
             engineOsc.stop(now + 2.5);
 
-            // 3. Ruído de Ar Comprimido / Escape saindo (Air Hiss)
             const bufferSize = audioCtx.sampleRate * 1.2;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -2054,9 +2091,7 @@
             noise.start(now + 1.8);
             noise.stop(now + 2.8);
 
-        } catch (e) {
-            console.warn('Erro ao tocar áudio:', e);
-        }
+        } catch (e) {}
     }
 
     const tocarSomSucesso = () => tocarSequencia([587.33, 880], { passo: 0.1, dur: 0.2 });
