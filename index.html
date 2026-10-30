@@ -47,8 +47,8 @@
             height: 28px !important; line-height: 20px !important;
         }
 
-        .td-sscc-container { position: relative; width: 150px; max-width: 170px; }
-        .excel-input-sscc { width: 100%; transition: border-color 0.15s ease, background-color 0.15s ease; }
+        .td-sscc-container { position: relative; width: 190px; min-width: 185px; max-width: 220px; }
+        .excel-input-sscc { width: 100%; font-size: 12px; letter-spacing: -0.2px; transition: border-color 0.15s ease, background-color 0.15s ease; }
         .excel-input-sscc:focus { border: 2px solid #2563eb !important; background-color: rgba(37, 99, 235, 0.05) !important; border-radius: 6px; }
         body.dark .excel-input-sscc:focus { border: 2px solid #3b82f6 !important; background-color: rgba(59, 130, 246, 0.1) !important; }
 
@@ -89,7 +89,6 @@
         @keyframes flashRemoto { 0% { background-color: rgba(250, 204, 21, 0.55); } 100% { background-color: rgba(250, 204, 21, 0); } }
         tr.flash-remoto td { animation: flashRemoto 1.6s ease-out; }
 
-        /* ALERTA CAIXA PARADA (>30 MINUTOS) */
         @keyframes caixaParadaAlerta {
             0%, 100% { border-color: rgba(245, 158, 11, 1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
             50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25); }
@@ -99,7 +98,9 @@
             background-color: rgba(245, 158, 11, 0.08) !important;
         }
 
-        /* ORDEM INTERROMPIDA (VERMELHO) */
+        .bloco-alerta-30m { border-color: #f59e0b !important; background-color: rgba(245, 158, 11, 0.03) !important; }
+        .bloco-alerta-1h { border-color: #ef4444 !important; background-color: rgba(239, 68, 68, 0.05) !important; }
+
         @keyframes blocoInterrompida {
             0%, 100% { border-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
             50% { border-color: #f87171; box-shadow: 0 0 18px rgba(248, 113, 113, 0.6); }
@@ -110,11 +111,10 @@
             border-style: dashed !important;
         }
 
-        /* ORDEM FINALIZADA / CAMINHÃO SAINDO DA DOCA */
         .bloco-finalizado {
             border-color: #22c55e !important;
             background-color: rgba(34, 197, 94, 0.04) !important;
-            opacity: 0.85;
+            opacity: 0.9;
         }
 
         @keyframes truckDrive {
@@ -149,17 +149,59 @@
 </head>
 <body class="light p-2 sm:p-3 pb-16">
 
-    <!-- CONTENEDOR DE NOTIFICAÇÕES TOAST EM TEMPO REAL -->
     <div id="toast-container" class="fixed top-4 right-4 z-[999999] flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
-    <!-- ANIMAÇÃO DE CAMINHÃO SAINDO DA DOCA (GLOBAL) -->
+    <!-- MENU CONTEXTUAL DE FIXAR PORTÃO (PRESSIONAR) -->
+    <div id="menu-contexto-portao" class="fixed inset-0 bg-black/40 hidden z-[999999] flex items-center justify-center p-4">
+        <div class="ui-card rounded-xl max-w-xs w-full p-4 shadow-2xl border text-center my-auto">
+            <h3 id="titulo-menu-portao" class="text-sm font-bold text-blue-500 mb-3">Portão X</h3>
+            <div class="space-y-2">
+                <button id="btn-acao-fixar" onclick="executarFixarMenu()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs cursor-pointer shadow flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-thumbtack"></i> <span id="txt-acao-fixar">Fixar no Início</span>
+                </button>
+                <button onclick="fecharMenuContextoPortao()" class="w-full py-1.5 border rounded text-xs cursor-pointer opacity-75">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DETALHES DE TEMPO DA SSCC -->
+    <div id="modal-tempo-sscc" class="fixed inset-0 bg-black/60 hidden z-[999999] flex items-center justify-center p-4">
+        <div class="ui-card rounded-xl max-w-sm w-full p-5 shadow-2xl border border-blue-500 my-auto">
+            <div class="flex justify-between items-center pb-2 border-b mb-3">
+                <h3 class="text-xs font-bold text-blue-500 flex items-center gap-1.5 uppercase"><i class="fa-solid fa-clock"></i> Detalhes de Tempo (SSCC)</h3>
+                <button onclick="fecharModalTempoSSCC()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <span class="opacity-75 block text-[10px] uppercase font-bold">Código SSCC</span>
+                    <span id="detalhe-tempo-sscc" class="font-mono font-bold text-sm">0047...</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-zinc-900 p-2.5 rounded-lg border">
+                    <div>
+                        <span class="opacity-75 block text-[10px]">Criado / Adicionado</span>
+                        <span id="detalhe-tempo-criacao" class="font-mono font-bold">-</span>
+                    </div>
+                    <div>
+                        <span class="opacity-75 block text-[10px]">Tempo Ativo</span>
+                        <span id="detalhe-tempo-decorrido" class="font-mono font-bold text-blue-600">-</span>
+                    </div>
+                </div>
+                <div>
+                    <span class="opacity-75 block text-[10px]">Status da Requisição</span>
+                    <span id="detalhe-tempo-requisicao" class="font-bold">-</span>
+                </div>
+                <button onclick="fecharModalTempoSSCC()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs cursor-pointer shadow">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="truck-animation-overlay" class="fixed inset-0 pointer-events-none z-[9999999] hidden flex items-center justify-center overflow-hidden bg-black/40 backdrop-blur-[2px]">
         <div class="absolute flex flex-col items-center animar-caminhao-doca">
             <div class="bg-emerald-600 text-white px-8 py-4 rounded-2xl shadow-2xl font-black text-xl uppercase tracking-wider flex items-center gap-4 border-2 border-emerald-300">
                 <i class="fa-solid fa-truck-moving text-3xl animate-bounce"></i>
                 <div class="flex flex-col">
                     <span id="truck-overlay-title">Ordem Finalizada!</span>
-                    <span class="text-xs font-mono font-normal opacity-90">Caminhão liberado e saindo da doca 🚚💨</span>
+                    <span id="truck-overlay-subtitle" class="text-xs font-mono font-normal opacity-90">Caminhão liberado e saindo da doca 🚚💨</span>
                 </div>
             </div>
         </div>
@@ -185,6 +227,26 @@
             }, 1400);
         });
     </script>
+
+    <!-- MODAL COLAGEM EM LOTE -->
+    <div id="modal-colagem-lote" class="fixed inset-0 bg-black/70 hidden z-[99999] flex items-center justify-center p-4">
+        <div class="ui-card rounded-xl max-w-lg w-full p-5 shadow-2xl border border-blue-500 my-auto">
+            <div class="flex justify-between items-center pb-2 border-b mb-4">
+                <h3 class="text-sm font-bold text-blue-500 flex items-center gap-1.5"><i class="fa-solid fa-paste"></i> Colar Lote de SSCCs do SIAG (<span id="titulo-modal-lote-ordem" class="font-mono">Ordem</span>)</h3>
+                <button onclick="fecharModalColagemLote()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <p class="opacity-75">Cole abaixo o texto copiado do SIAG. O sistema identificará automaticamente todos os códigos que começam com <strong>0047</strong> e adicionará nesta ordem.</p>
+                <div>
+                    <textarea id="textarea-lote-sscc" rows="8" placeholder="Cole aqui o texto copiado do SIAG..." class="w-full ui-card border rounded p-2.5 font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t">
+                    <button onclick="fecharModalColagemLote()" class="px-3 py-1.5 border rounded cursor-pointer opacity-75">Cancelar</button>
+                    <button onclick="processarColagemLote()" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded cursor-pointer shadow">Processar e Inserir</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL ALERTA DE LOCALIZAÇÃO -->
     <div id="modal-alerta-integracao" class="fixed inset-0 bg-black/80 hidden z-[999999] flex items-center justify-center p-4">
@@ -222,40 +284,6 @@
                     <button onclick="fecharModalNovaOrdem()" class="px-3 py-1.5 border rounded cursor-pointer opacity-75">Cancelar</button>
                     <button onclick="confirmarAdicionarNovaOrdem()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded cursor-pointer shadow">Criar Ordem</button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL SEM EXTERNA -->
-    <div id="modal-sem-externa" class="fixed inset-0 bg-black/70 hidden z-[99999] flex items-center justify-center p-4">
-        <div class="ui-card rounded-xl max-w-lg w-full p-5 shadow-2xl border border-blue-500 my-auto">
-            <div class="flex justify-between items-center pb-2 border-b mb-4">
-                <h3 class="text-sm font-bold text-blue-500 flex items-center gap-1.5"><i class="fa-solid fa-box-archive"></i> Consulta de Caixas Sem Externa</h3>
-                <button onclick="fecharModalSemExterna()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block opacity-75 mb-1 font-bold">Produto</label>
-                        <input type="text" id="busca-produto" placeholder="Ex: 23496..." class="w-full ui-card border rounded p-2 font-mono font-bold">
-                    </div>
-                    <div>
-                        <label class="block opacity-75 mb-1 font-bold">Cor</label>
-                        <input type="text" id="busca-cor" placeholder="Ex: Cp443..." class="w-full ui-card border rounded p-2 font-mono font-bold">
-                    </div>
-                </div>
-                <button onclick="executarBuscaSemExterna()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs cursor-pointer shadow flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-magnifying-glass"></i> Buscar no Banco
-                </button>
-                <div class="mt-4 border-t pt-3">
-                    <span class="text-[11px] font-bold uppercase tracking-wider opacity-75 block mb-2">Resultados da Consulta</span>
-                    <div id="resultado-busca-sem-externa" class="max-h-[220px] overflow-y-auto space-y-2 font-mono text-[11px]">
-                        <p class="text-center opacity-50 py-4">Insira o produto ou cor e clique em buscar.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="flex justify-end pt-3 border-t mt-3">
-                <button onclick="fecharModalSemExterna()" class="px-3 py-1.5 border rounded text-xs cursor-pointer">Fechar</button>
             </div>
         </div>
     </div>
@@ -363,7 +391,6 @@
             </div>
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
-            <button onclick="abrirModalSemExterna()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-box-archive"></i> Sem Externa</button>
             <button onclick="abrirModalNovaOrdem()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-layer-group"></i> + Nova Ordem</button>
             <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
         </div>
@@ -401,7 +428,7 @@
     </div>
 
     <!-- ABAS -->
-    <div class="flex border-b mb-3 overflow-x-auto ui-card rounded-t-lg border p-1 gap-1" id="container-abas-portoes"></div>
+    <div class="flex border-b mb-3 overflow-x-auto ui-card rounded-t-lg border p-1 gap-1 items-center" id="container-abas-portoes"></div>
 
     <!-- CONTEÚDO PRINCIPAL -->
     <div id="wrapper-conteudo-dinamico" class="fade-in">
@@ -418,7 +445,6 @@
                     <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" id="titulo-portao-atual">
                         <i class="fa-solid fa-truck text-blue-500"></i> Portão 7 - Faltas
                     </span>
-                    <!-- SINALIZAR CUIDADOS COM ÍCONE 👤 -->
                     <span id="indicador-cuidados" class="hidden text-[11px] font-normal text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30"></span>
                     <button onclick="toggleCuidadosPortao()" id="btn-cuidados" class="text-[10px] opacity-40 hover:opacity-100 underline cursor-pointer font-normal" title="Sinalizar que este portão está sob sua responsabilidade">Sinalizar Cuidados</button>
                 </div>
@@ -450,7 +476,7 @@
                     <thead>
                         <tr>
                             <th class="w-24">Portão</th>
-                            <th class="w-48">Código SSCC</th>
+                            <th style="min-width: 190px;">Código SSCC</th>
                             <th class="w-36">Categoria</th>
                             <th class="w-32">Status</th>
                             <th class="w-28">Requisitada?</th>
@@ -511,8 +537,15 @@
     const flashSet = new Set();
     const ordensInterrompidas = new Set();
     const ordensFinalizadas = new Set();
+    const ordensTimestamps = {}; // Guarda o momento de início da ordem
+    const ordensTemposFechados = {}; // Guarda o tempo exato congelado quando a ordem for finalizada
     const portoesCuidados = {};
     const filtrosPortoes = {};
+    let portoesFixados = new Set();
+    try {
+        const salvoFix = localStorage.getItem('grendene_portoes_fixados');
+        if (salvoFix) portoesFixados = new Set(JSON.parse(salvoFix));
+    } catch(e) {}
 
     let portaoAtual = 7;
     let turnoAtual = 'Turno 1';
@@ -524,6 +557,8 @@
     let focoUid = null;
     let html5QrcodeScanner = null;
     let campoAlvoScanner = null;
+    let ordemAlvoColagemLote = '';
+    let portaoMenuContexto = null;
 
     let semUid = false;
     let uidChecado = false;
@@ -557,7 +592,17 @@
     const comparaRec = (a, b) => (a.sortKey - b.sortKey) || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0);
     const $ = id => document.getElementById(id);
 
-    // NOTIFICAÇÕES TOAST EM TEMPO REAL
+    function formatarTempoDecorrido(ms) {
+        if (ms < 0) ms = 0;
+        const totalSegs = Math.floor(ms / 1000);
+        const hrs = Math.floor(totalSegs / 3600);
+        const mins = Math.floor((totalSegs % 3600) / 60);
+        const segs = totalSegs % 60;
+        if (hrs > 0) return `${hrs}h ${mins}m`;
+        if (mins > 0) return `${mins}m ${segs}s`;
+        return `${segs}s`;
+    }
+
     function mostrarToast(mensagem) {
         const container = $('toast-container');
         if (!container) return;
@@ -620,17 +665,19 @@
         renderTudo();
     }
 
-    function dispararAnimacaoCaminhao(ordemKey) {
+    function dispararAnimacaoCaminhao(ordemKey, tempoDecorridoStr) {
         const overlay = $('truck-animation-overlay');
         const title = $('truck-overlay-title');
-        if (!overlay || !title) return;
+        const subtitle = $('truck-overlay-subtitle');
+        if (!overlay || !title || !subtitle) return;
         title.textContent = `Ordem ${ordemKey} Finalizada!`;
+        subtitle.textContent = `Tempo total na doca: ${tempoDecorridoStr} 🚚💨`;
         overlay.classList.remove('hidden');
         tocarSomCaminhaoRealista();
         if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
         setTimeout(() => {
             overlay.classList.add('hidden');
-        }, 3600);
+        }, 4000);
     }
 
     function novaRec(o) {
@@ -640,6 +687,8 @@
             portao: Number(o.portao), kind: o.kind || 'falta',
             sscc: o.sscc || '', status: o.status || 'Pendente', requisitada: o.requisitada || 'Não', origem: o.origem || 'CD',
             ordem: o.ordem || '', cor: o.cor || 'azul', noApp: o.noApp || 'Não', obs: o.obs || '',
+            criadoEm: o.criadoEm || Date.now(),
+            concluidoEm: o.concluidoEm || null,
             saved: !!o.saved, dirty: o.dirty || {}, inflight: false, again: false, deleted: false,
             touched: o.touched || Date.now(),
             sortKey: (o.sortKey !== undefined && o.sortKey !== null) ? o.sortKey : sortKeyDoUid(uid)
@@ -835,7 +884,7 @@
                 if (r.data !== dataAtual) return;
                 if ((!r.saved && r.sscc.trim()) || Object.keys(r.dirty).length) {
                     pend.push({ uid: r.uid, id: r.id, data: r.data, portao: r.portao, kind: r.kind, sscc: r.sscc, status: r.status,
-                        requisitada: r.requisitada, origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, saved: r.saved, dirty: r.dirty, sortKey: r.sortKey });
+                        requisitada: r.requisitada, origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, criadoEm: r.criadoEm, concluidoEm: r.concluidoEm, saved: r.saved, dirty: r.dirty, sortKey: r.sortKey });
                 }
             });
             if (pend.length) localStorage.setItem(chavePend(), JSON.stringify(pend));
@@ -921,6 +970,8 @@
             rec = addRec(novaRec({
                 uid, id: row.id, data: row.data_operacao, portao: row.portao,
                 kind: ehRasgadaObs(vals.obs) ? 'rasgada' : 'falta', ...vals,
+                criadoEm: Date.parse(row.created_at) || Date.now(),
+                concluidoEm: (vals.status === 'Entregue no Portão' || vals.status === 'Restaurada') ? (Date.parse(row.created_at) || Date.now()) : null,
                 saved: true, touched: Date.parse(row.created_at) || Date.now(), sortKey: sk
             }));
             flashSet.add(rec.uid);
@@ -934,7 +985,14 @@
         for (const f of CAMPOS) {
             if (rec.dirty[f] !== undefined) continue;
             if (estaEditando(rec.uid, f)) continue;
-            if (rec[f] !== vals[f]) { rec[f] = vals[f]; mudou = true; }
+            if (rec[f] !== vals[f]) {
+                if (f === 'status') {
+                    if ((vals[f] === 'Entregue no Portão' || vals[f] === 'Restaurada') && !rec.concluidoEm) rec.concluidoEm = Date.now();
+                    else if (vals[f] !== 'Entregue no Portão' && vals[f] !== 'Restaurada') rec.concluidoEm = null;
+                }
+                rec[f] = vals[f];
+                mudou = true;
+            }
         }
         if (mudou) flashSet.add(rec.uid);
         return rec;
@@ -1073,10 +1131,11 @@
               })
               .on('broadcast', { event: 'ordem_finalizada' }, payload => {
                 if (payload && payload.payload) {
-                    const { ordem, responsavel } = payload.payload;
+                    const { ordem, responsavel, tempoDecorrido } = payload.payload;
                     ordensFinalizadas.add(ordem);
-                    dispararAnimacaoCaminhao(ordem);
-                    mostrarToast(`${responsavel} finalizou a ordem ${ordem} e o caminhão saiu da doca! 🚚`);
+                    ordensTemposFechados[ordem] = tempoDecorrido;
+                    dispararAnimacaoCaminhao(ordem, tempoDecorrido || 'pouco tempo');
+                    mostrarToast(`${responsavel} finalizou a ordem ${ordem} em ${tempoDecorrido}! 🚚`);
                     agendarRender();
                 }
               })
@@ -1113,7 +1172,7 @@
             recs.forEach(r => {
                 if (r.saved && r.data === dataAtual) {
                     lista.push({ uid: r.uid, id: r.id, data: r.data, portao: r.portao, kind: r.kind, sscc: r.sscc, status: r.status,
-                        requisitada: r.requisitada, origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, sortKey: r.sortKey });
+                        requisitada: r.requisitada, origem: r.origem, ordem: r.ordem, cor: r.cor, noApp: r.noApp, obs: r.obs, criadoEm: r.criadoEm, concluidoEm: r.concluidoEm, sortKey: r.sortKey });
                 }
             });
             if (lista.length) localStorage.setItem(chaveCache(), JSON.stringify(lista));
@@ -1236,6 +1295,76 @@
     }
     function fecharAlertaIntegracao() { $('modal-alerta-integracao').classList.add('hidden'); }
 
+    // MODAL DE DETALHES DE TEMPO DA SSCC
+    function abrirModalTempoSSCC(uid) {
+        const rec = recs.get(uid);
+        if (!rec) return;
+        $('detalhe-tempo-sscc').textContent = rec.sscc || 'Sem SSCC informado';
+        const dataCriacao = new Date(rec.criadoEm || Date.now());
+        $('detalhe-tempo-criacao').textContent = dataCriacao.toLocaleTimeString();
+        
+        const fimMs = rec.concluidoEm || Date.now();
+        const decorrido = fimMs - (rec.criadoEm || Date.now());
+        $('detalhe-tempo-decorrido').textContent = formatarTempoDecorrido(decorrido) + (rec.concluidoEm ? ' (Concluído 🔒)' : '');
+        $('detalhe-tempo-requisicao').textContent = rec.requisitada === 'Sim' ? '🔥 Requisitada (Sim)' : 'Não requisitada';
+        $('modal-tempo-sscc').classList.remove('hidden');
+    }
+    function fecharModalTempoSSCC() {
+        $('modal-tempo-sscc').classList.add('hidden');
+    }
+
+    // MODAL COLAGEM EM LOTE
+    function abrirModalColagemLote(ordemKey) {
+        ordemAlvoColagemLote = ordemKey;
+        $('titulo-modal-lote-ordem').textContent = ordemKey === SEM_ORDEM ? 'Sem Ordem' : `Ordem ${ordemKey}`;
+        $('textarea-lote-sscc').value = '';
+        $('modal-colagem-lote').classList.remove('hidden');
+    }
+    function fecharModalColagemLote() {
+        $('modal-colagem-lote').classList.add('hidden');
+    }
+    function processarColagemLote() {
+        const texto = $('textarea-lote-sscc').value;
+        if (!texto.trim()) { alert('Cole o texto copiado do SIAG antes de processar.'); return; }
+
+        const regex = /\b0047\d{11,21}\b/g;
+        const encontrados = texto.match(regex);
+
+        if (!encontrados || encontrados.length === 0) {
+            alert('Nenhum código SSCC válido (iniciado com 0047) foi encontrado no texto colado.');
+            return;
+        }
+
+        const unicos = [...new Set(encontrados)];
+        let inseridos = 0;
+        const ordemReal = ordemAlvoColagemLote === SEM_ORDEM ? '' : ordemAlvoColagemLote;
+
+        unicos.forEach(codigo => {
+            const ssccTratado = tratarSSCC(codigo);
+            if (ssccTratado) {
+                const jaExiste = Array.from(recs.values()).some(r => r.portao === portaoAtual && r.sscc === ssccTratado);
+                if (!jaExiste) {
+                    const rec = addRec(novaRec({
+                        portao: portaoAtual,
+                        ordem: ordemReal,
+                        sscc: ssccTratado,
+                        status: 'Pendente',
+                        requisitada: 'Não',
+                        origem: 'CD',
+                        noApp: 'Não'
+                    }));
+                    marcarSujo(rec, CAMPOS);
+                    inseridos++;
+                }
+            }
+        });
+
+        fecharModalColagemLote();
+        tocarSomSucesso();
+        mostrarToast(`${inseridos} caixa(s) inserida(s) na ordem do Portão ${portaoAtual}!`);
+        agendarRender();
+    }
+
     function reconciliar(pai, itens, chave, criar, atualizar) {
         const desejadas = new Set(itens.map(chave));
         const existentes = new Map();
@@ -1295,10 +1424,10 @@
         return 'bg-blue-600 text-white';
     }
 
-    // VERIFICA SE A CAIXA ESTÁ PARADA HÁ MAIS DE 30 MINUTOS
     function ehCaixaParada(rec) {
         if (rec.status !== 'Em andamento') return false;
-        const tempoDecorridoMin = (Date.now() - (rec.touched || Date.now())) / (1000 * 60);
+        const fimMs = rec.concluidoEm || Date.now();
+        const tempoDecorridoMin = (fimMs - (rec.criadoEm || rec.touched || Date.now())) / (1000 * 60);
         return tempoDecorridoMin >= 30;
     }
 
@@ -1308,7 +1437,8 @@
             <td class="text-center opacity-60 font-mono text-[11px]" data-label="#"></td>
             <td class="td-sscc-container" data-label="SSCC">
                 <div class="flex items-center gap-1">
-                    <input type="text" data-f="sscc" autocomplete="off" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold">
+                    <input type="text" data-f="sscc" autocomplete="off" placeholder="Digite o SSCC..." class="excel-input excel-input-sscc font-bold font-mono">
+                    <button type="button" data-action="info-tempo" class="opacity-50 hover:opacity-100 p-1 cursor-pointer shrink-0" title="Ver tempo da SSCC"><i class="fa-solid fa-clock text-xs"></i></button>
                     <span data-role="badge-parada" class="hidden text-[9px] font-bold px-1 rounded bg-amber-500 text-black shrink-0 animate-pulse" title="Caixa parada há +30 minutos!">⏱️ +30m</span>
                 </div>
             </td>
@@ -1351,7 +1481,15 @@
         });
         const peso = { vermelho: 1, amarelo: 2, azul: 3 };
         const blocos = Array.from(grupos.values());
-        blocos.forEach(b => { b.primeiro = b.itens[0] || b.rasg[0]; b.cor = b.primeiro.cor || 'azul'; });
+        blocos.forEach(b => {
+            b.primeiro = b.itens[0] || b.rasg[0];
+            b.cor = b.primeiro.cor || 'azul';
+            const chaveT = `${p}_${b.key}`;
+            if (!ordensTimestamps[chaveT]) {
+                const maisAntigo = Math.min(...b.itens.map(x => x.criadoEm || Date.now()), Date.now());
+                ordensTimestamps[chaveT] = maisAntigo;
+            }
+        });
         blocos.sort((a, b) => ((peso[a.cor] || 3) - (peso[b.cor] || 3)) || comparaRec(a.primeiro, b.primeiro));
         return blocos;
     }
@@ -1369,10 +1507,12 @@
         div.className = 'bloco ui-card border rounded-lg overflow-hidden shadow-sm';
         div.innerHTML = `
             <div class="bg-blue-50/50 dark:bg-zinc-900/80 p-2.5 border-b flex flex-wrap justify-between items-center gap-2">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <span data-role="badge" class="text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-sm uppercase tracking-wide"></span>
                     <span data-role="badge-interrompida" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded bg-red-600 text-white uppercase tracking-wider animate-pulse">⏸️ ORDEM INTERROMPIDA</span>
                     <span data-role="badge-finalizada" class="hidden text-[10px] font-extrabold px-2.5 py-0.5 rounded bg-emerald-600 text-white uppercase tracking-wider">🚚 ORDEM FINALIZADA</span>
+                    <span data-role="cronometro-bloco" class="text-[11px] font-mono font-medium opacity-80 px-2 py-0.5 rounded border flex items-center gap-1" title="Tempo ativo nesta ordem"><i class="fa-solid fa-clock text-blue-500"></i> <span data-role="tempo-texto">00:00</span></span>
+                    <span data-role="badge-tempo-alerta" class="hidden text-[10px] font-bold px-2 py-0.5 rounded animate-pulse"></span>
                     <div class="flex items-center gap-1.5">
                         <span class="text-xs font-bold opacity-75">Nº Ordem:</span>
                         <input type="text" data-role="ordem-input" autocomplete="off" placeholder="Digite a ordem..." class="ui-card border rounded px-2 py-0.5 font-mono text-xs font-bold w-36">
@@ -1382,14 +1522,15 @@
                     <span data-role="count" class="text-[11px] opacity-75 font-mono"></span>
                     <button data-action="toggle-finalizada" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1" title="Finalizar Ordem e Tirar Caminhão da Doca"><i class="fa-solid fa-truck-fast"></i> Finalizar</button>
                     <button data-action="toggle-interrompida" class="bg-red-600/80 hover:bg-red-600 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1" title="Marcar Ordem Interrompida"><i class="fa-solid fa-ban"></i> Interrompida</button>
-                    <button data-action="add-line" class="bg-gray-700 hover:bg-gray-800 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1"><i class="fa-solid fa-plus"></i> Linha</button>
+                    <button data-action="add-line" class="bg-gray-700 hover:bg-gray-800 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1" title="Adicionar Linha Individual"><i class="fa-solid fa-plus"></i> Linha</button>
+                    <button data-action="colar-lote" class="bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer flex items-center justify-center" title="Colar Lote de SSCCs do SIAG"><i class="fa-solid fa-paste"></i></button>
                     <button data-action="del-block" class="bg-red-600/80 hover:bg-red-600 text-white text-[11px] px-2 py-1 rounded font-bold cursor-pointer" title="Remover Bloco"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
             </div>
             <div data-role="wrap-faltas" class="overflow-x-auto">
                 <table class="excel-table">
                     <thead><tr>
-                        <th class="w-6 text-center">#</th><th style="width:145px;">Código SSCC</th><th style="width:125px;">Status</th>
+                        <th class="w-6 text-center">#</th><th style="min-width:190px;">Código SSCC</th><th style="width:125px;">Status</th>
                         <th style="width:105px;">Requisitada?</th><th style="width:110px;">Origem</th><th style="width:80px;">No App?</th><th>Observação</th><th class="w-8 text-center">Ação</th>
                     </tr></thead>
                     <tbody data-role="tbody"></tbody>
@@ -1403,7 +1544,7 @@
                 <div class="overflow-x-auto">
                     <table class="excel-table">
                         <thead><tr>
-                            <th class="w-6 text-center">#</th><th style="width:155px;">Código SSCC</th><th style="width:130px;">Tipo</th>
+                            <th class="w-6 text-center">#</th><th style="min-width:190px;">Código SSCC</th><th style="width:130px;">Tipo</th>
                             <th style="width:135px;">Status</th><th style="width:110px;">Origem</th><th style="width:130px;">Ordem</th>
                             <th>Observação</th><th class="w-8 text-center">Ação</th>
                         </tr></thead>
@@ -1426,19 +1567,26 @@
     }
 
     function toggleOrdemFinalizada(ordemKey) {
+        const chaveT = `${portaoAtual}_${ordemKey}`;
+        const inicio = ordensTimestamps[chaveT] || Date.now();
+        const tempoMs = ordensTemposFechados[ordemKey] || (Date.now() - inicio);
+        const tempoDecorridoStr = formatarTempoDecorrido(tempoMs);
+
         if (ordensFinalizadas.has(ordemKey)) {
             ordensFinalizadas.delete(ordemKey);
+            delete ordensTemposFechados[ordemKey];
             enviarNotificacao(`reabriu a ordem ${ordemKey} na doca`);
         } else {
             ordensFinalizadas.add(ordemKey);
-            dispararAnimacaoCaminhao(ordemKey);
-            enviarNotificacao(`finalizou a ordem ${ordemKey}! Caminhão liberado da doca 🚚`);
+            ordensTemposFechados[ordemKey] = tempoMs; // congela o tempo exato
+            dispararAnimacaoCaminhao(ordemKey, tempoDecorridoStr);
+            enviarNotificacao(`finalizou a ordem ${ordemKey} em ${tempoDecorridoStr}! Caminhão liberado 🚚`);
             if (canal && supabaseClient) {
                 try {
                     canal.send({
                         type: 'broadcast',
                         event: 'ordem_finalizada',
-                        payload: { ordem: ordemKey, responsavel: responsavelAtual || 'Alguém' }
+                        payload: { ordem: ordemKey, responsavel: responsavelAtual || 'Alguém', tempoDecorrido: tempoDecorridoStr }
                     });
                 } catch (e) {}
             }
@@ -1462,6 +1610,40 @@
 
         const badgeFinalizada = el.querySelector('[data-role="badge-finalizada"]');
         if (badgeFinalizada) badgeFinalizada.classList.toggle('hidden', !ehFinalizada);
+
+        // Cronômetro da Ordem ( congela se finalizada )
+        const chaveT = `${portaoAtual}_${b.key}`;
+        const inicio = ordensTimestamps[chaveT] || Date.now();
+        const msAtivo = ehFinalizada ? (ordensTemposFechados[b.key] || (Date.now() - inicio)) : (Date.now() - inicio);
+        
+        const elTempo = el.querySelector('[data-role="tempo-texto"]');
+        if (elTempo) elTempo.textContent = formatarTempoDecorrido(msAtivo);
+
+        // Alertas de tempo decorrido (>30m e >1h)
+        const badgeAlerta = el.querySelector('[data-role="badge-tempo-alerta"]');
+        el.classList.remove('bloco-alerta-30m', 'bloco-alerta-1h');
+        if (!ehFinalizada) {
+            const mins = msAtivo / (1000 * 60);
+            if (mins >= 60) {
+                el.classList.add('bloco-alerta-1h');
+                if (badgeAlerta) {
+                    badgeAlerta.textContent = '⚠️ Ordem > 1h em espera';
+                    badgeAlerta.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-red-600 text-white animate-pulse';
+                    badgeAlerta.classList.remove('hidden');
+                }
+            } else if (mins >= 30) {
+                el.classList.add('bloco-alerta-30m');
+                if (badgeAlerta) {
+                    badgeAlerta.textContent = '⏱️ Ordem > 30m';
+                    badgeAlerta.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500 text-black animate-pulse';
+                    badgeAlerta.classList.remove('hidden');
+                }
+            } else {
+                if (badgeAlerta) badgeAlerta.classList.add('hidden');
+            }
+        } else {
+            if (badgeAlerta) badgeAlerta.classList.add('hidden');
+        }
 
         const btnFinalizar = el.querySelector('[data-action="toggle-finalizada"]');
         if (btnFinalizar) {
@@ -1536,7 +1718,7 @@
         tr.innerHTML = `
             <td class="text-center opacity-60 font-mono text-[11px]" data-label="#"></td>
             <td class="td-sscc-container" data-label="SSCC"><div class="flex items-center gap-1 w-full justify-end">
-                <input type="text" data-f="sscc" autocomplete="off" class="excel-input excel-input-sscc font-bold">
+                <input type="text" data-f="sscc" autocomplete="off" class="excel-input excel-input-sscc font-bold font-mono">
                 <button type="button" data-action="scan" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
             </div></td>
             <td data-label="Tipo"><select data-f="tipo" class="excel-select font-bold"><option value="Lida">Rasgada (Lida)</option><option value="Nao Lida">Rasgada (Não Lida)</option></select></td>
@@ -1681,6 +1863,11 @@
             const rotulo = rotuloStatus(v);
             const idCaixa = rec.sscc.trim() ? `da caixa ${rec.sscc}` : 'de uma caixa';
             enviarNotificacao(`mudou status ${idCaixa} para "${rotulo}" no portão ${rec.portao}`);
+            if (v === 'Entregue no Portão' || v === 'Restaurada') {
+                rec.concluidoEm = Date.now();
+            } else {
+                rec.concluidoEm = null;
+            }
         }
 
         rec[f] = v;
@@ -1710,8 +1897,12 @@
             } else if (acao === 'scan') {
                 const tr = btn.closest('tr');
                 abrirModalScannerParaCampo(tr.querySelector('[data-f="sscc"]'));
+            } else if (acao === 'info-tempo') {
+                abrirModalTempoSSCC(btn.dataset.uid);
             } else if (acao === 'add-line') {
                 adicionarLinhaEmOrdem(btn.closest('.bloco').dataset.k);
+            } else if (acao === 'colar-lote') {
+                abrirModalColagemLote(btn.closest('.bloco').dataset.k);
             } else if (acao === 'del-block') {
                 removerBlocoOrdem(btn.closest('.bloco').dataset.k);
             } else if (acao === 'toggle-interrompida') {
@@ -1826,6 +2017,28 @@
         selecionarPortao(portaoAlvo);
     }
 
+    // MENU DE CONTEXTO AO PRESSIONAR O PORTÃO
+    function abrirMenuContextoPortao(p) {
+        portaoMenuContexto = p;
+        $('titulo-menu-portao').textContent = `Portão ${p}`;
+        const fixado = portoesFixados.has(p);
+        $('txt-acao-fixar').textContent = fixado ? 'Desafixar Portão' : 'Fixar no Início';
+        $('menu-contexto-portao').classList.remove('hidden');
+    }
+    function fecharMenuContextoPortao() {
+        $('menu-contexto-portao').classList.add('hidden');
+        portaoMenuContexto = null;
+    }
+    function executarFixarMenu() {
+        if (!portaoMenuContexto) return;
+        const p = portaoMenuContexto;
+        if (portoesFixados.has(p)) portoesFixados.delete(p);
+        else portoesFixados.add(p);
+        try { localStorage.setItem('grendene_portoes_fixados', JSON.stringify([...portoesFixados])); } catch(err) {}
+        fecharMenuContextoPortao();
+        gerarAbasPortoes();
+    }
+
     function gerarAbasPortoes() {
         const container = $('container-abas-portoes');
         container.innerHTML = '';
@@ -1834,20 +2047,63 @@
         btnTodos.innerHTML = '<i class="fa-solid fa-layer-group text-[11px]"></i> Todos';
         btnTodos.onclick = () => selecionarPortao('todos');
         container.appendChild(btnTodos);
-        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) {
+
+        const listaPortoes = [];
+        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) listaPortoes.push(i);
+        listaPortoes.sort((a, b) => {
+            const fixA = portoesFixados.has(a) ? 0 : 1;
+            const fixB = portoesFixados.has(b) ? 0 : 1;
+            if (fixA !== fixB) return fixA - fixB;
+            return a - b;
+        });
+
+        listaPortoes.forEach(i => {
+            const fixado = portoesFixados.has(i);
             const btn = document.createElement('button');
             btn.id = `btn-portao-${i}`;
-            btn.innerHTML = `<i class="fa-solid fa-truck text-[10px] opacity-60"></i> P-${i} <span id="badge-rasgada-${i}" class="hidden w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`;
+            btn.draggable = true;
+            btn.dataset.portao = i;
+            btn.innerHTML = `
+                <i class="fa-solid fa-truck text-[10px] opacity-60"></i> P-${i} 
+                <span id="badge-rasgada-${i}" class="hidden w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                ${fixado ? '<i class="fa-solid fa-thumbtack text-[9px] text-amber-500 ml-1"></i>' : ''}
+            `;
             btn.onclick = () => selecionarPortao(i);
+
+            let pressTimer = null;
+            btn.addEventListener('mousedown', () => { pressTimer = setTimeout(() => abrirMenuContextoPortao(i), 600); });
+            btn.addEventListener('mouseup', () => clearTimeout(pressTimer));
+            btn.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+            btn.addEventListener('touchstart', () => { pressTimer = setTimeout(() => abrirMenuContextoPortao(i), 700); });
+            btn.addEventListener('touchend', () => clearTimeout(pressTimer));
+
+            btn.addEventListener('dragstart', ev => { ev.dataTransfer.setData('text/plain', i); });
+            btn.addEventListener('dragover', ev => { ev.preventDefault(); });
+            btn.addEventListener('drop', ev => {
+                ev.preventDefault();
+                const origemP = parseInt(ev.dataTransfer.getData('text/plain'));
+                if (origemP && origemP !== i) {
+                    if (!portoesFixados.has(origemP)) portoesFixados.add(origemP);
+                    try { localStorage.setItem('grendene_portoes_fixados', JSON.stringify([...portoesFixados])); } catch(err) {}
+                    gerarAbasPortoes();
+                }
+            });
+
             container.appendChild(btn);
-        }
+        });
+        selecionarPortao(portaoAtual);
     }
+
     function selecionarPortao(p) {
         portaoAtual = p;
         const ativo = 'px-2.5 py-1.5 text-xs font-bold rounded bg-blue-600 text-white shadow-sm whitespace-nowrap cursor-pointer flex items-center gap-1.5';
         const inativo = 'px-2.5 py-1.5 text-xs font-bold rounded ui-card hover:opacity-85 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5';
-        $('btn-portao-todos').className = p === 'todos' ? ativo : inativo + ' border-r text-blue-500';
-        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) $(`btn-portao-${i}`).className = (i === p) ? ativo : inativo;
+        const elTodos = $('btn-portao-todos');
+        if (elTodos) elTodos.className = p === 'todos' ? ativo : inativo + ' border-r text-blue-500';
+        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) {
+            const b = $(`btn-portao-${i}`);
+            if (b) b.className = (i === p) ? ativo : inativo;
+        }
         if (p === 'todos') {
             $('wrapper-conteudo-dinamico').classList.add('hidden');
             $('wrapper-todos-portoes').classList.remove('hidden');
@@ -1887,53 +2143,6 @@
     if (localStorage.getItem('tema_grendene') === 'dark') {
         document.body.classList.replace('light', 'dark');
         $('icone-tema').className = 'fa-solid fa-sun';
-    }
-
-    function abrirModalSemExterna() {
-        $('busca-produto').value = ''; $('busca-cor').value = '';
-        $('resultado-busca-sem-externa').innerHTML = '<p class="text-center opacity-50 py-4">Insira o produto ou cor e clique em buscar.</p>';
-        $('modal-sem-externa').classList.remove('hidden');
-    }
-    function fecharModalSemExterna() { $('modal-sem-externa').classList.add('hidden'); }
-    async function executarBuscaSemExterna() {
-        const prod = $('busca-produto').value.trim();
-        const cor = $('busca-cor').value.trim();
-        const cont = $('resultado-busca-sem-externa');
-        if (!prod && !cor) { alert('Informe pelo menos o Produto ou a Cor para realizar a busca.'); return; }
-        cont.innerHTML = '<p class="text-center opacity-75 py-4"><i class="fa-solid fa-spinner fa-spin"></i> Pesquisando no banco de dados...</p>';
-        if (!supabaseClientSecundario) { cont.innerHTML = '<p class="text-center text-red-500 py-4">Erro: Conexão com o Supabase indisponível.</p>'; return; }
-        try {
-            let query = supabaseClientSecundario.from('caixas_cd8').select('*');
-            if (prod) query = query.ilike('produto', `%${prod}%`);
-            if (cor) query = query.ilike('cor', `%${cor}%`);
-            const { data, error } = await query.limit(50);
-            if (error) throw error;
-            if (!data || data.length === 0) { cont.innerHTML = '<p class="text-center text-amber-500 py-4 font-bold">Nenhum registro encontrado para este produto/cor.</p>'; return; }
-            cont.innerHTML = '';
-            data.forEach((item, idx) => {
-                const card = document.createElement('div');
-                card.className = 'ui-card border p-2.5 rounded shadow-sm flex flex-col gap-1';
-                const dt = item.created_at ? new Date(item.created_at).toLocaleString('pt-BR') : 'Data não informada';
-                const topo = document.createElement('div');
-                topo.className = 'flex justify-between items-center font-bold text-blue-500';
-                const a = document.createElement('span'); a.textContent = `#${idx + 1} - Produto: ${item.produto || 'N/A'}`;
-                const b = document.createElement('span'); b.className = 'text-[10px] opacity-75'; b.textContent = dt;
-                topo.append(a, b);
-                const grade = document.createElement('div');
-                grade.className = 'grid grid-cols-2 gap-1 text-[11px] opacity-90';
-                const c1 = document.createElement('div'); c1.innerHTML = '<strong class="opacity-70">Cor:</strong> '; c1.append(item.cor || 'N/A');
-                const c2 = document.createElement('div'); c2.innerHTML = '<strong class="opacity-70">Localização:</strong> ';
-                const loc = document.createElement('span'); loc.className = 'text-emerald-600 font-bold'; loc.textContent = item.localizacao || 'N/A'; c2.append(loc);
-                grade.append(c1, c2);
-                card.append(topo, grade);
-                cont.appendChild(card);
-            });
-        } catch (err) {
-            cont.innerHTML = '';
-            const p = document.createElement('p'); p.className = 'text-center text-red-500 py-4 font-bold';
-            p.textContent = `Erro ao consultar o banco: ${err.message || err}`;
-            cont.appendChild(p);
-        }
     }
 
     function abrirModalScannerParaCampo(campo) {
@@ -1987,13 +2196,11 @@
         } catch (e) {}
     }
 
-    // EFEITO SONORO REALISTA DE CAMINHÃO (Buzina de Ar + Motor Diesel + Escape/Ar comprimido)
     function tocarSomCaminhaoRealista() {
         try {
             audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
             const now = audioCtx.currentTime;
 
-            // 1. Buzina de Ar do Caminhão (Air Horn)
             [350, 410].forEach(freq => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
@@ -2011,7 +2218,6 @@
                 osc.stop(now + 0.5);
             });
 
-            // 2. Ronco do Motor Acelerando (Engine Rev & Rumble)
             const engineOsc = audioCtx.createOscillator();
             const engineGain = audioCtx.createGain();
             engineOsc.type = 'sawtooth';
@@ -2028,7 +2234,6 @@
             engineOsc.start(now + 0.4);
             engineOsc.stop(now + 2.5);
 
-            // 3. Ruído de Ar Comprimido / Escape saindo (Air Hiss)
             const bufferSize = audioCtx.sampleRate * 1.2;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -2054,9 +2259,7 @@
             noise.start(now + 1.8);
             noise.stop(now + 2.8);
 
-        } catch (e) {
-            console.warn('Erro ao tocar áudio:', e);
-        }
+        } catch (e) {}
     }
 
     const tocarSomSucesso = () => tocarSequencia([587.33, 880], { passo: 0.1, dur: 0.2 });
@@ -2092,6 +2295,23 @@
         ligarEventos($('blocos-ordens-container'));
         selecionarPortao(7);
         await carregarDia();
+
+        // Intervalo de atualização de tempos na tela a cada segundo
+        setInterval(() => {
+            if (portaoAtual !== 'todos') {
+                document.querySelectorAll('[data-role="cronometro-bloco"]').forEach(el => {
+                    const blocoEl = el.closest('.bloco');
+                    if (blocoEl && blocoEl.dataset.k) {
+                        const chaveT = `${portaoAtual}_${blocoEl.dataset.k}`;
+                        const inicio = ordensTimestamps[chaveT] || Date.now();
+                        const ehFinalizado = ordensFinalizadas.has(blocoEl.dataset.k);
+                        const msAtivo = ehFinalizado ? (ordensTemposFechados[blocoEl.dataset.k] || (Date.now() - inicio)) : (Date.now() - inicio);
+                        const txtEl = el.querySelector('[data-role="tempo-texto"]');
+                        if (txtEl) txtEl.textContent = formatarTempoDecorrido(msAtivo);
+                    }
+                });
+            }
+        }, 1000);
     });
     </script>
 </body>
