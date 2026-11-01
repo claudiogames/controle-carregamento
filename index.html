@@ -236,13 +236,13 @@
                 <button onclick="fecharModalColagemLote()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
             <div class="space-y-3 text-xs">
-                <p class="opacity-75">Cole abaixo o texto copiado do SIAG. O sistema identificará automaticamente todos os códigos que começam com <strong>0047</strong> e adicionará nesta ordem.</p>
+                <p class="opacity-75">Cole abaixo o texto copiado do SIAG. O sistema identificará automaticamente os códigos, fará a análise e adicionará as novas faltas.</p>
                 <div>
                     <textarea id="textarea-lote-sscc" rows="8" placeholder="Cole aqui o texto copiado do SIAG..." class="w-full ui-card border rounded p-2.5 font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
                 </div>
                 <div class="flex justify-end gap-2 pt-2 border-t">
                     <button onclick="fecharModalColagemLote()" class="px-3 py-1.5 border rounded cursor-pointer opacity-75">Cancelar</button>
-                    <button onclick="processarColagemLote()" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded cursor-pointer shadow">Processar e Inserir</button>
+                    <button onclick="processarColagemLote()" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded cursor-pointer shadow">Processar e Analisar</button>
                 </div>
             </div>
         </div>
@@ -537,8 +537,8 @@
     const flashSet = new Set();
     const ordensInterrompidas = new Set();
     const ordensFinalizadas = new Set();
-    const ordensTimestamps = {}; // Guarda o momento de início da ordem
-    const ordensTemposFechados = {}; // Guarda o tempo exato congelado quando a ordem for finalizada
+    const ordensTimestamps = {};
+    const ordensTemposFechados = {};
     const portoesCuidados = {};
     const filtrosPortoes = {};
     let portoesFixados = new Set();
@@ -1295,7 +1295,6 @@
     }
     function fecharAlertaIntegracao() { $('modal-alerta-integracao').classList.add('hidden'); }
 
-    // MODAL DE DETALHES DE TEMPO DA SSCC
     function abrirModalTempoSSCC(uid) {
         const rec = recs.get(uid);
         if (!rec) return;
@@ -1313,7 +1312,7 @@
         $('modal-tempo-sscc').classList.add('hidden');
     }
 
-    // MODAL COLAGEM EM LOTE
+    // MODAL COLAGEM EM LOTE COM ANÁLISE INTELIGENTE DE FALTAS
     function abrirModalColagemLote(ordemKey) {
         ordemAlvoColagemLote = ordemKey;
         $('titulo-modal-lote-ordem').textContent = ordemKey === SEM_ORDEM ? 'Sem Ordem' : `Ordem ${ordemKey}`;
@@ -1336,14 +1335,17 @@
         }
 
         const unicos = [...new Set(encontrados)];
-        let inseridos = 0;
+        let inseridosNovos = 0;
+        let jaExistentes = 0;
         const ordemReal = ordemAlvoColagemLote === SEM_ORDEM ? '' : ordemAlvoColagemLote;
 
         unicos.forEach(codigo => {
             const ssccTratado = tratarSSCC(codigo);
             if (ssccTratado) {
-                const jaExiste = Array.from(recs.values()).some(r => r.portao === portaoAtual && r.sscc === ssccTratado);
-                if (!jaExiste) {
+                // Verifica se já existe em qualquer registro do dia atual
+                const jaExisteNoPortao = Array.from(recs.values()).some(r => r.portao === portaoAtual && r.sscc === ssccTratado);
+                
+                if (!jaExisteNoPortao) {
                     const rec = addRec(novaRec({
                         portao: portaoAtual,
                         ordem: ordemReal,
@@ -1354,14 +1356,19 @@
                         noApp: 'Não'
                     }));
                     marcarSujo(rec, CAMPOS);
-                    inseridos++;
+                    inseridosNovos++;
+                } else {
+                    jaExistentes++;
                 }
             }
         });
 
         fecharModalColagemLote();
         tocarSomSucesso();
-        mostrarToast(`${inseridos} caixa(s) inserida(s) na ordem do Portão ${portaoAtual}!`);
+
+        // Análise inteligente detalhada na notificação
+        let mensagemAnalise = `📊 Análise do Lote:\n• ${inseridosNovos} nova(s) falta(s) registrada(s).\n• ${jaExistentes} caixa(s) já haviam sido adicionadas antes.`;
+        mostrarToast(mensagemAnalise);
         agendarRender();
     }
 
@@ -1578,7 +1585,7 @@
             enviarNotificacao(`reabriu a ordem ${ordemKey} na doca`);
         } else {
             ordensFinalizadas.add(ordemKey);
-            ordensTemposFechados[ordemKey] = tempoMs; // congela o tempo exato
+            ordensTemposFechados[ordemKey] = tempoMs;
             dispararAnimacaoCaminhao(ordemKey, tempoDecorridoStr);
             enviarNotificacao(`finalizou a ordem ${ordemKey} em ${tempoDecorridoStr}! Caminhão liberado 🚚`);
             if (canal && supabaseClient) {
@@ -1611,7 +1618,6 @@
         const badgeFinalizada = el.querySelector('[data-role="badge-finalizada"]');
         if (badgeFinalizada) badgeFinalizada.classList.toggle('hidden', !ehFinalizada);
 
-        // Cronômetro da Ordem ( congela se finalizada )
         const chaveT = `${portaoAtual}_${b.key}`;
         const inicio = ordensTimestamps[chaveT] || Date.now();
         const msAtivo = ehFinalizada ? (ordensTemposFechados[b.key] || (Date.now() - inicio)) : (Date.now() - inicio);
@@ -1619,7 +1625,6 @@
         const elTempo = el.querySelector('[data-role="tempo-texto"]');
         if (elTempo) elTempo.textContent = formatarTempoDecorrido(msAtivo);
 
-        // Alertas de tempo decorrido (>30m e >1h)
         const badgeAlerta = el.querySelector('[data-role="badge-tempo-alerta"]');
         el.classList.remove('bloco-alerta-30m', 'bloco-alerta-1h');
         if (!ehFinalizada) {
@@ -2017,7 +2022,6 @@
         selecionarPortao(portaoAlvo);
     }
 
-    // MENU DE CONTEXTO AO PRESSIONAR O PORTÃO
     function abrirMenuContextoPortao(p) {
         portaoMenuContexto = p;
         $('titulo-menu-portao').textContent = `Portão ${p}`;
@@ -2296,7 +2300,6 @@
         selecionarPortao(7);
         await carregarDia();
 
-        // Intervalo de atualização de tempos na tela a cada segundo
         setInterval(() => {
             if (portaoAtual !== 'todos') {
                 document.querySelectorAll('[data-role="cronometro-bloco"]').forEach(el => {
