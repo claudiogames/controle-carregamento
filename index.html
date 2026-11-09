@@ -73,6 +73,9 @@
         .status-rasgada-restaurada { background-color: #0369a1 !important; color: #ffffff !important; }
         .status-rasgada-entregue { background-color: #15803d !important; color: #ffffff !important; }
 
+        .origem-fabrica { background-color: #dc2626 !important; color: #ffffff !important; font-weight: 800 !important; }
+        .origem-cd { background-color: transparent !important; }
+
         .app-nao { background-color: #ef4444 !important; color: #ffffff !important; }
         .app-sim { background-color: #22c55e !important; color: #ffffff !important; }
 
@@ -400,7 +403,7 @@
     <div id="aviso-sistema" class="hidden mb-3 p-2.5 rounded-lg text-xs font-bold border"></div>
 
     <!-- KPIs -->
-    <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
+    <div class="grid grid-cols-2 sm:grid-cols-7 gap-2 mb-3">
         <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold opacity-75 uppercase block">Total Faltas</span>
             <div class="text-base sm:text-lg font-black font-mono" id="kpi-total-faltas">0</div>
@@ -412,6 +415,10 @@
         <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold text-red-500 uppercase block">Pendentes</span>
             <div class="text-base sm:text-lg font-black font-mono text-red-500" id="kpi-pendentes">0</div>
+        </div>
+        <div class="ui-card border p-2 rounded-lg shadow-sm">
+            <span class="text-[9px] font-bold text-purple-600 dark:text-purple-400 uppercase block">Pend. Fábrica</span>
+            <div class="text-base sm:text-lg font-black font-mono text-purple-600 dark:text-purple-400" id="kpi-pend-fabrica">0</div>
         </div>
         <div class="ui-card border p-2 rounded-lg shadow-sm">
             <span class="text-[9px] font-bold text-orange-500 uppercase block">Requisitadas</span>
@@ -1467,7 +1474,9 @@
         const req = tr.querySelector('[data-f="requisitada"]'); setSelectValor(req, rec.requisitada);
         req.className = 'excel-select ' + (rec.requisitada === 'Sim' ? 'requisitada-sim' : 'requisitada-nao');
 
-        setSelectValor(tr.querySelector('[data-f="origem"]'), rec.origem);
+        const ori = tr.querySelector('[data-f="origem"]'); setSelectValor(ori, rec.origem);
+        ori.className = 'excel-select border ' + (rec.origem !== 'CD' ? 'origem-fabrica' : 'origem-cd');
+
         const ap = tr.querySelector('[data-f="noApp"]'); setSelectValor(ap, rec.noApp);
         ap.className = 'excel-select ' + (rec.noApp === 'Sim' ? 'app-sim' : 'app-nao');
         setInputValor(tr.querySelector('[data-f="obs"]'), rec.obs);
@@ -1745,7 +1754,10 @@
         st.className = 'excel-select font-bold ' + (tipo === 'Lida' ? 'text-red-600' : 'text-amber-600');
         const s = tr.querySelector('[data-f="status"]'); setSelectValor(s, rec.status);
         s.className = 'excel-select ' + getClassStatusRasgada(rec.status);
-        setSelectValor(tr.querySelector('[data-f="origem"]'), rec.origem);
+        
+        const ori = tr.querySelector('[data-f="origem"]'); setSelectValor(ori, rec.origem);
+        ori.className = 'excel-select border ' + (rec.origem !== 'CD' ? 'origem-fabrica' : 'origem-cd');
+
         const so = tr.querySelector('[data-f="ordem"]');
         if (so.dataset.sig !== sigOrdens && document.activeElement !== so) {
             so.textContent = '';
@@ -1766,11 +1778,15 @@
             total++;
             const tr = document.createElement('tr');
             const rasg = r.kind === 'rasgada';
+            const ehFabrica = r.origem && r.origem !== 'CD';
+            const catTexto = rasg ? `Rasgada (${tipoDaObs(r.obs)})` : (ehFabrica ? 'Falta (Fábrica)' : 'Falta Normal');
+            const origTexto = ehFabrica ? `${r.origem} 🏭` : r.origem;
             const cel = [
                 [`Portão ${r.portao}`, 'font-bold ' + (rasg ? 'text-amber-500' : 'text-blue-500')],
                 [r.sscc, 'font-mono font-bold'],
-                [rasg ? `Rasgada (${tipoDaObs(r.obs)})` : 'Falta Normal', ''],
-                [rotuloStatus(r.status), ''], [r.requisitada || 'Não', ''], [r.origem, ''], [r.ordem, ''],
+                [catTexto, ehFabrica ? 'font-bold text-purple-600 dark:text-purple-400' : ''],
+                [rotuloStatus(r.status), ''], [r.requisitada || 'Não', ''],
+                [origTexto, ehFabrica ? 'font-bold text-red-600' : ''], [r.ordem, ''],
                 [rasg ? 'Sim' : r.noApp, ''], [rasg ? restoDaObs(r.obs) : r.obs, '']
             ];
             cel.forEach(([txt, cls]) => { const td = document.createElement('td'); td.textContent = txt; if (cls) td.className = cls; tr.appendChild(td); });
@@ -1780,7 +1796,7 @@
     }
 
     function atualizarKPIs() {
-        let total = 0, entregues = 0, pendentes = 0, requisitadas = 0, rasgadas = 0, noApp = 0;
+        let total = 0, entregues = 0, pendentes = 0, requisitadas = 0, rasgadas = 0, noApp = 0, pendFabrica = 0;
         recs.forEach(r => {
             if (r.kind === 'rasgada') rasgadas++;
             if (!r.sscc.trim()) return;
@@ -1788,10 +1804,12 @@
             if (r.status === 'Entregue no Portão') entregues++; else pendentes++;
             if (r.requisitada === 'Sim') requisitadas++;
             if (r.kind === 'falta' && r.noApp === 'Sim') noApp++;
+            if (r.origem && r.origem !== 'CD') pendFabrica++;
         });
         $('kpi-total-faltas').innerText = total;
         $('kpi-entregues').innerText = entregues;
         $('kpi-pendentes').innerText = pendentes;
+        $('kpi-pend-fabrica').innerText = pendFabrica;
         $('kpi-requisitadas').innerText = requisitadas;
         $('kpi-rasgadas').innerText = rasgadas;
         $('kpi-no-app').innerText = noApp;
@@ -1872,6 +1890,15 @@
                 rec.concluidoEm = Date.now();
             } else {
                 rec.concluidoEm = null;
+            }
+        }
+
+        if (f === 'origem') {
+            const idCaixa = rec.sscc.trim() ? `da caixa ${rec.sscc}` : 'de uma caixa';
+            if (v !== 'CD') {
+                enviarNotificacao(`marcou pendência de fábrica (${v}) ${idCaixa} no portão ${rec.portao}`);
+            } else {
+                enviarNotificacao(`retornou a origem ${idCaixa} para CD no portão ${rec.portao}`);
             }
         }
 
