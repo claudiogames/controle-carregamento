@@ -154,7 +154,7 @@
 
     <div id="toast-container" class="fixed top-4 right-4 z-[999999] flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
-    <!-- MENU CONTEXTUAL DE FIXAR PORTÃO (PRESSIONAR) -->
+    <!-- MENU CONTEXTUAL DE FIXAR PORTÃO -->
     <div id="menu-contexto-portao" class="fixed inset-0 bg-black/40 hidden z-[999999] flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-xs w-full p-4 shadow-2xl border text-center my-auto">
             <h3 id="titulo-menu-portao" class="text-sm font-bold text-blue-500 mb-3">Portão X</h3>
@@ -231,7 +231,27 @@
         });
     </script>
 
-    <!-- MODAL COLAGEM EM LOTE -->
+    <!-- MODAL COLAGEM EM LOTE DO SISTEMA (GERAL - EXTRATOR PRECISO POR COLUNAS) -->
+    <div id="modal-colagem-lote-geral" class="fixed inset-0 bg-black/70 hidden z-[99999] flex items-center justify-center p-4">
+        <div class="ui-card rounded-xl max-w-xl w-full p-5 shadow-2xl border border-cyan-500 my-auto">
+            <div class="flex justify-between items-center pb-2 border-b mb-4">
+                <h3 class="text-sm font-bold text-cyan-500 flex items-center gap-1.5"><i class="fa-solid fa-file-excel"></i> Importar Relatório Completo do Sistema (SIAG)</h3>
+                <button onclick="fecharModalColagemGeral()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <p class="opacity-75">Cole abaixo as linhas copiadas do relatório do SIAG. O sistema fará o mapeamento exato por colunas (SSCC, Ordem 1112XXXX e Portão correto), sem misturar portões!</p>
+                <div>
+                    <textarea id="textarea-lote-geral" rows="9" placeholder="Cole aqui a tabela copiada do sistema..." class="w-full ui-card border rounded p-2.5 font-mono text-xs focus:ring-2 focus:ring-cyan-500 outline-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t">
+                    <button onclick="fecharModalColagemGeral()" class="px-3 py-1.5 border rounded cursor-pointer opacity-75">Cancelar</button>
+                    <button onclick="processarColagemGeralSistema()" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded cursor-pointer shadow">Distribuir e Salvar Automaticamente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL COLAGEM EM LOTE (POR BLOCO) -->
     <div id="modal-colagem-lote" class="fixed inset-0 bg-black/70 hidden z-[99999] flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-lg w-full p-5 shadow-2xl border border-blue-500 my-auto">
             <div class="flex justify-between items-center pb-2 border-b mb-4">
@@ -393,9 +413,12 @@
                 </select>
             </div>
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
+            <button onclick="abrirModalColagemGeral()" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer" title="Colar relatório completo do sistema"><i class="fa-solid fa-file-excel"></i> Importar Lote SIAG</button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
             <button onclick="abrirModalNovaOrdem()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-layer-group"></i> + Nova Ordem</button>
             <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
+            <!-- BOTÃO SUTIL DE LIMPAR DADOS -->
+            <button onclick="apagarTodosDadosLocais()" class="ui-card border p-2 rounded-lg text-xs opacity-50 hover:opacity-100 hover:text-red-500 transition-opacity cursor-pointer shadow-sm" title="Limpar cache e dados locais"><i class="fa-solid fa-eraser"></i></button>
         </div>
     </header>
 
@@ -685,6 +708,29 @@
         setTimeout(() => {
             overlay.classList.add('hidden');
         }, 4000);
+    }
+
+    // FUNÇÃO PARA APAGAR DADOS LOCAIS DE FORMA SUTIL
+    function apagarTodosDadosLocais() {
+        if (!confirm('Deseja limpar todos os dados locais e cache salvos neste dispositivo?')) return;
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && (k.startsWith('grendene_') || k.includes('cache') || k.includes('pend'))) {
+                    keysToRemove.push(k);
+                }
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+            recs.clear();
+            idIndex.clear();
+            tombstones.clear();
+            mostrarToast('🗑️ Dados locais e cache limpos com sucesso.');
+            agendarRender();
+            setTimeout(() => window.location.reload(), 1000);
+        } catch(e) {
+            alert('Erro ao limpar dados.');
+        }
     }
 
     function novaRec(o) {
@@ -1319,7 +1365,88 @@
         $('modal-tempo-sscc').classList.add('hidden');
     }
 
-    // MODAL COLAGEM EM LOTE COM ANÁLISE INTELIGENTE DE FALTAS
+    // FUNÇÕES DE COLAGEM EM LOTE (GERAL - EXTRATOR PRECISO POR COLUNAS DO SIAG)
+    function abrirModalColagemGeral() {
+        $('textarea-lote-geral').value = '';
+        $('modal-colagem-lote-geral').classList.remove('hidden');
+    }
+    function fecharModalColagemGeral() {
+        $('modal-colagem-lote-geral').classList.add('hidden');
+    }
+
+    function processarColagemGeralSistema() {
+        const texto = $('textarea-lote-geral').value;
+        if (!texto.trim()) { alert('Cole o relatório copiado do sistema antes de processar.'); return; }
+
+        const linhas = texto.split('\n');
+        let inseridos = 0;
+        let duplicados = 0;
+
+        linhas.forEach(linha => {
+            if (!linha.trim()) return;
+
+            // Extrai rigorosamente o SSCC de 20 dígitos começando com 0047
+            const matchSSCC = linha.match(/\b0047\d{16}\b/) || linha.match(/\b0047\d{11,21}\b/);
+            if (!matchSSCC) return;
+
+            const sscc = tratarSSCC(matchSSCC[0]);
+
+            // Divide a linha pelas tabulações ou espaços exatos da tabela copiada
+            const colunas = linha.split(/\t+|\s{2,}/).map(c => c.trim()).filter(Boolean);
+
+            let portao = portaoAtual;
+            let ordem = '';
+
+            // Procura a ordem que começa obrigatoriamente com "1112" e tem 8 dígitos (ex: 11122583)
+            for (let col of colunas) {
+                if (/^1112\d{4}$/.test(col)) {
+                    ordem = col;
+                    break;
+                }
+            }
+            if (!ordem) {
+                const matchOrdem = linha.match(/\b1112\d{4}\b/);
+                if (matchOrdem) ordem = matchOrdem[0];
+            }
+
+            // Procura o portão exato (número isolado entre 7 e 26 que fica logo antes de "SEM PALLET" ou em coluna numérica dedicada)
+            for (let i = 0; i < colunas.length; i++) {
+                const n = parseInt(colunas[i]);
+                if (!isNaN(n) && n >= PORTAO_MIN && n <= PORTAO_MAX) {
+                    // Confirma se não pegou a ordem por engano
+                    if (String(n).length <= 2) {
+                        portao = n;
+                    }
+                }
+            }
+
+            if (sscc && sscc.length >= 10) {
+                // Valida duplicidade estritamente dentro do MESMO portão para não afetar outros portões
+                const jaExisteNoPortao = Array.from(recs.values()).some(r => r.portao === portao && r.sscc === sscc);
+                if (!jaExisteNoPortao) {
+                    const rec = addRec(novaRec({
+                        portao: portao,
+                        ordem: ordem,
+                        sscc: sscc,
+                        status: 'Pendente',
+                        requisitada: 'Não',
+                        origem: 'CD',
+                        noApp: 'Não'
+                    }));
+                    marcarSujo(rec, CAMPOS);
+                    inseridos++;
+                } else {
+                    duplicados++;
+                }
+            }
+        });
+
+        fecharModalColagemGeral();
+        tocarSomSucesso();
+        mostrarToast(`📥 Importação Concluída:\n• ${inseridos} falta(s) distribuída(s) com precisão absoluta.\n• ${duplicados} já existiam.`);
+        agendarRender();
+    }
+
     function abrirModalColagemLote(ordemKey) {
         ordemAlvoColagemLote = ordemKey;
         $('titulo-modal-lote-ordem').textContent = ordemKey === SEM_ORDEM ? 'Sem Ordem' : `Ordem ${ordemKey}`;
@@ -1349,9 +1476,7 @@
         unicos.forEach(codigo => {
             const ssccTratado = tratarSSCC(codigo);
             if (ssccTratado) {
-                // Verifica se já existe em qualquer registro do dia atual
                 const jaExisteNoPortao = Array.from(recs.values()).some(r => r.portao === portaoAtual && r.sscc === ssccTratado);
-                
                 if (!jaExisteNoPortao) {
                     const rec = addRec(novaRec({
                         portao: portaoAtual,
@@ -1372,10 +1497,7 @@
 
         fecharModalColagemLote();
         tocarSomSucesso();
-
-        // Análise inteligente detalhada na notificação
-        let mensagemAnalise = `📊 Análise do Lote:\n• ${inseridosNovos} nova(s) falta(s) registrada(s).\n• ${jaExistentes} caixa(s) já haviam sido adicionadas antes.`;
-        mostrarToast(mensagemAnalise);
+        mostrarToast(`📊 Análise do Lote:\n• ${inseridosNovos} nova(s) falta(s) registrada(s).\n• ${jaExistentes} caixa(s) já haviam sido adicionadas antes.`);
         agendarRender();
     }
 
