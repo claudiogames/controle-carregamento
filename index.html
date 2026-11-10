@@ -417,7 +417,6 @@
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
             <button onclick="abrirModalNovaOrdem()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-layer-group"></i> + Nova Ordem</button>
             <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
-            <!-- BOTÃO SUTIL DE LIMPAR DADOS -->
             <button onclick="apagarTodosDadosLocais()" class="ui-card border p-2 rounded-lg text-xs opacity-50 hover:opacity-100 hover:text-red-500 transition-opacity cursor-pointer shadow-sm" title="Limpar cache e dados locais"><i class="fa-solid fa-eraser"></i></button>
         </div>
     </header>
@@ -710,7 +709,6 @@
         }, 4000);
     }
 
-    // FUNÇÃO PARA APAGAR DADOS LOCAIS DE FORMA SUTIL
     function apagarTodosDadosLocais() {
         if (!confirm('Deseja limpar todos os dados locais e cache salvos neste dispositivo?')) return;
         try {
@@ -1365,7 +1363,6 @@
         $('modal-tempo-sscc').classList.add('hidden');
     }
 
-    // FUNÇÕES DE COLAGEM EM LOTE (GERAL - EXTRATOR PRECISO POR COLUNAS DO SIAG)
     function abrirModalColagemGeral() {
         $('textarea-lote-geral').value = '';
         $('modal-colagem-lote-geral').classList.remove('hidden');
@@ -1385,19 +1382,15 @@
         linhas.forEach(linha => {
             if (!linha.trim()) return;
 
-            // Extrai rigorosamente o SSCC de 20 dígitos começando com 0047
             const matchSSCC = linha.match(/\b0047\d{16}\b/) || linha.match(/\b0047\d{11,21}\b/);
             if (!matchSSCC) return;
 
             const sscc = tratarSSCC(matchSSCC[0]);
-
-            // Divide a linha pelas tabulações ou espaços exatos da tabela copiada
             const colunas = linha.split(/\t+|\s{2,}/).map(c => c.trim()).filter(Boolean);
 
             let portao = portaoAtual;
             let ordem = '';
 
-            // Procura a ordem que começa obrigatoriamente com "1112" e tem 8 dígitos (ex: 11122583)
             for (let col of colunas) {
                 if (/^1112\d{4}$/.test(col)) {
                     ordem = col;
@@ -1409,11 +1402,9 @@
                 if (matchOrdem) ordem = matchOrdem[0];
             }
 
-            // Procura o portão exato (número isolado entre 7 e 26 que fica logo antes de "SEM PALLET" ou em coluna numérica dedicada)
             for (let i = 0; i < colunas.length; i++) {
                 const n = parseInt(colunas[i]);
                 if (!isNaN(n) && n >= PORTAO_MIN && n <= PORTAO_MAX) {
-                    // Confirma se não pegou a ordem por engano
                     if (String(n).length <= 2) {
                         portao = n;
                     }
@@ -1421,7 +1412,6 @@
             }
 
             if (sscc && sscc.length >= 10) {
-                // Valida duplicidade estritamente dentro do MESMO portão para não afetar outros portões
                 const jaExisteNoPortao = Array.from(recs.values()).some(r => r.portao === portao && r.sscc === sscc);
                 if (!jaExisteNoPortao) {
                     const rec = addRec(novaRec({
@@ -2419,22 +2409,78 @@
     const tocarSomConquistaAnimada = () => tocarSequencia([523.25, 659.25, 783.99, 1046.5], { tipo: 'triangle', passo: 0.08, dur: 0.25 });
     const tocarSomTrocaData = () => tocarSequencia([440, 554.37], { passo: 0.12, dur: 0.25, vol: 0.1 });
 
-    function exportarExcel() {
-        const wb = XLSX.utils.book_new();
-        let temDados = false;
-        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) {
-            const lista = Array.from(recs.values()).filter(r => r.portao === i && r.sscc.trim()).sort(comparaRec);
-            if (!lista.length) continue;
-            temDados = true;
-            const linhas = [{ 'SSCC': `Portão ${i} (${dataAtual})`, 'Status': '', 'Requisitada?': '', 'Origem': '', 'Ordem': '', 'Prioridade': '', 'No App?': '', 'Observação': '' }];
-            lista.filter(r => r.kind === 'falta').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': rotuloStatus(r.status), 'Requisitada?': r.requisitada || 'Não', 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': r.cor, 'No App?': r.noApp, 'Observação': r.obs }));
-            lista.filter(r => r.kind === 'rasgada').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': `${rotuloStatus(r.status)} (Rasgada ${tipoDaObs(r.obs)})`, 'Requisitada?': 'Sim', 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': 'vermelho', 'No App?': 'Sim', 'Observação': r.obs }));
-            const ws = XLSX.utils.json_to_sheet(linhas);
-            ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 15 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
-            XLSX.utils.book_append_sheet(wb, ws, `Portão ${i}`);
+    async function exportarExcel() {
+        const opcao = prompt(
+            "Selecione o tipo de relatório do Excel:\n\n1 - Relatório do período atuante (Apenas o dia " + dataAtual + ")\n2 - Relatório completo de todo o período (Todas as datas, unificado em uma aba)",
+            "1"
+        );
+
+        if (!opcao) return;
+
+        if (opcao === "1") {
+            const wb = XLSX.utils.book_new();
+            let temDados = false;
+            for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) {
+                const lista = Array.from(recs.values()).filter(r => r.portao === i && r.sscc.trim()).sort(comparaRec);
+                if (!lista.length) continue;
+                temDados = true;
+                const linhas = [{ 'SSCC': `Portão ${i} (${dataAtual})`, 'Status': '', 'Requisitada?': '', 'Origem': '', 'Ordem': '', 'Prioridade': '', 'No App?': '', 'Observação': '' }];
+                lista.filter(r => r.kind === 'falta').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': rotuloStatus(r.status), 'Requisitada?': r.requisitada || 'Não', 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': r.cor, 'No App?': r.noApp, 'Observação': r.obs }));
+                lista.filter(r => r.kind === 'rasgada').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': `${rotuloStatus(r.status)} (Rasgada)`, 'Requisitada?': 'Sim', 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': 'vermelho', 'No App?': 'Sim', 'Observação': r.obs }));
+                const ws = XLSX.utils.json_to_sheet(linhas);
+                ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 15 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
+                XLSX.utils.book_append_sheet(wb, ws, `Portão ${i}`);
+            }
+            if (!temDados) { alert('Nenhum dado encontrado para exportar.'); return; }
+            XLSX.writeFile(wb, `Controle_Carregamento_${dataAtual}.xlsx`);
+        } else if (opcao === "2") {
+            if (!supabaseClient) {
+                alert("Modo offline: exportando apenas os dados disponíveis na memória.");
+                return;
+            }
+
+            mostrarToast("⏳ Baixando histórico completo de todas as datas...");
+            try {
+                const TAM = 1000, todas = [];
+                for (let ini = 0; ini < 100000; ini += TAM) {
+                    const { data, error } = await supabaseClient.from(TABELA).select('*').order('data_operacao', { ascending: true }).range(ini, ini + TAM - 1);
+                    if (error) throw error;
+                    if (!data || data.length === 0) break;
+                    todas.push(...data);
+                    if (data.length < TAM) break;
+                }
+
+                if (todas.length === 0) {
+                    alert("Nenhum registro encontrado no banco de dados.");
+                    return;
+                }
+
+                const linhas = [];
+                todas.forEach(r => {
+                    const rasg = r.observacao && r.observacao.startsWith('Rasgada (');
+                    linhas.push({
+                        'Data Operação': r.data_operacao || '',
+                        'Portão': `Portão ${r.portao}`,
+                        'SSCC': r.sscc || '',
+                        'Status': (rotuloStatus(r.status) || '') + (rasg ? ' (Rasgada)' : ''),
+                        'Requisitada?': r.requisitada || 'Não',
+                        'Origem': r.origem || 'CD',
+                        'Ordem': r.ordem || '',
+                        'Observação': r.observacao || ''
+                    });
+                });
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(linhas);
+                ws['!cols'] = [{ wch: 14 }, { wch: 12 }, { wch: 28 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 35 }];
+                
+                XLSX.utils.book_append_sheet(wb, ws, "Relatório Geral");
+                XLSX.writeFile(wb, `Controle_Carregamento_Geral_Unificado.xlsx`);
+                mostrarToast("📊 Relatório unificado exportado com sucesso!");
+            } catch (err) {
+                alert("Erro ao buscar histórico completo: " + (err.message || err));
+            }
         }
-        if (!temDados) { alert('Nenhum dado encontrado para exportar.'); return; }
-        XLSX.writeFile(wb, `Controle_Carregamento_${dataAtual}.xlsx`);
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
