@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s, color 0.3s; overflow-x: hidden; }
@@ -154,7 +153,7 @@
 
     <div id="toast-container" class="fixed top-4 right-4 z-[999999] flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
-    <!-- MENU CONTEXTUAL DE FIXAR PORTÃO -->
+    <!-- MENU CONTEXTUAL DE FIXAR PORTÃO (PRESSIONAR) -->
     <div id="menu-contexto-portao" class="fixed inset-0 bg-black/40 hidden z-[999999] flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-xs w-full p-4 shadow-2xl border text-center my-auto">
             <h3 id="titulo-menu-portao" class="text-sm font-bold text-blue-500 mb-3">Portão X</h3>
@@ -231,27 +230,7 @@
         });
     </script>
 
-    <!-- MODAL COLAGEM EM LOTE DO SISTEMA (GERAL - EXTRATOR PRECISO POR COLUNAS) -->
-    <div id="modal-colagem-lote-geral" class="fixed inset-0 bg-black/70 hidden z-[99999] flex items-center justify-center p-4">
-        <div class="ui-card rounded-xl max-w-xl w-full p-5 shadow-2xl border border-cyan-500 my-auto">
-            <div class="flex justify-between items-center pb-2 border-b mb-4">
-                <h3 class="text-sm font-bold text-cyan-500 flex items-center gap-1.5"><i class="fa-solid fa-file-excel"></i> Importar Relatório Completo do Sistema (SIAG)</h3>
-                <button onclick="fecharModalColagemGeral()" class="opacity-70 hover:opacity-100 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <p class="opacity-75">Cole abaixo as linhas copiadas do relatório do SIAG. O sistema fará o mapeamento exato por colunas (SSCC, Ordem 1112XXXX e Portão correto), sem misturar portões!</p>
-                <div>
-                    <textarea id="textarea-lote-geral" rows="9" placeholder="Cole aqui a tabela copiada do sistema..." class="w-full ui-card border rounded p-2.5 font-mono text-xs focus:ring-2 focus:ring-cyan-500 outline-none"></textarea>
-                </div>
-                <div class="flex justify-end gap-2 pt-2 border-t">
-                    <button onclick="fecharModalColagemGeral()" class="px-3 py-1.5 border rounded cursor-pointer opacity-75">Cancelar</button>
-                    <button onclick="processarColagemGeralSistema()" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded cursor-pointer shadow">Distribuir e Salvar Automaticamente</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL COLAGEM EM LOTE (POR BLOCO) -->
+    <!-- MODAL COLAGEM EM LOTE -->
     <div id="modal-colagem-lote" class="fixed inset-0 bg-black/70 hidden z-[99999] flex items-center justify-center p-4">
         <div class="ui-card rounded-xl max-w-lg w-full p-5 shadow-2xl border border-blue-500 my-auto">
             <div class="flex justify-between items-center pb-2 border-b mb-4">
@@ -413,11 +392,9 @@
                 </select>
             </div>
             <button onclick="alternarTema()" class="ui-card border p-2 rounded-lg text-xs cursor-pointer shadow-sm"><i id="icone-tema" class="fa-solid fa-moon"></i></button>
-            <button onclick="abrirModalColagemGeral()" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer" title="Colar relatório completo do sistema"><i class="fa-solid fa-file-excel"></i> Importar Lote SIAG</button>
             <button onclick="abrirModalRasgada()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-triangle-exclamation"></i> Rasgada</button>
             <button onclick="abrirModalNovaOrdem()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-layer-group"></i> + Nova Ordem</button>
             <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-file-excel"></i> Excel</button>
-            <button onclick="apagarTodosDadosLocais()" class="ui-card border p-2 rounded-lg text-xs opacity-50 hover:opacity-100 hover:text-red-500 transition-opacity cursor-pointer shadow-sm" title="Limpar cache e dados locais"><i class="fa-solid fa-eraser"></i></button>
         </div>
     </header>
 
@@ -530,12 +507,6 @@
     </div>
 
     <script>
-    const SUPABASE_URL = "https://mpsyqawieuwjgupoedib.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wc3lxYXdpZXV3amd1cG9lZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTA1OTQsImV4cCI6MjEwNjA4NjU5NH0.P9I8u6ycOBCKYIT2mvp35kZ-SfNTHiVY3Jkw7ltYFuQ";
-    const SUPABASE_URL_SEC = "https://dylwhnsxjbeiukdmcupq.supabase.co";
-    const SUPABASE_KEY_SEC = "sb_publishable_uZL-3Z0_a-X-ZjMhwRXC9w_RP8c754J";
-
-    const TABELA = 'controle_faltas_portao';
     const PORTAO_MIN = 7, PORTAO_MAX = 26;
     const ORIGENS = ['CD', 'Fábrica 1', 'Fábrica 2', 'Fábrica 3', 'Fábrica 5', 'Fábrica 6', 'Fábrica 7'];
     const STATUS_FALTA = ['Pendente', 'Em andamento', 'Apareceu no Portão', 'Entregue no Portão'];
@@ -543,22 +514,8 @@
     const rotuloStatus = v => ROTULO_STATUS[v] || v;
     const optsStatusHTML = lista => lista.map(o => `<option value="${o}">${rotuloStatus(o)}</option>`).join('');
     const CAMPOS = ['sscc', 'status', 'requisitada', 'origem', 'ordem', 'cor', 'noApp', 'obs'];
-    const COLUNA = { sscc: 'sscc', status: 'status', requisitada: 'requisitada', origem: 'origem', ordem: 'ordem', cor: 'prioridade_cor', noApp: 'no_app', obs: 'observacao' };
     const SEM_ORDEM = 'SEM ORDEM DEFINIDA';
     const clientId = Math.random().toString(36).slice(2, 8);
-
-    let supabaseClient = null, supabaseClientSecundario = null;
-    try {
-        if (typeof supabase !== 'undefined') {
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-                auth: { persistSession: false, autoRefreshToken: false },
-                realtime: { params: { eventsPerSecond: 20 } }
-            });
-            supabaseClientSecundario = supabase.createClient(SUPABASE_URL_SEC, SUPABASE_KEY_SEC, {
-                auth: { persistSession: false, autoRefreshToken: false }
-            });
-        }
-    } catch (e) { console.warn('Supabase SDK indisponível', e); }
 
     const recs = new Map();
     const idIndex = new Map();
@@ -582,20 +539,17 @@
     let dataAtual = '';
     let loadToken = 0;
     let diaCarregado = false;
-    let canal = null, canalEtiquetas = null;
     let focoUid = null;
     let html5QrcodeScanner = null;
     let campoAlvoScanner = null;
     let ordemAlvoColagemLote = '';
     let portaoMenuContexto = null;
 
-    let semUid = false;
-    let uidChecado = false;
     let rtOk = false;
     let tentouFetch = false;
     let ultimoFetchOk = false;
     let buscandoToken = -1;
-    let pollTimer = null, cacheTimer = null, reinscreverTimer = null;
+    let pollTimer = null, cacheTimer = null;
 
     function novoUid() {
         return Date.now().toString(36).padStart(9, '0') + '-' + Math.random().toString(36).slice(2, 8);
@@ -657,27 +611,10 @@
         const resp = responsavelAtual || 'Alguém';
         const msg = `${resp} ${texto}`;
         mostrarToast(msg);
-        if (canal && supabaseClient) {
-            try {
-                canal.send({
-                    type: 'broadcast',
-                    event: 'notificacao',
-                    payload: { mensagem: msg, remetente: clientId }
-                });
-            } catch (e) {}
-        }
     }
 
     function broadcastCuidados() {
-        if (canal && supabaseClient) {
-            try {
-                canal.send({
-                    type: 'broadcast',
-                    event: 'cuidados_portao',
-                    payload: { portoes: portoesCuidados, remetente: clientId }
-                });
-            } catch (e) {}
-        }
+        // Implementado localmente no serverless
     }
 
     function toggleCuidadosPortao() {
@@ -690,7 +627,6 @@
             portoesCuidados[portaoAtual] = resp;
             enviarNotificacao(`assumiu os cuidados do portão ${portaoAtual}`);
         }
-        broadcastCuidados();
         renderTudo();
     }
 
@@ -709,29 +645,7 @@
         }, 4000);
     }
 
-    function apagarTodosDadosLocais() {
-        if (!confirm('Deseja limpar todos os dados locais e cache salvos neste dispositivo?')) return;
-        try {
-            const keysToRemove = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k && (k.startsWith('grendene_') || k.includes('cache') || k.includes('pend'))) {
-                    keysToRemove.push(k);
-                }
-            }
-            keysToRemove.forEach(k => localStorage.removeItem(k));
-            recs.clear();
-            idIndex.clear();
-            tombstones.clear();
-            mostrarToast('🗑️ Dados locais e cache limpos com sucesso.');
-            agendarRender();
-            setTimeout(() => window.location.reload(), 1000);
-        } catch(e) {
-            alert('Erro ao limpar dados.');
-        }
-    }
-
-    function novaRec(o) {
+    function novoRec(o) {
         const uid = o.uid || novoUid();
         return {
             uid, id: o.id || null, data: o.data || dataAtual,
@@ -768,7 +682,7 @@
     }
 
     function payloadCompleto(rec) {
-        const p = {
+        return {
             data_operacao: rec.data,
             portao: rec.portao,
             sscc: rec.sscc,
@@ -780,68 +694,33 @@
             no_app: rec.noApp,
             observacao: rec.obs,
             turno: String(turnoAtual || 'Turno 1'),
-            responsavel: String(responsavelAtual || 'Não informado')
+            responsavel: String(responsavelAtual || 'Não informado'),
+            uid: rec.uid
         };
-        if (!semUid) p.uid = rec.uid;
-        colunasAusentes.forEach(c => { delete p[c]; });
-        return p;
-    }
-
-    function colunaAusenteDe(err) {
-        const msg = String((err && err.message) || err || '');
-        let m = msg.match(/Could not find the '([^']+)' column/i);
-        if (m) return m[1];
-        m = msg.match(/column \"?(?:[\w]+\.)?([\w]+)\"? .*does not exist/i) || msg.match(/column [\w]+\.([\w]+) does not exist/i);
-        if (m && ((err && err.code === '42703') || /does not exist/i.test(msg))) return m[1];
-        return null;
-    }
-    function erroDeColunaUid(err) { return colunaAusenteDe(err) === 'uid'; }
-
-    const colunasAusentes = new Set((() => { try { return JSON.parse(localStorage.getItem('grendene_cols_ausentes') || '[]'); } catch (e) { return []; } })());
-    function lembrarColunasAusentes() { try { localStorage.setItem('grendene_cols_ausentes', JSON.stringify([...colunasAusentes])); } catch (e) {} }
-    function descreverErro(err) {
-        if (!err) return 'erro desconhecido';
-        const partes = [err.message || String(err)];
-        if (err.code) partes.push(`código ${err.code}`);
-        if (err.details) partes.push(err.details);
-        if (err.hint) partes.push(err.hint);
-        return partes.join(' | ');
     }
 
     async function inserirLinha(rec) {
-        const tabela = supabaseClient.from(TABELA);
-        const res = await tabela.insert([payloadCompleto(rec)]).select('id');
-        if (res.error) {
-            if (res.error.code === '23505' && !semUid) {
-                const ja = await supabaseClient.from(TABELA).select('id').eq('uid', rec.uid).limit(1);
-                if (!ja.error && ja.data && ja.data[0]) return ja.data[0].id;
-            }
-            throw res.error;
-        }
-        const row = Array.isArray(res.data) ? res.data[0] : res.data;
-        if (row && row.id) return row.id;
-        if (!semUid) {
-            const conf = await supabaseClient.from(TABELA).select('id').eq('uid', rec.uid).limit(1);
-            if (!conf.error && conf.data && conf.data[0]) return conf.data[0].id;
-        }
-        throw new Error('O banco não confirmou a gravação.');
+        const res = await fetch('/api/dados', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ acao: 'inserir', payload: payloadCompleto(rec) })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Erro ao inserir');
+        return json.id;
     }
 
     async function enviar(rec) {
-        if (!supabaseClient) return;
         if (rec.inflight) { rec.again = true; return; }
         if (rec.deleted) return;
         rec.inflight = true;
         atualizarIndicadorSync();
-        let falhou = false, repetirJa = false;
+        let falhou = false;
         try {
             do {
                 rec.again = false;
                 if (!rec.saved && !rec.sscc.trim()) break;
-                let sent;
                 if (!rec.saved) {
-                    sent = {};
-                    CAMPOS.forEach(f => sent[f] = rec[f]);
                     const novoId = await inserirLinha(rec);
                     rec.id = novoId; idIndex.set(novoId, rec.uid);
                     rec.saved = true;
@@ -853,66 +732,46 @@
                         }
                     }
                 } else {
-                    sent = { ...rec.dirty };
                     const patch = {};
-                    Object.keys(sent).forEach(f => { if (COLUNA[f] && !colunasAusentes.has(COLUNA[f])) patch[COLUNA[f]] = sent[f]; });
-                    if (!Object.keys(patch).length) { for (const f in sent) { if (rec.dirty[f] === sent[f]) delete rec.dirty[f]; } break; }
-                    if (!rec.id && semUid) throw new Error('linha sem id no modo compatível');
-                    const q = supabaseClient.from(TABELA).update(patch);
-                    const res = await (rec.id ? q.eq('id', rec.id) : q.eq('uid', rec.uid)).select('id');
-                    if (res.error) throw res.error;
-                    const linhas = Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []);
-                    if (linhas.length === 0) {
-                        const existe = rec.id
-                            ? await supabaseClient.from(TABELA).select('id').eq('id', rec.id).limit(1)
-                            : await supabaseClient.from(TABELA).select('id').eq('uid', rec.uid).limit(1);
-                        if (existe.error) throw existe.error;
-                        if (existe.data && existe.data.length) throw new Error('O banco recusou a alteração.');
-                        if (idIndex.get(rec.id) === rec.uid) idIndex.delete(rec.id);
-                        rec.id = null; rec.saved = false;
-                        CAMPOS.forEach(f => rec.dirty[f] = rec[f]);
-                        rec.again = true;
-                        continue;
+                    Object.keys(rec.dirty).forEach(f => {
+                        const mapaCol = { sscc: 'sscc', status: 'status', requisitada: 'requisitada', origem: 'origem', ordem: 'ordem', cor: 'prioridade_cor', noApp: 'no_app', obs: 'observacao' };
+                        if (mapaCol[f]) patch[mapaCol[f]] = rec[f];
+                    });
+                    if (Object.keys(patch).length > 0) {
+                        const res = await fetch('/api/dados', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ acao: 'atualizar', id: rec.id, uid: rec.uid, payload: patch })
+                        });
+                        const json = await res.json();
+                        if (!res.ok) throw new Error(json.error || 'Erro ao atualizar');
                     }
-                    if (linhas[0] && linhas[0].id) { rec.id = linhas[0].id; idIndex.set(linhas[0].id, rec.uid); }
+                    rec.dirty = {};
                 }
-                for (const f in sent) { if (rec.dirty[f] === sent[f]) delete rec.dirty[f]; }
                 rec.touched = Date.now();
             } while (rec.again);
             setAviso('escrita', '');
         } catch (err) {
             console.warn('Falha ao gravar linha', err);
-            const colFalta = colunaAusenteDe(err);
-            if (colFalta && colFalta !== 'uid' && !colunasAusentes.has(colFalta)) {
-                colunasAusentes.add(colFalta);
-                lembrarColunasAusentes();
-                repetirJa = true;
-                setAviso('colunas', `A tabela do banco não tem a coluna "${colFalta}".`, 'aviso');
-            } else if (!semUid && erroDeColunaUid(err)) {
-                semUid = true;
-                uidChecado = true;
-                repetirJa = true;
-                setAviso('modo', 'Banco sem a coluna "uid": funcionando em modo compatível.', 'aviso');
-            } else {
-                falhou = true;
-                setAviso('escrita', `NÃO SALVOU no banco: ${descreverErro(err)}.`, 'erro');
-            }
+            falhou = true;
+            setAviso('escrita', `NÃO SALVOU no servidor: ${err.message}.`, 'erro');
         } finally {
             rec.inflight = false;
             if (rec.deleted) apagarNoBanco(rec);
             persistirPendentes();
             atualizarIndicadorSync();
-            if (repetirJa && !rec.deleted) enviar(rec);
-            else if (falhou && !rec.deleted) setTimeout(() => enviar(rec), 5000);
+            if (falhou && !rec.deleted) setTimeout(() => enviar(rec), 5000);
         }
     }
 
     async function apagarNoBanco(rec, tentativa = 0) {
-        if (!supabaseClient || (!rec.id && !rec.saved)) return;
+        if (!rec.id && !rec.saved) return;
         try {
-            const q = supabaseClient.from(TABELA).delete();
-            const { error } = await (rec.id ? q.eq('id', rec.id) : q.eq('uid', rec.uid));
-            if (error) throw error;
+            await fetch('/api/dados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ acao: 'deletar', id: rec.id, uid: rec.uid })
+            });
         } catch (e) {
             if (tentativa < 5) setTimeout(() => apagarNoBanco(rec, tentativa + 1), 3000);
         }
@@ -979,7 +838,7 @@
         const el = $('status-conexao');
         if (!el) return;
         const cfg = {
-            ok: ['text-emerald-500', 'bg-emerald-500', 'Ao vivo'],
+            ok: ['text-emerald-500', 'bg-emerald-500', 'Ao vivo (Serverless)'],
             poll: ['text-emerald-500', 'bg-emerald-500', 'Sincronizando'],
             conectando: ['text-amber-500', 'bg-amber-500', 'Conectando…'],
             cache: ['text-red-500', 'bg-red-500', 'Modo Offline (Cópia local)'],
@@ -989,10 +848,9 @@
         el.innerHTML = `<span class="w-2 h-2 rounded-full ${cfg[1]} inline-block"></span> ${cfg[2]}`;
     }
     function atualizarStatusConexao() {
-        if (!supabaseClient) return setConexao('offline');
         if (!tentouFetch) return setConexao('conectando');
         if (!ultimoFetchOk) return setConexao('cache');
-        setConexao(rtOk ? 'ok' : 'poll');
+        setConexao('ok');
     }
 
     function estaEditando(uid, f) {
@@ -1010,7 +868,7 @@
             sscc: row.sscc || '', status: row.status || 'Pendente', requisitada: row.requisitada || 'Não', origem: row.origem || 'CD',
             ordem: row.ordem || '', cor: row.prioridade_cor || 'azul', noApp: row.no_app || 'Não', obs: row.observacao || ''
         };
-        if (!rec && (semUid || !row.uid)) {
+        if (!rec && (!row.uid)) {
             for (const r of recs.values()) {
                 if (!r.id && r.inflight && r.portao === row.portao && r.sscc === vals.sscc && r.data === row.data_operacao) { rec = r; break; }
             }
@@ -1049,58 +907,17 @@
         return rec;
     }
 
-    function aoEventoRemoto(payload) {
-        const tipo = payload.eventType;
-        if (tipo === 'DELETE') {
-            const id = payload.old && payload.old.id;
-            const uid = idIndex.get(id);
-            const rec = uid ? recs.get(uid) : null;
-            if (rec && !rec.inflight && !Object.keys(rec.dirty).length) { removerLocal(rec); agendarRender(); }
-            return;
-        }
-        const row = payload.new;
-        if (!row || row.data_operacao !== dataAtual) return;
-        aplicarLinhaRemota(row);
-        agendarRender();
-    }
-
-    function avisarColunasAusentes() {
-        if (colunasAusentes.size) setAviso('colunas', `A tabela do banco não tem a(s) coluna(s) ${[...colunasAusentes].map(c => '"' + c + '"').join(', ')}.`, 'aviso');
-    }
-    async function checarColunaUid() {
-        try {
-            const { error } = await supabaseClient.from(TABELA).select('uid').limit(1);
-            if (!error) { uidChecado = true; semUid = false; setAviso('modo', ''); return; }
-            if (erroDeColunaUid(error)) {
-                uidChecado = true; semUid = true;
-                setAviso('modo', 'Banco sem a coluna "uid".', 'aviso');
-            }
-        } catch (e) {}
-    }
-
-    async function buscarDiaCompleto(dia) {
-        const TAM = 1000, todas = [];
-        for (let ini = 0; ini < 100000; ini += TAM) {
-            const { data, error } = await supabaseClient.from(TABELA).select('*')
-                .eq('data_operacao', dia).order('id', { ascending: true }).range(ini, ini + TAM - 1);
-            if (error) throw error;
-            todas.push(...(data || []));
-            if (!data || data.length < TAM) break;
-        }
-        return todas;
-    }
-
     async function refrescar(token) {
-        if (!supabaseClient) return;
         const tok = (token === undefined) ? loadToken : token;
         if (buscandoToken === tok) return;
         buscandoToken = tok;
         const t0 = Date.now();
         const dia = dataAtual;
         try {
-            if (!uidChecado) await checarColunaUid();
-            avisarColunasAusentes();
-            const data = await buscarDiaCompleto(dia);
+            const res = await fetch(`/api/dados?data_operacao=${encodeURIComponent(dia)}`);
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Erro ao carregar dados do servidor');
+            const data = json.data || [];
             if (tok !== loadToken || dia !== dataAtual) return;
             const vistos = new Set();
             data.forEach(row => { const r = aplicarLinhaRemota(row, t0); if (r) { vistos.add(r.uid); r.faltou = 0; } });
@@ -1122,96 +939,10 @@
             if (tok !== loadToken) return;
             tentouFetch = true;
             ultimoFetchOk = false;
-            setAviso('leitura', `Não foi possível ler o banco: ${(e && e.message) || e}.`, 'erro');
+            setAviso('leitura', `Não foi possível ler o servidor: ${(e && e.message) || e}.`, 'erro');
         } finally {
             if (buscandoToken === tok) buscandoToken = -1;
             if (tok === loadToken) atualizarStatusConexao();
-        }
-    }
-
-    function desinscrever() {
-        const c = canal;
-        canal = null;
-        if (c && supabaseClient) { try { supabaseClient.removeChannel(c); } catch (e) {} }
-        
-        const ce = canalEtiquetas;
-        canalEtiquetas = null;
-        if (ce && supabaseClient) { try { supabaseClient.removeChannel(ce); } catch (e) {} }
-    }
-
-    function inscreverCanalEtiquetas() {
-        if (!supabaseClient) return;
-        try {
-            canalEtiquetas = supabaseClient.channel('etiquetas-global-realtime', {
-                config: { broadcast: { self: false } }
-            })
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'controle_etiquetas' }, payload => {
-                const row = payload.new;
-                if (!row) return;
-                const sscc = row.sscc || row.codigo || row.etiqueta || 'desconhecida';
-                const origem = row.origem || row.local || row.tipo_desvinculo || row.status_origem || 'sorter';
-                mostrarToast(`caixa "${sscc}" foi disvinculada do "${origem}" e registrada no sistema`);
-            })
-            .subscribe();
-        } catch (e) {}
-    }
-
-    function inscrever(token) {
-        if (!supabaseClient) return;
-        try {
-            const ch = supabaseClient.channel(`faltas-${dataAtual}`, {
-                config: { broadcast: { self: false } }
-            });
-            canal = ch;
-            
-            ch.on('postgres_changes', { event: '*', schema: 'public', table: TABELA, filter: `data_operacao=eq.${dataAtual}` },
-                payload => { if (token === loadToken && canal === ch) aoEventoRemoto(payload); })
-            
-              .on('broadcast', { event: 'notificacao' }, payload => {
-                if (payload && payload.payload && payload.payload.mensagem) {
-                    if (payload.payload.remetente !== clientId) {
-                        mostrarToast(payload.payload.mensagem);
-                    }
-                }
-              })
-              .on('broadcast', { event: 'cuidados_portao' }, payload => {
-                if (payload && payload.payload && payload.payload.portoes) {
-                    Object.assign(portoesCuidados, payload.payload.portoes);
-                    renderTudo();
-                }
-              })
-              .on('broadcast', { event: 'ordem_finalizada' }, payload => {
-                if (payload && payload.payload) {
-                    const { ordem, responsavel, tempoDecorrido } = payload.payload;
-                    ordensFinalizadas.add(ordem);
-                    ordensTemposFechados[ordem] = tempoDecorrido;
-                    dispararAnimacaoCaminhao(ordem, tempoDecorrido || 'pouco tempo');
-                    mostrarToast(`${responsavel} finalizou a ordem ${ordem} em ${tempoDecorrido}! 🚚`);
-                    agendarRender();
-                }
-              })
-              .subscribe((status, err) => {
-                if (token !== loadToken || canal !== ch) return;
-                if (status === 'SUBSCRIBED') {
-                    rtOk = true;
-                    setAviso('rt', '');
-                    atualizarStatusConexao();
-                    refrescar(token);
-                    reenviarPendentes();
-                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-                    rtOk = false;
-                    setAviso('rt', 'Tempo real indisponível — atualizando automaticamente.', 'aviso');
-                    atualizarStatusConexao();
-                    clearTimeout(reinscreverTimer);
-                    reinscreverTimer = setTimeout(() => {
-                        if (token === loadToken && !rtOk) { desinscrever(); inscrever(token); }
-                    }, 15000);
-                }
-            });
-
-            inscreverCanalEtiquetas();
-        } catch (e) {
-            rtOk = false;
         }
     }
 
@@ -1242,17 +973,13 @@
     async function carregarDia() {
         const meu = ++loadToken;
         diaCarregado = false; tentouFetch = false; ultimoFetchOk = false; rtOk = false;
-        clearTimeout(reinscreverTimer);
-        desinscrever();
         recs.clear(); idIndex.clear(); tombstones.clear(); flashSet.clear();
         restaurarCache();
         restaurarPendentes();
         agendarRender();
         atualizarStatusConexao();
-        if (!supabaseClient) return;
         await refrescar(meu);
         if (meu !== loadToken) return;
-        inscrever(meu);
         reenviarPendentes();
         agendarPoll();
     }
@@ -1262,7 +989,7 @@
         pollTimer = setTimeout(async () => {
             if (!document.hidden) await refrescar(loadToken);
             agendarPoll();
-        }, rtOk ? 6000 : 2500);
+        }, 3000);
     }
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { refrescar(loadToken); reenviarPendentes(); } });
     window.addEventListener('online', () => { refrescar(loadToken); reenviarPendentes(); });
@@ -1275,7 +1002,7 @@
         ocTimer = setTimeout(sincronizarOcorrenciasTurno, 2500);
     }
     async function sincronizarOcorrenciasTurno() {
-        if (!supabaseClientSecundario || !dataAtual || !diaCarregado) return;
+        if (!dataAtual || !diaCarregado) return;
         let faltas = 0, rasgadas = 0;
         recs.forEach(r => {
             if (!r.sscc.trim()) return;
@@ -1284,18 +1011,20 @@
         const assinatura = `${dataAtual}|${faltas}|${rasgadas}`;
         if (assinatura === ocUltimo) return;
         try {
-            const { data: existente, error } = await supabaseClientSecundario.from('ocorrencias_turno1').select('id').eq('data', dataAtual).maybeSingle();
-            if (error) throw error;
-            if (existente) {
-                await supabaseClientSecundario.from('ocorrencias_turno1').update({ carregamento: rasgadas, faltas }).eq('id', existente.id);
-            } else {
-                await supabaseClientSecundario.from('ocorrencias_turno1').insert([{
-                    data: dataAtual, sorter: 0, carregamento: rasgadas, faltas,
-                    pend_sorter: 0, pend_carregamento: 0, pend_faltas: 0,
-                    observacoes: 'Gerado automaticamente pelo Controle de Carregamento',
-                    responsavel: responsavelAtual || 'Yens Farrapo'
-                }]);
-            }
+            await fetch('/api/dados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    acao: 'sync_ocorrencias',
+                    data_operacao: dataAtual,
+                    payload: {
+                        data: dataAtual, sorter: 0, carregamento: rasgadas, faltas,
+                        pend_sorter: 0, pend_carregamento: 0, pend_faltas: 0,
+                        observacoes: 'Gerado automaticamente pelo Controle de Carregamento',
+                        responsavel: responsavelAtual || 'Yens Farrapo'
+                    }
+                })
+            });
             ocUltimo = assinatura;
         } catch (err) { console.warn('Erro ao sincronizar ocorrências:', err); }
     }
@@ -1307,42 +1036,24 @@
 
     async function cruzarSSCC(rec) {
         const codigo = rec.sscc;
-        if (!codigo || !supabaseClient) return;
-        let msg = '';
+        if (!codigo) return;
         try {
-            let achado = null;
-            const exato = await supabaseClient.from('registros_sscc').select('*').eq('sscc', codigo).limit(5);
-            if (!exato.error && exato.data) achado = exato.data.find(x => mesmoSSCC(x.sscc, codigo)) || null;
-            if (!achado && codigo.length >= 15) {
-                const fim = await supabaseClient.from('registros_sscc').select('*').ilike('sscc', `%${codigo}`).limit(10);
-                if (!fim.error && fim.data) achado = fim.data.find(x => mesmoSSCC(x.sscc, codigo)) || null;
-            }
-            if (achado) {
-                msg = `Caixa localizada em Reposição: ${achado.categoria || 'Reposição'}${achado.rastro ? ` (${achado.rastro})` : ''}`;
-            }
-            if (!msg) {
-                for (const r of recs.values()) {
-                    if (r.kind === 'rasgada' && r.uid !== rec.uid && r.data === dataAtual && r.sscc === codigo) {
-                        msg = `ALERTA: Caixa localizada em Rasgadas (Portão ${r.portao} - Tipo: ${tipoDaObs(r.obs)})`;
-                        break;
-                    }
-                }
-            }
-            if (!msg) {
-                const rd = await supabaseClient.from(TABELA).select('portao,sscc').eq('sscc', codigo)
-                    .eq('data_operacao', dataAtual).like('observacao', 'Rasgada (%').limit(1);
-                if (!rd.error && rd.data && rd.data[0] && rd.data[0].sscc === codigo) msg = `ALERTA: Caixa localizada em Rasgadas (Portão ${rd.data[0].portao})`;
+            const res = await fetch('/api/dados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ acao: 'cruzar', codigo, data_operacao: dataAtual })
+            });
+            const json = await res.json();
+            const msg = json.msg;
+            if (!msg || rec.sscc !== codigo || !recs.has(rec.uid)) return;
+            if (!rec.obs.includes(msg)) {
+                rec.obs = `[${msg}]`;
+                marcarSujo(rec, ['obs']);
+                agendarRender();
+                $('texto-alerta-integracao').innerText = msg;
+                $('modal-alerta-integracao').classList.remove('hidden');
             }
         } catch (e) { return; }
-
-        if (!msg || rec.sscc !== codigo || !recs.has(rec.uid)) return;
-        if (!rec.obs.includes(msg)) {
-            rec.obs = `[${msg}]`;
-            marcarSujo(rec, ['obs']);
-            agendarRender();
-            $('texto-alerta-integracao').innerText = msg;
-            $('modal-alerta-integracao').classList.remove('hidden');
-        }
     }
     function fecharAlertaIntegracao() { $('modal-alerta-integracao').classList.add('hidden'); }
 
@@ -1361,80 +1072,6 @@
     }
     function fecharModalTempoSSCC() {
         $('modal-tempo-sscc').classList.add('hidden');
-    }
-
-    function abrirModalColagemGeral() {
-        $('textarea-lote-geral').value = '';
-        $('modal-colagem-lote-geral').classList.remove('hidden');
-    }
-    function fecharModalColagemGeral() {
-        $('modal-colagem-lote-geral').classList.add('hidden');
-    }
-
-    function processarColagemGeralSistema() {
-        const texto = $('textarea-lote-geral').value;
-        if (!texto.trim()) { alert('Cole o relatório copiado do sistema antes de processar.'); return; }
-
-        const linhas = texto.split('\n');
-        let inseridos = 0;
-        let duplicados = 0;
-
-        linhas.forEach(linha => {
-            if (!linha.trim()) return;
-
-            const matchSSCC = linha.match(/\b0047\d{16}\b/) || linha.match(/\b0047\d{11,21}\b/);
-            if (!matchSSCC) return;
-
-            const sscc = tratarSSCC(matchSSCC[0]);
-            const colunas = linha.split(/\t+|\s{2,}/).map(c => c.trim()).filter(Boolean);
-
-            let portao = portaoAtual;
-            let ordem = '';
-
-            for (let col of colunas) {
-                if (/^1112\d{4}$/.test(col)) {
-                    ordem = col;
-                    break;
-                }
-            }
-            if (!ordem) {
-                const matchOrdem = linha.match(/\b1112\d{4}\b/);
-                if (matchOrdem) ordem = matchOrdem[0];
-            }
-
-            for (let i = 0; i < colunas.length; i++) {
-                const n = parseInt(colunas[i]);
-                if (!isNaN(n) && n >= PORTAO_MIN && n <= PORTAO_MAX) {
-                    if (String(n).length <= 2) {
-                        portao = n;
-                    }
-                }
-            }
-
-            if (sscc && sscc.length >= 10) {
-                const jaExisteNoPortao = Array.from(recs.values()).some(r => r.portao === portao && r.sscc === sscc);
-                if (!jaExisteNoPortao) {
-                    const rec = addRec(novaRec({
-                        portao: portao,
-                        ordem: ordem,
-                        sscc: sscc,
-                        status: 'Pendente',
-                        requisitada: 'Não',
-                        origem: 'CD',
-                        noApp: 'Não'
-                    }));
-                    marcarSujo(rec, CAMPOS);
-                    inseridos++;
-                } else {
-                    duplicados++;
-                }
-            }
-        });
-
-        fecharModalColagemGeral();
-        tocarSomSucesso();
-        mostrarToast(`📥 Importação Concluída:\n• ${inseridos} falta(s) distribuída(s) com precisão absoluta.\n• ${duplicados} já existiam.`);
-        agendarRender();
     }
 
     function abrirModalColagemLote(ordemKey) {
@@ -1487,7 +1124,8 @@
 
         fecharModalColagemLote();
         tocarSomSucesso();
-        mostrarToast(`📊 Análise do Lote:\n• ${inseridosNovos} nova(s) falta(s) registrada(s).\n• ${jaExistentes} caixa(s) já haviam sido adicionadas antes.`);
+        let mensagemAnalise = `📊 Análise do Lote:\n• ${inseridosNovos} nova(s) falta(s) registrada(s).\n• ${jaExistentes} caixa(s) já haviam sido adicionadas antes.`;
+        mostrarToast(mensagemAnalise);
         agendarRender();
     }
 
@@ -1709,15 +1347,6 @@
             ordensTemposFechados[ordemKey] = tempoMs;
             dispararAnimacaoCaminhao(ordemKey, tempoDecorridoStr);
             enviarNotificacao(`finalizou a ordem ${ordemKey} em ${tempoDecorridoStr}! Caminhão liberado 🚚`);
-            if (canal && supabaseClient) {
-                try {
-                    canal.send({
-                        type: 'broadcast',
-                        event: 'ordem_finalizada',
-                        payload: { ordem: ordemKey, responsavel: responsavelAtual || 'Alguém', tempoDecorrido: tempoDecorridoStr }
-                    });
-                } catch (e) {}
-            }
         }
         agendarRender();
     }
@@ -1843,7 +1472,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="text-center opacity-60 font-mono text-[11px]" data-label="#"></td>
-            <td class="td-sscc-container" data-label="SSCC"><div class="flex items-center gap-1 w-full justify-end">
+            <td class="td-sscc-container" data-label="SSCC"><div class="flex items-center gap-2.5 w-full justify-end">
                 <input type="text" data-f="sscc" autocomplete="off" class="excel-input excel-input-sscc font-bold font-mono">
                 <button type="button" data-action="scan" class="text-amber-500 hover:text-amber-700 p-1 cursor-pointer" title="Bipar"><i class="fa-solid fa-camera text-xs"></i></button>
             </div></td>
@@ -2409,78 +2038,22 @@
     const tocarSomConquistaAnimada = () => tocarSequencia([523.25, 659.25, 783.99, 1046.5], { tipo: 'triangle', passo: 0.08, dur: 0.25 });
     const tocarSomTrocaData = () => tocarSequencia([440, 554.37], { passo: 0.12, dur: 0.25, vol: 0.1 });
 
-    async function exportarExcel() {
-        const opcao = prompt(
-            "Selecione o tipo de relatório do Excel:\n\n1 - Relatório do período atuante (Apenas o dia " + dataAtual + ")\n2 - Relatório completo de todo o período (Todas as datas, unificado em uma aba)",
-            "1"
-        );
-
-        if (!opcao) return;
-
-        if (opcao === "1") {
-            const wb = XLSX.utils.book_new();
-            let temDados = false;
-            for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) {
-                const lista = Array.from(recs.values()).filter(r => r.portao === i && r.sscc.trim()).sort(comparaRec);
-                if (!lista.length) continue;
-                temDados = true;
-                const linhas = [{ 'SSCC': `Portão ${i} (${dataAtual})`, 'Status': '', 'Requisitada?': '', 'Origem': '', 'Ordem': '', 'Prioridade': '', 'No App?': '', 'Observação': '' }];
-                lista.filter(r => r.kind === 'falta').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': rotuloStatus(r.status), 'Requisitada?': r.requisitada || 'Não', 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': r.cor, 'No App?': r.noApp, 'Observação': r.obs }));
-                lista.filter(r => r.kind === 'rasgada').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': `${rotuloStatus(r.status)} (Rasgada)`, 'Requisitada?': 'Sim', 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': 'vermelho', 'No App?': 'Sim', 'Observação': r.obs }));
-                const ws = XLSX.utils.json_to_sheet(linhas);
-                ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 15 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
-                XLSX.utils.book_append_sheet(wb, ws, `Portão ${i}`);
-            }
-            if (!temDados) { alert('Nenhum dado encontrado para exportar.'); return; }
-            XLSX.writeFile(wb, `Controle_Carregamento_${dataAtual}.xlsx`);
-        } else if (opcao === "2") {
-            if (!supabaseClient) {
-                alert("Modo offline: exportando apenas os dados disponíveis na memória.");
-                return;
-            }
-
-            mostrarToast("⏳ Baixando histórico completo de todas as datas...");
-            try {
-                const TAM = 1000, todas = [];
-                for (let ini = 0; ini < 100000; ini += TAM) {
-                    const { data, error } = await supabaseClient.from(TABELA).select('*').order('data_operacao', { ascending: true }).range(ini, ini + TAM - 1);
-                    if (error) throw error;
-                    if (!data || data.length === 0) break;
-                    todas.push(...data);
-                    if (data.length < TAM) break;
-                }
-
-                if (todas.length === 0) {
-                    alert("Nenhum registro encontrado no banco de dados.");
-                    return;
-                }
-
-                const linhas = [];
-                todas.forEach(r => {
-                    const rasg = r.observacao && r.observacao.startsWith('Rasgada (');
-                    linhas.push({
-                        'Data Operação': r.data_operacao || '',
-                        'Portão': `Portão ${r.portao}`,
-                        'SSCC': r.sscc || '',
-                        'Status': (rotuloStatus(r.status) || '') + (rasg ? ' (Rasgada)' : ''),
-                        'Requisitada?': r.requisitada || 'Não',
-                        'Origem': r.origem || 'CD',
-                        'Ordem': r.ordem || '',
-                        'Observação': r.observacao || ''
-                    });
-                });
-
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.json_to_sheet(linhas);
-                ws['!cols'] = [{ wch: 14 }, { wch: 12 }, { wch: 28 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 35 }];
-                
-                XLSX.utils.book_append_sheet(wb, ws, "Relatório Geral");
-                XLSX.writeFile(wb, `Controle_Carregamento_Geral_Unificado.xlsx`);
-                mostrarToast("📊 Relatório unificado exportado com sucesso!");
-            } catch (err) {
-                alert("Erro ao buscar histórico completo: " + (err.message || err));
-            }
+    function exportarExcel() {
+        const wb = XLSX.utils.book_new();
+        let temDados = false;
+        for (let i = PORTAO_MIN; i <= PORTAO_MAX; i++) {
+            const lista = Array.from(recs.values()).filter(r => r.portao === i && r.sscc.trim()).sort(comparaRec);
+            if (!lista.length) continue;
+            temDados = true;
+            const linhas = [{ 'SSCC': `Portão ${i} (${dataAtual})`, 'Status': '', 'Requisitada?': '', 'Origem': '', 'Ordem': '', 'Prioridade': '', 'No App?': '', 'Observação': '' }];
+            lista.filter(r => r.kind === 'falta').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': rotuloStatus(r.status), 'Requisitada?': r.requisitada || 'Não', 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': r.cor, 'No App?': r.noApp, 'Observação': r.obs }));
+            lista.filter(r => r.kind === 'rasgada').forEach(r => linhas.push({ 'SSCC': r.sscc, 'Status': `${rotuloStatus(r.status)} (Rasgada ${tipoDaObs(r.obs)})`, 'Requisitada?': 'Sim', 'Origem': r.origem, 'Ordem': r.ordem, 'Prioridade': 'vermelho', 'No App?': 'Sim', 'Observação': r.obs }));
+            const ws = XLSX.utils.json_to_sheet(linhas);
+            ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 15 }, { wch: 22 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }];
+            XLSX.utils.book_append_sheet(wb, ws, `Portão ${i}`);
         }
+        if (!temDados) { alert('Nenhum dado encontrado para exportar.'); return; }
+        XLSX.writeFile(wb, `Controle_Carregamento_${dataAtual}.xlsx`);
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
